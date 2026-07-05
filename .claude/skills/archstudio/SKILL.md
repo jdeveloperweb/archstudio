@@ -17,7 +17,9 @@ ArchStudio (https://archstudio.mjolnix.com.br) é um editor de diagramas que car
 ### Fluxo
 1. Entenda o sistema (pergunte só o essencial; na dúvida, proponha um desenho inicial razoável).
 2. Escreva a spec em `<slug>.archstudio.json` (formato abaixo). Mire em **6–15 nós** — diagrama é comunicação, não inventário.
-3. Gere o link e entregue **o arquivo + o link clicável**, avisando que dá para editar no navegador e re-salvar.
+3. Gere o link (comando abaixo).
+4. **Renderize um PNG e confira**: acrescente `&view=clean` ao link (esconde a interface e ajusta o zoom ao conteúdo) e capture com navegador headless (comando abaixo). Depois **leia o PNG** para validar o layout — sobreposições? fluxo legível? Se estiver ruim, ajuste a spec (direção das edges, boxes) e re-renderize.
+5. Entregue os três: **o PNG** (análise visual imediata, sem sair do chat), **o link clicável** (editar/validar no navegador) e **o arquivo** `.archstudio.json`.
 
 ### Gerando o link (abre o diagrama direto no navegador)
 
@@ -30,6 +32,20 @@ Sem Node, use Python:
 ```bash
 python -c "import base64,sys;print('https://archstudio.mjolnix.com.br/#d=j:'+base64.urlsafe_b64encode(open(sys.argv[1],'rb').read()).decode().rstrip('='))" <arquivo>.archstudio.json
 ```
+
+### Renderizando o PNG (análise visual imediata)
+
+Acrescente `&view=clean` ao link — o app esconde a interface e ajusta o zoom ao conteúdo — e capture com navegador headless:
+
+```bash
+# Windows (Edge)
+"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --window-size=1600,1000 --screenshot="diagrama.png" "<LINK>&view=clean"
+
+# macOS/Linux (google-chrome ou chromium)
+google-chrome --headless=new --disable-gpu --window-size=1600,1000 --screenshot=diagrama.png "<LINK>&view=clean"
+```
+
+Aumente `--window-size` para diagramas grandes. **Sempre leia o PNG gerado** antes de entregar — se houver sobreposição ou fluxo confuso, ajuste a spec e re-renderize.
 
 ### Formato da spec
 
@@ -142,3 +158,4 @@ Aceite qualquer uma destas formas — todas carregam os mesmos `nodes`/`edges`:
 - Boas práticas por padrão: encryption at rest, `RemovalPolicy`/`prevent_destroy` explícitos, DLQ com `maxReceiveCount`, timeouts de Lambda coerentes, tags do projeto.
 - Termine com **"Decisões assumidas"** (instância/tamanhos, região, VPC nova vs existente) e **"Pendências humanas"** (domínios, certificados, segredos, quotas) — em lista curta.
 - Se houver `texts` no diagrama, trate-os como requisitos (ex.: "idempotente" ⇒ comente onde a idempotência entra).
+- Renderize o PNG do diagrama aprovado (seção acima) e salve como `docs/architecture.png` do projeto de infra — o desenho validado É a documentação, e o `.archstudio.json` ao lado permite reeditar.

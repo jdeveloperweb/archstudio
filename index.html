@@ -131,6 +131,8 @@ select.tool-btn{appearance:auto}
 .tpl-tag{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.8px}
 pre.schema{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;color:#c9cde3;margin:8px 0}
 body[data-theme="light"] pre.schema{color:#3a3f58}
+body.clean .topbar,body.clean .hintbar,body.clean .propsbar,body.clean .palette{display:none}
+body.clean .layout{height:100vh}
 @media(max-width:900px){
   body{overflow:auto}
   .layout{flex-direction:column;height:auto!important}
@@ -817,18 +819,34 @@ function loadDoc(doc){
   if(doc && Array.isArray(doc.nodes)){ loadSpec(doc); return true; }
   return false;
 }
+function fitView(){
+  const all=[...state.nodes.map(n=>({x:n.x,y:n.y,x2:n.x+nodeW(n),y2:n.y+nodeH(n)})),
+             ...state.boxes.map(b=>({x:b.x,y:b.y,x2:b.x+b.w,y2:b.y+b.h})),
+             ...state.arrows.map(a=>({x:Math.min(a.x1,a.x2),y:Math.min(a.y1,a.y2),x2:Math.max(a.x1,a.x2),y2:Math.max(a.y1,a.y2)})),
+             ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+220,y2:t.y+30}))];
+  if(!all.length) return;
+  const minX=Math.min(...all.map(o=>o.x)), minY=Math.min(...all.map(o=>o.y));
+  const w=Math.max(...all.map(o=>o.x2))-minX, h=Math.max(...all.map(o=>o.y2))-minY;
+  setZoom(Math.min((canvasOuter.clientWidth-90)/w,(canvasOuter.clientHeight-90)/h,1.5));
+  canvasOuter.scrollLeft=Math.max(0,minX*zoom-45);
+  canvasOuter.scrollTop=Math.max(0,minY*zoom-45);
+}
 async function loadFromUrl(){
   try{
-    const d=new URLSearchParams(location.hash.slice(1)).get('d');
+    const hp=new URLSearchParams(location.hash.slice(1));
+    const clean=hp.get('view')==='clean';
+    if(clean) document.body.classList.add('clean');
+    const d=hp.get('d');
     if(d){
       const kind=d.slice(0,2), body=d.slice(2);
       const bytes = kind==='z:' ? await pipeStream(b64u.dec(body),DecompressionStream,'deflate-raw') : b64u.dec(kind==='j:'?body:d);
-      if(loadDoc(JSON.parse(new TextDecoder().decode(bytes))))
+      if(loadDoc(JSON.parse(new TextDecoder().decode(bytes))) && !clean)
         history.replaceState(null,'',location.pathname+location.search);
-      return;
+    } else {
+      const src=new URLSearchParams(location.search).get('src');
+      if(src) loadDoc(await (await fetch(src)).json());
     }
-    const src=new URLSearchParams(location.search).get('src');
-    if(src) loadDoc(await (await fetch(src)).json());
+    if(clean) fitView();
   }catch(e){ console.warn('ArchStudio: não consegui carregar o diagrama da URL.', e); }
 }
 

@@ -40,6 +40,13 @@ O ArchStudio fecha esse buraco. É um canvas que **fala JSON**: você (ou seu ag
 - **12 modelos de solução** — Cache-Aside, Fila + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, pipeline serverless de mídia, Strangler Fig, Bulkhead, ingestão Kafka com ordem por chave, híbrido on-prem ↔ nuvem — cada um com o *problema*, o *porquê da solução* e *quando usar*.
 - **Delícias de editor** — arrastar e conectar, caixas de grupo que movem o conteúdo, setas livres, anotações, desfazer/refazer, grade magnética, zoom, tema claro/escuro, 7 fontes (incluindo estilo rascunho à mão).
 - **Exportação** — PNG (2×) e SVG com fontes embutidas, além de salvar/carregar `.archstudio.json`.
+- **Visão limpa** — acrescente `&view=clean` a um link compartilhado e a interface some, com zoom ajustado ao conteúdo: feito para screenshots headless, embeds e revisão visual instantânea.
+
+<p align="center">
+  <img src="assets/screenshot-rag.png" alt="Arquitetura RAG serverless desenhada por um agente de IA a partir de uma spec JSON, renderizada pelo ArchStudio" width="100%">
+  <br>
+  <em>Desenhado por um agente de IA a partir de <a href="examples/rag-serverless-aws.archstudio.json">uma spec JSON</a>, renderizado headless com <code>&view=clean</code> — nenhum humano arrastou uma caixa sequer.</em>
+</p>
 
 ## Começando
 
@@ -63,7 +70,7 @@ Este repositório traz uma skill em [`.claude/skills/archstudio/SKILL.md`](.clau
 
 > *"Desenhe a arquitetura de um checkout de e-commerce com fallback de pagamento."*
 
-O Claude escreve a spec `.archstudio.json` **e** devolve um link que abre o diagrama pronto no navegador. Para usar a skill em qualquer projeto, copie a pasta para `~/.claude/skills/archstudio/`.
+O Claude escreve a spec `.archstudio.json`, **renderiza um PNG do diagrama direto no chat** (e confere antes de entregar), e devolve um link que abre o diagrama editável no navegador. Para usar a skill em qualquer projeto, copie a pasta para `~/.claude/skills/archstudio/`.
 
 ### 2 · Qualquer LLM via Modo Agente
 
@@ -76,6 +83,7 @@ Clique em **🤖 Agente** no app, copie o schema, cole em qualquer chat ("desenh
 | `…/#d=z:<base64url>` | Abre um diagrama comprimido com deflate-raw (o que o botão 🔗 gera) |
 | `…/#d=j:<base64url>` | Abre um JSON puro em base64url — trivial para agentes emitirem |
 | `…/?src=<url>` | Busca um JSON cru (ex.: raw de um gist) e renderiza |
+| `…&view=clean` (depois de `#d=…`) | Esconde a interface e ajusta o zoom ao diagrama — feito para screenshots headless |
 
 Gerando um link a partir de um arquivo de spec:
 

@@ -40,6 +40,13 @@ ArchStudio closes that gap. It is a canvas that **speaks JSON**: you (or your AI
 - **12 solution templates** — Cache-Aside, Queue + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, Serverless media pipeline, Strangler Fig, Bulkhead, keyed Kafka ingestion, Hybrid on-prem ↔ cloud — each with the *problem*, *why the pattern solves it* and *when to use it*.
 - **Editor niceties** — drag & connect, group boxes that move their contents, free arrows, notes, undo/redo, snap grid, zoom, dark/light theme, 7 font styles (including sketchy hand-drawn).
 - **Export** — PNG (2×) and SVG with embedded fonts, plus save/load as `.archstudio.json`.
+- **Clean view** — append `&view=clean` to a share link and the UI disappears, zoom-fit to content: made for headless screenshots, embeds and instant visual review.
+
+<p align="center">
+  <img src="assets/screenshot-rag.png" alt="Serverless RAG architecture drawn by an AI agent from a JSON spec, rendered by ArchStudio" width="100%">
+  <br>
+  <em>Drawn by an AI agent from <a href="examples/rag-serverless-aws.archstudio.json">a JSON spec</a>, rendered headlessly with <code>&view=clean</code> — no human dragged a single box.</em>
+</p>
 
 ## Quick start
 
@@ -65,7 +72,7 @@ This repo ships a skill at [`.claude/skills/archstudio/SKILL.md`](.claude/skills
 
 > *"Draw the architecture of an e-commerce checkout with payment fallback."*
 
-Claude writes the `.archstudio.json` spec **and** returns a link that opens the finished diagram in your browser. To use the skill from any project, copy the folder to `~/.claude/skills/archstudio/`.
+Claude writes the `.archstudio.json` spec, **renders a PNG of the diagram right into the chat** (and checks it before delivering), and returns a link that opens the editable diagram in your browser. To use the skill from any project, copy the folder to `~/.claude/skills/archstudio/`.
 
 ### 2 · Any LLM via Agent Mode
 
@@ -78,6 +85,7 @@ Click **🤖 Agente** in the app, copy the schema, paste it into any chat ("draw
 | `…/#d=z:<base64url>` | Opens a diagram compressed with deflate-raw (what the 🔗 button generates) |
 | `…/#d=j:<base64url>` | Opens a plain base64url-encoded JSON — trivial for agents to emit |
 | `…/?src=<url>` | Fetches a raw JSON (e.g. a gist) and renders it |
+| `…&view=clean` (after `#d=…`) | Hides the editor chrome and zoom-fits the diagram — made for headless screenshots |
 
 Generate a link from a spec file in one line:
 
