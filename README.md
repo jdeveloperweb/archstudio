@@ -36,7 +36,7 @@ ArchStudio closes that gap. It is a canvas that **speaks JSON**: you (or your AI
 - **Shareable links** — the whole diagram is compressed into the URL (`#d=…`). Send a link, get an editable diagram. Agents can *deliver diagrams as clickable links*.
 - **Claude Code skill included** — open this repo in [Claude Code](https://claude.com/claude-code) and say *"draw my system's architecture"*; the bundled skill does the rest.
 - **Diagram → Infrastructure-as-Code** ☁️ — once you've validated the drawing, one click packages it into a prompt that makes an AI agent generate **AWS CDK (TypeScript)** or **Terraform**, deriving least-privilege IAM and event wiring *from the arrows*.
-- **Component palette** — 60+ components: AWS (network, compute, data, messaging, security), generic/cloud-agnostic, serverless and on-premise.
+- **Component palette** — 90+ components across **AWS, GCP, Azure**, an **AI & LLM** category (agents, vector DBs, embeddings, MCP servers, GPUs), plus generic/cloud-agnostic, serverless and on-premise.
 - **12 solution templates** — Cache-Aside, Queue + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, Serverless media pipeline, Strangler Fig, Bulkhead, keyed Kafka ingestion, Hybrid on-prem ↔ cloud — each with the *problem*, *why the pattern solves it* and *when to use it*.
 - **Editor niceties** — drag & connect, group boxes that move their contents, free arrows, notes, undo/redo, snap grid, zoom, dark/light theme, 7 font styles (including sketchy hand-drawn).
 - **Export** — PNG (2×) and SVG with embedded fonts, plus save/load as `.archstudio.json`.
@@ -131,7 +131,7 @@ Agents (and humans) describe diagrams like this — **omit `x`/`y` and the auto-
 
 - Full JSON Schema: [`schema/archstudio.schema.json`](schema/archstudio.schema.json)
 - Ready-to-load examples: [`examples/`](examples/)
-- 60+ component types (`user`, `api`, `queue`, `lambda`, `s3`, `k8s`, `mainframe`, …): listed in the schema and in the in-app Agent Mode
+- 90+ component types (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `vectordb`, `mcp`, `mainframe`, …): listed in the schema and in the in-app Agent Mode
 
 ## Built-in templates
 

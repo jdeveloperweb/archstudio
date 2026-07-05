@@ -19,6 +19,7 @@
   --bg:#0e1017;--panel:#151824;--panel2:#1c2032;--border:#2a2f47;
   --ink:#e6e8f2;--dim:#8f94ad;--accent:#a679ff;
   --aws:#ff9900;--client:#7c9eff;--gen:#a679ff;--onprem:#9aa3b5;--sless:#4ade80;--red:#f87171;
+  --gcp:#22d3ee;--azure:#3ea6ff;--ai:#f472b6;
   --nodebg:#1a1d2e;--gridline:rgba(166,121,255,.05);--shadow:rgba(0,0,0,.4);--edge:#6b72a3;
   --mono:'Cascadia Code','JetBrains Mono',Consolas,monospace;
   --sans:'Segoe UI',system-ui,sans-serif;
@@ -27,6 +28,7 @@ body[data-theme="light"]{
   --bg:#f2f3f9;--panel:#ffffff;--panel2:#eceef7;--border:#d5d9ea;
   --ink:#1d2030;--dim:#6a7089;--accent:#7c4dff;
   --aws:#e68a00;--client:#3b6fe0;--gen:#7c4dff;--onprem:#5c6478;--sless:#0f9d58;--red:#d9534f;
+  --gcp:#0891b2;--azure:#0067b8;--ai:#d6409f;
   --nodebg:#ffffff;--gridline:rgba(90,70,180,.08);--shadow:rgba(40,45,80,.14);--edge:#8a90b8;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -67,7 +69,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15p
 .pal-item:hover{border-color:var(--accent)}
 .pal-item .picon{width:20px;height:20px;flex-shrink:0}
 .picon svg,.nicon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.i-aws{color:var(--aws)} .i-client{color:var(--client)} .i-gen{color:var(--gen)} .i-onprem{color:var(--onprem)} .i-sless{color:var(--sless)}
+.i-aws{color:var(--aws)} .i-client{color:var(--client)} .i-gen{color:var(--gen)} .i-onprem{color:var(--onprem)} .i-sless{color:var(--sless)} .i-gcp{color:var(--gcp)} .i-azure{color:var(--azure)} .i-ai{color:var(--ai)}
 
 .center{flex:1;min-width:0}
 .canvas-outer{height:100%;overflow:auto;background:
@@ -107,6 +109,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15p
 .node.b-gen{border-top:3px solid var(--gen)}
 .node.b-onprem{border-top:3px solid var(--onprem)}
 .node.b-sless{border-top:3px solid var(--sless)}
+.node.b-gcp{border-top:3px solid var(--gcp)}
+.node.b-azure{border-top:3px solid var(--azure)}
+.node.b-ai{border-top:3px solid var(--ai)}
 .node.sel{outline:2px solid var(--accent);outline-offset:2px}
 
 .canvas{--dfont:'Segoe UI',system-ui,sans-serif}
@@ -218,7 +223,7 @@ const ICONS = {
  chip:'<rect x="6.5" y="6.5" width="11" height="11" rx="1.6"/><rect x="10" y="10" width="4" height="4"/><path d="M9 3.5v3M15 3.5v3M9 17.5v3M15 17.5v3M3.5 9h3M3.5 15h3M17.5 9h3M17.5 15h3"/>',
  box:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
  wheel:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 3.5v6M12 14.2v6.3M4 8.5l5.5 2.7M20 8.5l-5.5 2.7M6 18.5l4.2-4.4M18 18.5l-4.2-4.4"/>',
- lambda:'<path d="M6 4.5h3.2L15 19.5h3M14 12.5l-5 7"/>',
+ lambda:'<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.5 7.5h2.6l4.4 9h2M13 12.2L9.5 16.5"/>',
  layers:'<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"/>',
  bucket:'<path d="M4.5 6.5h15l-2 13.5a2 2 0 0 1-2 1.7h-7a2 2 0 0 1-2-1.7z"/><ellipse cx="12" cy="6.5" rx="7.5" ry="2.3"/>',
  cylinder:'<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v13c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-13"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>',
@@ -252,12 +257,36 @@ const ICONS = {
  disks:'<ellipse cx="12" cy="6" rx="7" ry="2.4"/><path d="M5 6v4c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4V6"/><path d="M5 13v4c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4v-4"/><ellipse cx="12" cy="13" rx="7" ry="2.4"/>',
  tunnel:'<path d="M4 19v-7a8 8 0 0 1 16 0v7"/><path d="M8 19v-7a4 4 0 0 1 8 0v7"/><circle cx="12" cy="15" r="1.3" fill="currentColor" stroke="none"/>',
  monitor:'<rect x="3" y="4.5" width="18" height="12" rx="2"/><rect x="7.5" y="7.5" width="9" height="6" rx="1"/><path d="M9 20.5h6M12 16.5v4"/>',
- k8s:'<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5l4.8 2.3 1.2 5.2-3.3 4.2H9.3L6 14l1.2-5.2z"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>'
+ k8s:'<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5l4.8 2.3 1.2 5.2-3.3 4.2H9.3L6 14l1.2-5.2z"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+ cubebolt:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5"/><path d="M12.8 13l-2.3 3.2h1.8L11 19.5l3.3-3.7h-1.9z" fill="currentColor" stroke="none"/>',
+ lbsq:'<circle cx="5" cy="12" r="2.4"/><path d="M7.4 12H11M11 12l6-6M11 12l6 6M11 12h6"/><rect x="17.2" y="4.2" width="3.6" height="3.6" rx=".6"/><rect x="17.2" y="10.2" width="3.6" height="3.6" rx=".6"/><rect x="17.2" y="16.2" width="3.6" height="3.6" rx=".6"/>',
+ kafka:'<circle cx="7.5" cy="5" r="2"/><circle cx="7.5" cy="12" r="2"/><circle cx="7.5" cy="19" r="2"/><circle cx="16.5" cy="8.5" r="2"/><circle cx="16.5" cy="15.5" r="2"/><path d="M9.3 11.1l5.4-1.8M9.3 12.9l5.4 1.8M7.5 7v3M7.5 14v3"/>',
+ dynamo:'<rect x="4" y="4" width="16" height="16" rx="3"/><ellipse cx="12" cy="8.8" rx="4.8" ry="1.7"/><path d="M7.2 8.8v6.4c0 .9 2.1 1.7 4.8 1.7s4.8-.8 4.8-1.7V8.8"/>',
+ cloudrun:'<circle cx="12" cy="12" r="8.5"/><path d="M10 8.5l4.5 3.5L10 15.5z"/>',
+ gke:'<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><circle cx="12" cy="12" r="2.8"/><path d="M12 7v2.2M12 14.8V17M7.7 9.5l1.9 1.1M14.4 13.4l1.9 1.1M7.7 14.5l1.9-1.1M14.4 10.6l1.9-1.1"/>',
+ cloudfn:'<path d="M7.5 4.5C5.5 6.5 5.5 17.5 7.5 19.5M16.5 4.5c2 2 2 13 0 15M10 9.5h4.5M13 9.5l-1.8 7c-.3 1.2-1 1.5-2.2 1.5"/>',
+ gcs:'<rect x="3.5" y="5.5" width="17" height="5.6" rx="1.4"/><rect x="3.5" y="12.9" width="17" height="5.6" rx="1.4"/><path d="M14.5 8.3h3M14.5 15.7h3"/><circle cx="7" cy="8.3" r=".9" fill="currentColor" stroke="none"/><circle cx="7" cy="15.7" r=".9" fill="currentColor" stroke="none"/>',
+ firestore:'<path d="M4.5 9.2L12 5l7.5 4.2M4.5 13.2L12 9l7.5 4.2M4.5 17.2L12 13l7.5 4.2"/>',
+ bigquery:'<circle cx="11" cy="11" r="6.8"/><path d="M15.8 15.8L20.5 20.5M8.3 11.2v2.3M11 8.8v4.7M13.7 10v3.5"/>',
+ pubsub:'<circle cx="12" cy="12" r="2.1"/><circle cx="5.5" cy="6.5" r="1.7"/><circle cx="18.5" cy="6.5" r="1.7"/><circle cx="5.5" cy="17.5" r="1.7"/><circle cx="18.5" cy="17.5" r="1.7"/><path d="M7 7.8l3.4 2.6M17 7.8l-3.4 2.6M7 16.2l3.4-2.6M17 16.2l-3.4-2.6"/>',
+ sparkle:'<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9-1.9 5.6-1.9-5.6L4.5 11l5.6-1.9z"/><path d="M18.5 16.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+ appsvc:'<circle cx="10.5" cy="11" r="6.5"/><path d="M4.5 11h12M10.5 5c2 1.8 3 3.8 3 6s-1 4.2-3 6c-2-1.8-3-3.8-3-6s1-4.2 3-6z"/><circle cx="17.5" cy="17.5" r="3"/><path d="M17.5 14v-1.2M17.5 22.2V21M14 17.5h-1.2M22.2 17.5H21"/>',
+ aks:'<rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="12" cy="12" r="2.8"/><path d="M12 6.5V9.2M12 14.8v2.7M6.5 12h2.7M14.8 12h2.7"/>',
+ azfunc:'<path d="M12 3.5L5.5 12h4L8 20.5 15.5 12h-4z"/><path d="M16.5 5.5L14.5 8.5h2L15 12.5"/>',
+ azvm:'<rect x="3.5" y="4.5" width="17" height="12" rx="1.6"/><path d="M3.5 10.5h17M12 4.5v12M9 20.5h6M12 16.5v4"/>',
+ azsql:'<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v13c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-13"/><path d="M14.6 11c0-.9-1.2-1.4-2.6-1.4s-2.6.5-2.6 1.4c0 2.1 5.2 1.4 5.2 3.5 0 .9-1.2 1.4-2.6 1.4s-2.6-.5-2.6-1.4"/>',
+ cosmos:'<circle cx="12" cy="12" r="4.8"/><ellipse cx="12" cy="12" rx="9.5" ry="3.4" transform="rotate(-22 12 12)"/><circle cx="20" cy="7" r="1" fill="currentColor" stroke="none"/>',
+ llmchat:'<path d="M3.5 5h17v11h-11L5 20v-4H3.5z"/><path d="M12 7.3l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z" fill="currentColor" stroke="none"/>',
+ robot:'<rect x="4.5" y="8.5" width="15" height="10.5" rx="3"/><circle cx="9.5" cy="13" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.1" fill="currentColor" stroke="none"/><path d="M9.5 16.3h5M12 8.5V6.2"/><circle cx="12" cy="4.9" r="1.3"/><path d="M4.5 12.5H3M21 12.5h-1.5"/>',
+ vectordb:'<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v13c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-13"/><path d="M9.2 16.8l1.9-4.7 4.7-1.9-1.9 4.7z"/>',
+ embed:'<rect x="3.5" y="7.5" width="6.8" height="9" rx="1.3"/><path d="M5.5 10.5h2.8M5.5 13.5h2.8M12.3 12h3.2M14 10.2l1.8 1.8-1.8 1.8"/><path d="M19 8.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" fill="currentColor" stroke="none"/>',
+ plug:'<path d="M9 3.5V8M15 3.5V8M7 8h10v3.5a5 5 0 0 1-10 0z"/><path d="M12 16.5V21"/>',
+ gpu:'<rect x="3.5" y="6" width="17" height="11.5" rx="1.8"/><circle cx="10" cy="11.8" r="3.2"/><path d="M10 9.2v1.1M10 13.3v1.1M7.4 11.8h1.1M11.5 11.8h1.1M16.8 8.8v6"/><path d="M5.5 17.5V21M9.5 17.5V21"/>'
 };
 
 /* ============ CATÁLOGO ============ */
-const CAT_COLORS_D = { aws:'#ff9900', client:'#7c9eff', gen:'#a679ff', onprem:'#9aa3b5', sless:'#4ade80' };
-const CAT_COLORS_L = { aws:'#e68a00', client:'#3b6fe0', gen:'#7c4dff', onprem:'#5c6478', sless:'#0f9d58' };
+const CAT_COLORS_D = { aws:'#ff9900', client:'#7c9eff', gen:'#a679ff', onprem:'#9aa3b5', sless:'#4ade80', gcp:'#22d3ee', azure:'#3ea6ff', ai:'#f472b6' };
+const CAT_COLORS_L = { aws:'#e68a00', client:'#3b6fe0', gen:'#7c4dff', onprem:'#5c6478', sless:'#0f9d58', gcp:'#0891b2', azure:'#0067b8', ai:'#d6409f' };
 const CATALOG = [
  {cat:'Clientes & Origens', color:'client', items:[
    {t:'user',n:'Usuário',i:'user'},{t:'browser',n:'Navegador / SPA',i:'browser'},
@@ -266,25 +295,44 @@ const CATALOG = [
  {cat:'AWS — Rede & Entrada', color:'aws', items:[
    {t:'route53',n:'Route 53 (DNS)',i:'globe'},{t:'cloudfront',n:'CloudFront (CDN)',i:'cdn'},
    {t:'waf',n:'AWS WAF',i:'shield'},{t:'apigw',n:'API Gateway',i:'funnel'},
-   {t:'alb',n:'Application LB',i:'lb'},{t:'nlb',n:'Network LB',i:'lb'},{t:'vpc',n:'VPC / Subnets',i:'cloud'}]},
+   {t:'alb',n:'Application LB',i:'lb'},{t:'nlb',n:'Network LB',i:'lbsq'},{t:'vpc',n:'VPC / Subnets',i:'cloud'}]},
  {cat:'AWS — Computação', color:'aws', items:[
    {t:'ec2',n:'EC2 (VMs)',i:'chip'},{t:'ecs',n:'ECS (Containers)',i:'box'},
-   {t:'eks',n:'EKS (Kubernetes)',i:'wheel'},{t:'fargate',n:'Fargate',i:'box'},
+   {t:'eks',n:'EKS (Kubernetes)',i:'wheel'},{t:'fargate',n:'Fargate',i:'cubebolt'},
    {t:'lambda',n:'Lambda',i:'lambda'},{t:'batch',n:'AWS Batch',i:'layers'}]},
  {cat:'AWS — Dados & Storage', color:'aws', items:[
    {t:'s3',n:'S3 (Object Storage)',i:'bucket'},{t:'rds',n:'RDS (SQL)',i:'cylinder'},
-   {t:'aurora',n:'Aurora',i:'dbbolt'},{t:'dynamodb',n:'DynamoDB',i:'dbbolt'},
+   {t:'aurora',n:'Aurora',i:'dbbolt'},{t:'dynamodb',n:'DynamoDB',i:'dynamo'},
    {t:'elasticache',n:'ElastiCache (Redis)',i:'bolt'},{t:'redshift',n:'Redshift (DW)',i:'chart'},
    {t:'opensearch',n:'OpenSearch',i:'magnifier'},{t:'glacier',n:'S3 Glacier (arquivo)',i:'snow'}]},
  {cat:'AWS — Integração & Mensageria', color:'aws', items:[
    {t:'sqs',n:'SQS (Fila)',i:'queue'},{t:'sns',n:'SNS (Pub/Sub)',i:'megaphone'},
    {t:'eventbridge',n:'EventBridge',i:'hub'},{t:'kinesis',n:'Kinesis (Stream)',i:'waves'},
-   {t:'msk',n:'MSK (Kafka)',i:'waves'},{t:'stepfn',n:'Step Functions',i:'flow'},
+   {t:'msk',n:'MSK (Kafka)',i:'kafka'},{t:'stepfn',n:'Step Functions',i:'flow'},
    {t:'ses',n:'SES (E-mail)',i:'envelope'}]},
  {cat:'AWS — Segurança & Operação', color:'aws', items:[
    {t:'iam',n:'IAM',i:'shield'},{t:'cognito',n:'Cognito (Auth)',i:'idcard'},
    {t:'secretsmgr',n:'Secrets Manager',i:'key'},{t:'kms',n:'KMS (Chaves)',i:'keycircle'},
    {t:'cloudwatch',n:'CloudWatch',i:'gauge'},{t:'xray',n:'X-Ray (Traces)',i:'pulse'}]},
+ {cat:'GCP', color:'gcp', items:[
+   {t:'cloudrun',n:'Cloud Run',i:'cloudrun'},{t:'gke',n:'GKE (Kubernetes)',i:'gke'},
+   {t:'cloudfn',n:'Cloud Functions',i:'cloudfn'},{t:'gce',n:'Compute Engine',i:'chip'},
+   {t:'gcs',n:'Cloud Storage',i:'gcs'},{t:'cloudsql',n:'Cloud SQL',i:'cylinder'},
+   {t:'firestore',n:'Firestore',i:'firestore'},{t:'bigquery',n:'BigQuery',i:'bigquery'},
+   {t:'pubsub',n:'Pub/Sub',i:'pubsub'},{t:'memorystore',n:'Memorystore (Redis)',i:'bolt'},
+   {t:'vertexai',n:'Vertex AI',i:'sparkle'}]},
+ {cat:'Azure', color:'azure', items:[
+   {t:'appservice',n:'App Service',i:'appsvc'},{t:'aks',n:'AKS (Kubernetes)',i:'aks'},
+   {t:'azfunc',n:'Azure Functions',i:'azfunc'},{t:'azvm',n:'Virtual Machine',i:'azvm'},
+   {t:'blob',n:'Blob Storage',i:'bucket'},{t:'azsql',n:'Azure SQL',i:'azsql'},
+   {t:'cosmosdb',n:'Cosmos DB',i:'cosmos'},{t:'servicebus',n:'Service Bus',i:'queue'},
+   {t:'eventhubs',n:'Event Hubs',i:'waves'},{t:'frontdoor',n:'Front Door / CDN',i:'cdn'},
+   {t:'entra',n:'Entra ID (AD)',i:'idcard'}]},
+ {cat:'IA & LLM', color:'ai', items:[
+   {t:'llm',n:'LLM (API)',i:'llmchat'},{t:'aiagent',n:'Agente de IA',i:'robot'},
+   {t:'vectordb',n:'Banco Vetorial',i:'vectordb'},{t:'embeddings',n:'Embeddings',i:'embed'},
+   {t:'mcp',n:'Servidor MCP',i:'plug'},{t:'guardrail',n:'Guardrails',i:'shield'},
+   {t:'gpu',n:'GPU / Inferência',i:'gpu'}]},
  {cat:'Serverless & Edge (genérico)', color:'sless', items:[
    {t:'funcao',n:'Função Serverless',i:'fx'},{t:'edgefn',n:'Edge Function',i:'trigger'},
    {t:'faasqueue',n:'Trigger / Evento',i:'bolt'},{t:'container',n:'Container',i:'box'}]},
@@ -1114,6 +1162,7 @@ function iacPrompt(kind){
 `3. Tipos de cliente/on-premise (user, browser, mobile, iot, partner, server, mainframe, dbonprem, ad, firewall, dc) NÃO viram recurso — são contexto. "extern" vira endpoint + secret. "outbox" é padrão de aplicação: comentário/tabela, não serviço.`,
 `4. Entregue um projeto completo e compilável, nomes derivados dos labels, criptografia em repouso, tags, e termine com duas listas curtas: "Decisões assumidas" e "Pendências humanas" (domínios, segredos, tamanhos).`,
 `5. Trate os "texts" do diagrama como requisitos.`,
+`6. Tipos GCP (cloudrun, gke, cloudfn, gce, gcs, cloudsql, firestore, bigquery, pubsub, memorystore, vertexai) e Azure (appservice, aks, azfunc, azvm, blob, azsql, cosmosdb, servicebus, eventhubs, frontdoor, entra) ⇒ gere Terraform com o provider google/azurerm (CDK clássico é só AWS — se pedirem CDK com esses nós, proponha Terraform ou CDKTF). Tipos de IA: llm→endpoint+secret (Bedrock/Vertex/Azure OpenAI conforme a nuvem do box), aiagent→serviço que hospeda o agente, vectordb→gerenciado equivalente (OpenSearch/pgvector/Pinecone), embeddings→função, mcp→container pequeno, gpu→instância/node pool GPU, guardrail→camada de aplicação.`,
 ``,
 `DIAGRAMA (ArchStudio):`,
 JSON.stringify(exportSpec(),null,1)

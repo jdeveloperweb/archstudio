@@ -83,6 +83,9 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 | AWS dados | `s3` `rds` `aurora` `dynamodb` `elasticache` `redshift` `opensearch` `glacier` |
 | AWS mensageria | `sqs` `sns` `eventbridge` `kinesis` `msk` `stepfn` `ses` |
 | AWS segurança/ops | `iam` `cognito` `secretsmgr` `kms` `cloudwatch` `xray` |
+| GCP | `cloudrun` `gke` `cloudfn` `gce` `gcs` `cloudsql` `firestore` `bigquery` `pubsub` `memorystore` `vertexai` |
+| Azure | `appservice` `aks` `azfunc` `azvm` `blob` `azsql` `cosmosdb` `servicebus` `eventhubs` `frontdoor` `entra` |
+| IA & LLM | `llm` `aiagent` `vectordb` `embeddings` `mcp` `guardrail` `gpu` |
 | Serverless genérico | `funcao` `edgefn` `faasqueue` `container` |
 | Genéricos | `api` `worker` `queue` `stream` `dlq` `outbox` `db` `cache` `lb` `gateway` `auth` `sched` `obs` `extern` `k8s` `cdngen` `storagegen` |
 | On-premise | `server` `vm` `dbonprem` `mainframe` `firewall` `nas` `ad` `vpn` `dc` |
@@ -141,6 +144,24 @@ Aceite qualquer uma destas formas — todas carregam os mesmos `nodes`/`edges`:
 \* `worker` conectado a partir de fila/stream = consumer (Lambda com event source, ou serviço ECS); `api` = serviço HTTP (Fargate+ALB) a menos que o contexto peça Lambda.
 
 **Não viram recurso** (são contexto): `user`, `browser`, `mobile`, `iot`, `partner`, `extern` (vira endpoint/secret de integração), `server`, `mainframe`, `dbonprem`, `nas`, `ad`, `firewall`, `dc`, `iam` (permissões saem das edges), `outbox` (é padrão de aplicação — gere comentário/tabela).
+
+### GCP e Azure
+
+Nós GCP/Azure ⇒ **Terraform** com provider `google`/`azurerm` (CDK clássico é só AWS — se pedirem CDK com esses nós, avise e proponha Terraform ou CDKTF):
+
+- **GCP:** `cloudrun`→`google_cloud_run_v2_service` · `gke`→`google_container_cluster` (Autopilot) · `cloudfn`→`google_cloudfunctions2_function` · `gce`→`google_compute_instance` · `gcs`→`google_storage_bucket` · `cloudsql`→`google_sql_database_instance` · `firestore`→`google_firestore_database` · `bigquery`→`google_bigquery_dataset`(+table) · `pubsub`→`google_pubsub_topic`(+subscription) · `memorystore`→`google_redis_instance` · `vertexai`→endpoint/comentário.
+- **Azure:** `appservice`→`azurerm_linux_web_app` · `aks`→`azurerm_kubernetes_cluster` · `azfunc`→`azurerm_linux_function_app` · `azvm`→`azurerm_linux_virtual_machine` · `blob`→`azurerm_storage_account`+container · `azsql`→`azurerm_mssql_server`+database · `cosmosdb`→`azurerm_cosmosdb_account` · `servicebus`→`azurerm_servicebus_namespace`+queue · `eventhubs`→`azurerm_eventhub_namespace`+eventhub · `frontdoor`→`azurerm_cdn_frontdoor_profile` · `entra`→`azuread_*`/comentário.
+- As edges seguem a mesma lógica de menor privilégio (ex.: `api → pubsub` = `roles/pubsub.publisher`; `servicebus → worker` = RBAC de receive).
+
+### Tipos de IA
+
+- `llm` → secret com a API key + variável de endpoint; se o box indicar a nuvem, prefira o serviço gerenciado (Bedrock / Vertex AI / Azure OpenAI).
+- `aiagent` → o serviço que hospeda o agente (Lambda, Cloud Run, Container Apps) com as permissões que as edges pedem.
+- `vectordb` → gerenciado equivalente ao contexto (OpenSearch Serverless, pgvector no RDS/Cloud SQL, ou Pinecone como `extern`).
+- `embeddings` → função dedicada no compute da nuvem do diagrama.
+- `mcp` → serviço de container pequeno (porta HTTP/stdio documentada).
+- `gpu` → instância/node pool com GPU (g5/A10G, A100, série NC) — deixe o tamanho como variável.
+- `guardrail` → camada de aplicação (comentário) ou Bedrock Guardrails quando AWS.
 
 ### As edges definem o wiring e o IAM (menor privilégio)
 - `api → sqs` ⇒ `queue.grantSendMessages(fn)` / policy `sqs:SendMessage`

@@ -36,7 +36,7 @@ O ArchStudio fecha esse buraco. É um canvas que **fala JSON**: você (ou seu ag
 - **Links compartilháveis** — o diagrama inteiro vai comprimido na URL (`#d=…`). Mande um link, receba um diagrama editável. Agentes podem *entregar diagramas como links clicáveis*.
 - **Skill do Claude Code inclusa** — abra este repositório no [Claude Code](https://claude.com/claude-code) e diga *"desenhe a arquitetura do meu sistema"*; a skill faz o resto.
 - **Do diagrama à Infra-as-Code** ☁️ — validou o desenho? Um clique empacota o diagrama num prompt que faz um agente de IA gerar **AWS CDK (TypeScript)** ou **Terraform**, derivando IAM de menor privilégio e o wiring de eventos *a partir das setas*.
-- **Paleta de componentes** — 60+ componentes: AWS (rede, computação, dados, mensageria, segurança), genéricos/agnósticos de nuvem, serverless e on-premise.
+- **Paleta de componentes** — 90+ componentes entre **AWS, GCP, Azure**, uma categoria de **IA & LLM** (agentes, bancos vetoriais, embeddings, servidores MCP, GPUs), além de genéricos/agnósticos, serverless e on-premise.
 - **12 modelos de solução** — Cache-Aside, Fila + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, pipeline serverless de mídia, Strangler Fig, Bulkhead, ingestão Kafka com ordem por chave, híbrido on-prem ↔ nuvem — cada um com o *problema*, o *porquê da solução* e *quando usar*.
 - **Delícias de editor** — arrastar e conectar, caixas de grupo que movem o conteúdo, setas livres, anotações, desfazer/refazer, grade magnética, zoom, tema claro/escuro, 7 fontes (incluindo estilo rascunho à mão).
 - **Exportação** — PNG (2×) e SVG com fontes embutidas, além de salvar/carregar `.archstudio.json`.
@@ -129,7 +129,7 @@ Agentes (e humanos) descrevem diagramas assim — **omita `x`/`y` e o layout aut
 
 - JSON Schema completo: [`schema/archstudio.schema.json`](schema/archstudio.schema.json)
 - Exemplos prontos para carregar: [`examples/`](examples/)
-- Os 60+ tipos de componente (`user`, `api`, `queue`, `lambda`, `s3`, `k8s`, `mainframe`, …) estão listados no schema e no Modo Agente do app
+- Os 90+ tipos de componente (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `vectordb`, `mcp`, `mainframe`, …) estão listados no schema e no Modo Agente do app
 
 ## Modelos embutidos
 

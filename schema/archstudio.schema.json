@@ -44,6 +44,9 @@
               "s3", "rds", "aurora", "dynamodb", "elasticache", "redshift", "opensearch", "glacier",
               "sqs", "sns", "eventbridge", "kinesis", "msk", "stepfn", "ses",
               "iam", "cognito", "secretsmgr", "kms", "cloudwatch", "xray",
+              "cloudrun", "gke", "cloudfn", "gce", "gcs", "cloudsql", "firestore", "bigquery", "pubsub", "memorystore", "vertexai",
+              "appservice", "aks", "azfunc", "azvm", "blob", "azsql", "cosmosdb", "servicebus", "eventhubs", "frontdoor", "entra",
+              "llm", "aiagent", "vectordb", "embeddings", "mcp", "guardrail", "gpu",
               "funcao", "edgefn", "faasqueue", "container",
               "api", "worker", "queue", "stream", "dlq", "outbox", "db", "cache", "lb", "gateway", "auth", "sched", "obs", "extern", "k8s", "cdngen", "storagegen",
               "server", "vm", "dbonprem", "mainframe", "firewall", "nas", "ad", "vpn", "dc"
