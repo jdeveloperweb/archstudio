@@ -83,9 +83,11 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 | AWS dados | `s3` `rds` `aurora` `dynamodb` `elasticache` `redshift` `opensearch` `glacier` |
 | AWS mensageria | `sqs` `sns` `eventbridge` `kinesis` `msk` `stepfn` `ses` |
 | AWS segurança/ops | `iam` `cognito` `secretsmgr` `kms` `cloudwatch` `xray` |
+| AWS IA & ML | `bedrock` `sagemaker` |
 | GCP | `cloudrun` `gke` `cloudfn` `gce` `gcs` `cloudsql` `firestore` `bigquery` `pubsub` `memorystore` `vertexai` |
-| Azure | `appservice` `aks` `azfunc` `azvm` `blob` `azsql` `cosmosdb` `servicebus` `eventhubs` `frontdoor` `entra` |
-| IA & LLM | `llm` `aiagent` `vectordb` `embeddings` `mcp` `guardrail` `gpu` |
+| Azure | `appservice` `aks` `azfunc` `azvm` `blob` `azsql` `cosmosdb` `servicebus` `eventhubs` `frontdoor` `entra` `azureopenai` |
+| IA — modelos/agentes | `llm` `gpu` `aiagent` `orchestrator` `tool` `mcp` `aimemory` `guardrail` |
+| IA — RAG | `docsource` `chunking` `embeddings` `vectordb` `retriever` `reranker` `promptbuild` `semcache` `ragas` `llmobs` |
 | Serverless genérico | `funcao` `edgefn` `faasqueue` `container` |
 | Genéricos | `api` `worker` `queue` `stream` `dlq` `outbox` `db` `cache` `lb` `gateway` `auth` `sched` `obs` `extern` `k8s` `cdngen` `storagegen` |
 | On-premise | `server` `vm` `dbonprem` `mainframe` `firewall` `nas` `ad` `vpn` `dc` |
@@ -153,15 +155,22 @@ Nós GCP/Azure ⇒ **Terraform** com provider `google`/`azurerm` (CDK clássico 
 - **Azure:** `appservice`→`azurerm_linux_web_app` · `aks`→`azurerm_kubernetes_cluster` · `azfunc`→`azurerm_linux_function_app` · `azvm`→`azurerm_linux_virtual_machine` · `blob`→`azurerm_storage_account`+container · `azsql`→`azurerm_mssql_server`+database · `cosmosdb`→`azurerm_cosmosdb_account` · `servicebus`→`azurerm_servicebus_namespace`+queue · `eventhubs`→`azurerm_eventhub_namespace`+eventhub · `frontdoor`→`azurerm_cdn_frontdoor_profile` · `entra`→`azuread_*`/comentário.
 - As edges seguem a mesma lógica de menor privilégio (ex.: `api → pubsub` = `roles/pubsub.publisher`; `servicebus → worker` = RBAC de receive).
 
-### Tipos de IA
+### Tipos de IA, RAG e agentes
 
-- `llm` → secret com a API key + variável de endpoint; se o box indicar a nuvem, prefira o serviço gerenciado (Bedrock / Vertex AI / Azure OpenAI).
-- `aiagent` → o serviço que hospeda o agente (Lambda, Cloud Run, Container Apps) com as permissões que as edges pedem.
+**Viram recurso de infra:**
+- `llm` → secret com a API key + variável de endpoint; se o box indicar a nuvem, prefira o serviço gerenciado: `bedrock` (IAM `bedrock:InvokeModel`), `vertexai`, `azureopenai` (`azurerm_cognitive_account`).
+- `sagemaker` → endpoint de inferência (`aws_sagemaker_endpoint`).
+- `aiagent` / `orchestrator` → o serviço que os hospeda (Lambda, Fargate, Cloud Run, Container Apps) com as permissões que as edges pedem.
 - `vectordb` → gerenciado equivalente ao contexto (OpenSearch Serverless, pgvector no RDS/Cloud SQL, ou Pinecone como `extern`).
+- `semcache` → Redis (ElastiCache/Memorystore) com TTL.
+- `aimemory` → tabela NoSQL de sessões/histórico (DynamoDB, Firestore, Cosmos).
+- `docsource` → bucket de origem (+ notificação de evento se houver edge para fila/função).
 - `embeddings` → função dedicada no compute da nuvem do diagrama.
 - `mcp` → serviço de container pequeno (porta HTTP/stdio documentada).
 - `gpu` → instância/node pool com GPU (g5/A10G, A100, série NC) — deixe o tamanho como variável.
-- `guardrail` → camada de aplicação (comentário) ou Bedrock Guardrails quando AWS.
+- `llmobs` → container self-host (Langfuse) ou SaaS como `extern` (só secret/endpoint).
+
+**Camada de aplicação (código, não recurso — gere módulo/comentário no projeto):** `chunking`, `retriever`, `reranker`, `promptbuild`, `tool`, `guardrail` (ou Bedrock Guardrails quando AWS) e `ragas` — se houver edge vindo de `sched`, gere o job agendado de avaliação (ex.: Lambda cron rodando o RAGAS sobre amostras dos traces).
 
 ### As edges definem o wiring e o IAM (menor privilégio)
 - `api → sqs` ⇒ `queue.grantSendMessages(fn)` / policy `sqs:SendMessage`

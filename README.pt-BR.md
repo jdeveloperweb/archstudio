@@ -36,8 +36,8 @@ O ArchStudio fecha esse buraco. É um canvas que **fala JSON**: você (ou seu ag
 - **Links compartilháveis** — o diagrama inteiro vai comprimido na URL (`#d=…`). Mande um link, receba um diagrama editável. Agentes podem *entregar diagramas como links clicáveis*.
 - **Skill do Claude Code inclusa** — abra este repositório no [Claude Code](https://claude.com/claude-code) e diga *"desenhe a arquitetura do meu sistema"*; a skill faz o resto.
 - **Do diagrama à Infra-as-Code** ☁️ — validou o desenho? Um clique empacota o diagrama num prompt que faz um agente de IA gerar **AWS CDK (TypeScript)** ou **Terraform**, derivando IAM de menor privilégio e o wiring de eventos *a partir das setas*.
-- **Paleta de componentes** — 90+ componentes entre **AWS, GCP, Azure**, uma categoria de **IA & LLM** (agentes, bancos vetoriais, embeddings, servidores MCP, GPUs), além de genéricos/agnósticos, serverless e on-premise.
-- **12 modelos de solução** — Cache-Aside, Fila + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, pipeline serverless de mídia, Strangler Fig, Bulkhead, ingestão Kafka com ordem por chave, híbrido on-prem ↔ nuvem — cada um com o *problema*, o *porquê da solução* e *quando usar*.
+- **Paleta de componentes** — 100+ componentes, com **AWS, GCP e Azure organizados por área de serviço** (rede, computação, dados, mensageria, segurança, IA) e uma seção completa de **IA & LLM**: o pipeline de RAG como peças de primeira classe (fontes de documentos, chunking, embeddings, banco vetorial, retriever, re-ranker, cache semântico), orquestração de agentes (orquestrador, agentes, ferramentas, servidores MCP, memória compartilhada) e qualidade (avaliação RAGAS, observabilidade de LLM, guardrails) — além de genéricos, serverless e on-premise.
+- **14 modelos de solução** — Cache-Aside, Fila + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, pipeline serverless de mídia, Strangler Fig, Bulkhead, ingestão Kafka com ordem por chave, híbrido on-prem ↔ nuvem, **RAG completo (com avaliação RAGAS)** e **orquestração multi-agente** — cada um com o *problema*, o *porquê da solução* e *quando usar*.
 - **Delícias de editor** — arrastar e conectar, caixas de grupo que movem o conteúdo, setas livres, anotações, desfazer/refazer, grade magnética, zoom, tema claro/escuro, 7 fontes (incluindo estilo rascunho à mão).
 - **Exportação** — PNG (2×) e SVG com fontes embutidas, além de salvar/carregar `.archstudio.json`.
 - **Visão limpa** — acrescente `&view=clean` a um link compartilhado e a interface some, com zoom ajustado ao conteúdo: feito para screenshots headless, embeds e revisão visual instantânea.
@@ -129,7 +129,7 @@ Agentes (e humanos) descrevem diagramas assim — **omita `x`/`y` e o layout aut
 
 - JSON Schema completo: [`schema/archstudio.schema.json`](schema/archstudio.schema.json)
 - Exemplos prontos para carregar: [`examples/`](examples/)
-- Os 90+ tipos de componente (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `vectordb`, `mcp`, `mainframe`, …) estão listados no schema e no Modo Agente do app
+- Os 100+ tipos de componente (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `retriever`, `reranker`, `ragas`, `orchestrator`, `mcp`, `mainframe`, …) estão listados no schema e no Modo Agente do app
 
 ## Modelos embutidos
 
@@ -149,6 +149,8 @@ Cada modelo responde três perguntas antes de tocar no canvas: **qual problema**
 | Bulkhead (filas por prioridade) | Resiliência |
 | Ingestão de eventos com ordem por chave | Mensageria |
 | Híbrido on-premise ↔ nuvem | Híbrido |
+| RAG completo (ingestão → consulta → avaliação RAGAS) | IA / RAG |
+| Orquestração multi-agente (orquestrador, ferramentas MCP, guardrails) | IA / Agentes |
 
 ## Hospedando você mesmo
 

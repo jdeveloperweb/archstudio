@@ -36,8 +36,8 @@ ArchStudio closes that gap. It is a canvas that **speaks JSON**: you (or your AI
 - **Shareable links** — the whole diagram is compressed into the URL (`#d=…`). Send a link, get an editable diagram. Agents can *deliver diagrams as clickable links*.
 - **Claude Code skill included** — open this repo in [Claude Code](https://claude.com/claude-code) and say *"draw my system's architecture"*; the bundled skill does the rest.
 - **Diagram → Infrastructure-as-Code** ☁️ — once you've validated the drawing, one click packages it into a prompt that makes an AI agent generate **AWS CDK (TypeScript)** or **Terraform**, deriving least-privilege IAM and event wiring *from the arrows*.
-- **Component palette** — 90+ components across **AWS, GCP, Azure**, an **AI & LLM** category (agents, vector DBs, embeddings, MCP servers, GPUs), plus generic/cloud-agnostic, serverless and on-premise.
-- **12 solution templates** — Cache-Aside, Queue + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, Serverless media pipeline, Strangler Fig, Bulkhead, keyed Kafka ingestion, Hybrid on-prem ↔ cloud — each with the *problem*, *why the pattern solves it* and *when to use it*.
+- **Component palette** — 100+ components, with **AWS, GCP and Azure organized by service area** (network, compute, data, messaging, security, AI) and a full **AI & LLM** section: the RAG pipeline as first-class parts (document sources, chunking, embeddings, vector DB, retriever, re-ranker, semantic cache), agent orchestration (orchestrator, agents, tools, MCP servers, shared memory) and quality (RAGAS evaluation, LLM observability, guardrails) — plus generic, serverless and on-premise.
+- **14 solution templates** — Cache-Aside, Queue + Worker, Outbox, Circuit Breaker, CQRS, Saga, BFF, Serverless media pipeline, Strangler Fig, Bulkhead, keyed Kafka ingestion, Hybrid on-prem ↔ cloud, **full RAG pipeline (with RAGAS evaluation)** and **multi-agent orchestration** — each with the *problem*, *why the pattern solves it* and *when to use it*.
 - **Editor niceties** — drag & connect, group boxes that move their contents, free arrows, notes, undo/redo, snap grid, zoom, dark/light theme, 7 font styles (including sketchy hand-drawn).
 - **Export** — PNG (2×) and SVG with embedded fonts, plus save/load as `.archstudio.json`.
 - **Clean view** — append `&view=clean` to a share link and the UI disappears, zoom-fit to content: made for headless screenshots, embeds and instant visual review.
@@ -131,7 +131,7 @@ Agents (and humans) describe diagrams like this — **omit `x`/`y` and the auto-
 
 - Full JSON Schema: [`schema/archstudio.schema.json`](schema/archstudio.schema.json)
 - Ready-to-load examples: [`examples/`](examples/)
-- 90+ component types (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `vectordb`, `mcp`, `mainframe`, …): listed in the schema and in the in-app Agent Mode
+- 100+ component types (`user`, `api`, `queue`, `lambda`, `cloudrun`, `cosmosdb`, `retriever`, `reranker`, `ragas`, `orchestrator`, `mcp`, `mainframe`, …): listed in the schema and in the in-app Agent Mode
 
 ## Built-in templates
 
@@ -151,6 +151,8 @@ Each template answers three questions before touching the canvas: **what problem
 | Bulkhead (priority queues) | Resilience |
 | Event ingestion with per-key ordering | Messaging |
 | Hybrid on-premise ↔ cloud | Hybrid |
+| Full RAG pipeline (ingest → query → RAGAS evaluation) | AI / RAG |
+| Multi-agent orchestration (orchestrator, MCP tools, guardrails) | AI / Agents |
 
 ## Self-hosting
 

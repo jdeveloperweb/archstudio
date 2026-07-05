@@ -65,6 +65,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15p
 .pal-cat::before{content:"▾ "}
 .pal-cat.closed::before{content:"▸ "}
 .pal-cat.closed + .pal-group{display:none}
+.pal-prov{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;padding:12px 6px 4px;cursor:pointer;user-select:none;margin-top:8px;border-top:1px solid var(--border)}
+.pal-prov::before{content:"▾ "}
+.pal-prov.closed::before{content:"▸ "}
+.pal-prov.closed + .pal-provbody{display:none}
+.pal-cat.sub{padding-left:16px}
+.pal-provbody .pal-item{margin-left:8px}
 .pal-item{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--ink);border:1px solid var(--border);margin-bottom:4px;background:var(--panel2);user-select:none}
 .pal-item:hover{border-color:var(--accent)}
 .pal-item .picon{width:20px;height:20px;flex-shrink:0}
@@ -281,7 +287,18 @@ const ICONS = {
  vectordb:'<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v13c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-13"/><path d="M9.2 16.8l1.9-4.7 4.7-1.9-1.9 4.7z"/>',
  embed:'<rect x="3.5" y="7.5" width="6.8" height="9" rx="1.3"/><path d="M5.5 10.5h2.8M5.5 13.5h2.8M12.3 12h3.2M14 10.2l1.8 1.8-1.8 1.8"/><path d="M19 8.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z" fill="currentColor" stroke="none"/>',
  plug:'<path d="M9 3.5V8M15 3.5V8M7 8h10v3.5a5 5 0 0 1-10 0z"/><path d="M12 16.5V21"/>',
- gpu:'<rect x="3.5" y="6" width="17" height="11.5" rx="1.8"/><circle cx="10" cy="11.8" r="3.2"/><path d="M10 9.2v1.1M10 13.3v1.1M7.4 11.8h1.1M11.5 11.8h1.1M16.8 8.8v6"/><path d="M5.5 17.5V21M9.5 17.5V21"/>'
+ gpu:'<rect x="3.5" y="6" width="17" height="11.5" rx="1.8"/><circle cx="10" cy="11.8" r="3.2"/><path d="M10 9.2v1.1M10 13.3v1.1M7.4 11.8h1.1M11.5 11.8h1.1M16.8 8.8v6"/><path d="M5.5 17.5V21M9.5 17.5V21"/>',
+ docs:'<path d="M8 3.5h7.5L19 7v10.5H8z"/><path d="M15 3.5V7h4M5 7.5V20h10"/>',
+ chunks:'<rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M5 9.3h14M5 14.6h14" stroke-dasharray="2.5 2"/>',
+ retrieve:'<circle cx="10.5" cy="10" r="5.5"/><path d="M14.5 14l6 6M8.3 8.5h4.4M8.3 11.5h3"/>',
+ rank:'<path d="M4 6h9M4 12h13M4 18h6"/><path d="M19.5 16.5v-9M17.3 9.7l2.2-2.2 2.2 2.2"/>',
+ promptb:'<path d="M7.5 4.5c-2 0-2.5 1-2.5 2.5v2c0 1.5-.5 2.5-2 2.5 1.5 0 2 1 2 2.5v2c0 1.5.5 2.5 2.5 2.5M16.5 4.5c2 0 2.5 1 2.5 2.5v2c0 1.5.5 2.5 2 2.5-1.5 0-2 1-2 2.5v2c0 1.5-.5 2.5-2.5 2.5"/><path d="M10 12h4"/>',
+ membubble:'<path d="M3.5 5h13v9.5H9L5 18v-3.5H3.5z"/><circle cx="17.5" cy="16.5" r="4"/><path d="M17.5 14.5v2l1.5 1"/>',
+ evalcheck:'<rect x="4.5" y="4" width="15" height="17" rx="2"/><path d="M9 3h6v2.5H9z"/><path d="M7.5 10.5h4M7.5 14h2.5"/><path d="M13 15.5l2 2 3.5-4"/>',
+ orch:'<circle cx="12" cy="6" r="2.2"/><circle cx="5.5" cy="17.5" r="2.2"/><circle cx="18.5" cy="17.5" r="2.2"/><path d="M10.8 7.8L7 15.5M13.2 7.8l3.8 7.7M7.7 17.5h8.6"/>',
+ wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+ sparklebox:'<rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><path d="M12 6.8l1.4 3.8 3.8 1.4-3.8 1.4-1.4 3.8-1.4-3.8-3.8-1.4 3.8-1.4z"/>',
+ neural:'<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/><circle cx="19" cy="8.5" r="1.7"/><circle cx="19" cy="15.5" r="1.7"/><path d="M6.5 11l3.9-4.5M6.5 12h3.8M6.5 13l3.9 4.5M13.6 6.5l3.9 1.2M13.6 12.6l3.9 2.2M13.6 11.4l3.9-2.2M13.6 17.5l3.9-1.2"/>'
 };
 
 /* ============ CATÁLOGO ============ */
@@ -292,47 +309,64 @@ const CATALOG = [
    {t:'user',n:'Usuário',i:'user'},{t:'browser',n:'Navegador / SPA',i:'browser'},
    {t:'mobile',n:'App Mobile',i:'mobile'},{t:'iot',n:'Dispositivo IoT',i:'iot'},
    {t:'partner',n:'Sistema Parceiro',i:'building'}]},
- {cat:'AWS — Rede & Entrada', color:'aws', items:[
+ {group:'AWS', cat:'Rede & Entrada', color:'aws', items:[
    {t:'route53',n:'Route 53 (DNS)',i:'globe'},{t:'cloudfront',n:'CloudFront (CDN)',i:'cdn'},
    {t:'waf',n:'AWS WAF',i:'shield'},{t:'apigw',n:'API Gateway',i:'funnel'},
    {t:'alb',n:'Application LB',i:'lb'},{t:'nlb',n:'Network LB',i:'lbsq'},{t:'vpc',n:'VPC / Subnets',i:'cloud'}]},
- {cat:'AWS — Computação', color:'aws', items:[
+ {group:'AWS', cat:'Computação', color:'aws', items:[
    {t:'ec2',n:'EC2 (VMs)',i:'chip'},{t:'ecs',n:'ECS (Containers)',i:'box'},
    {t:'eks',n:'EKS (Kubernetes)',i:'wheel'},{t:'fargate',n:'Fargate',i:'cubebolt'},
    {t:'lambda',n:'Lambda',i:'lambda'},{t:'batch',n:'AWS Batch',i:'layers'}]},
- {cat:'AWS — Dados & Storage', color:'aws', items:[
+ {group:'AWS', cat:'Dados & Storage', color:'aws', items:[
    {t:'s3',n:'S3 (Object Storage)',i:'bucket'},{t:'rds',n:'RDS (SQL)',i:'cylinder'},
    {t:'aurora',n:'Aurora',i:'dbbolt'},{t:'dynamodb',n:'DynamoDB',i:'dynamo'},
    {t:'elasticache',n:'ElastiCache (Redis)',i:'bolt'},{t:'redshift',n:'Redshift (DW)',i:'chart'},
    {t:'opensearch',n:'OpenSearch',i:'magnifier'},{t:'glacier',n:'S3 Glacier (arquivo)',i:'snow'}]},
- {cat:'AWS — Integração & Mensageria', color:'aws', items:[
+ {group:'AWS', cat:'Integração & Mensageria', color:'aws', items:[
    {t:'sqs',n:'SQS (Fila)',i:'queue'},{t:'sns',n:'SNS (Pub/Sub)',i:'megaphone'},
    {t:'eventbridge',n:'EventBridge',i:'hub'},{t:'kinesis',n:'Kinesis (Stream)',i:'waves'},
    {t:'msk',n:'MSK (Kafka)',i:'kafka'},{t:'stepfn',n:'Step Functions',i:'flow'},
    {t:'ses',n:'SES (E-mail)',i:'envelope'}]},
- {cat:'AWS — Segurança & Operação', color:'aws', items:[
+ {group:'AWS', cat:'Segurança & Operação', color:'aws', items:[
    {t:'iam',n:'IAM',i:'shield'},{t:'cognito',n:'Cognito (Auth)',i:'idcard'},
    {t:'secretsmgr',n:'Secrets Manager',i:'key'},{t:'kms',n:'KMS (Chaves)',i:'keycircle'},
    {t:'cloudwatch',n:'CloudWatch',i:'gauge'},{t:'xray',n:'X-Ray (Traces)',i:'pulse'}]},
- {cat:'GCP', color:'gcp', items:[
+ {group:'AWS', cat:'IA & ML', color:'aws', items:[
+   {t:'bedrock',n:'Bedrock (LLM)',i:'sparklebox'},{t:'sagemaker',n:'SageMaker (ML)',i:'neural'}]},
+ {group:'GCP', cat:'Computação', color:'gcp', items:[
    {t:'cloudrun',n:'Cloud Run',i:'cloudrun'},{t:'gke',n:'GKE (Kubernetes)',i:'gke'},
-   {t:'cloudfn',n:'Cloud Functions',i:'cloudfn'},{t:'gce',n:'Compute Engine',i:'chip'},
+   {t:'cloudfn',n:'Cloud Functions',i:'cloudfn'},{t:'gce',n:'Compute Engine',i:'chip'}]},
+ {group:'GCP', cat:'Dados & Analytics', color:'gcp', items:[
    {t:'gcs',n:'Cloud Storage',i:'gcs'},{t:'cloudsql',n:'Cloud SQL',i:'cylinder'},
    {t:'firestore',n:'Firestore',i:'firestore'},{t:'bigquery',n:'BigQuery',i:'bigquery'},
-   {t:'pubsub',n:'Pub/Sub',i:'pubsub'},{t:'memorystore',n:'Memorystore (Redis)',i:'bolt'},
-   {t:'vertexai',n:'Vertex AI',i:'sparkle'}]},
- {cat:'Azure', color:'azure', items:[
+   {t:'memorystore',n:'Memorystore (Redis)',i:'bolt'}]},
+ {group:'GCP', cat:'Integração & IA', color:'gcp', items:[
+   {t:'pubsub',n:'Pub/Sub',i:'pubsub'},{t:'vertexai',n:'Vertex AI',i:'sparkle'}]},
+ {group:'Azure', cat:'Computação', color:'azure', items:[
    {t:'appservice',n:'App Service',i:'appsvc'},{t:'aks',n:'AKS (Kubernetes)',i:'aks'},
-   {t:'azfunc',n:'Azure Functions',i:'azfunc'},{t:'azvm',n:'Virtual Machine',i:'azvm'},
+   {t:'azfunc',n:'Azure Functions',i:'azfunc'},{t:'azvm',n:'Virtual Machine',i:'azvm'}]},
+ {group:'Azure', cat:'Dados & Storage', color:'azure', items:[
    {t:'blob',n:'Blob Storage',i:'bucket'},{t:'azsql',n:'Azure SQL',i:'azsql'},
-   {t:'cosmosdb',n:'Cosmos DB',i:'cosmos'},{t:'servicebus',n:'Service Bus',i:'queue'},
-   {t:'eventhubs',n:'Event Hubs',i:'waves'},{t:'frontdoor',n:'Front Door / CDN',i:'cdn'},
-   {t:'entra',n:'Entra ID (AD)',i:'idcard'}]},
- {cat:'IA & LLM', color:'ai', items:[
-   {t:'llm',n:'LLM (API)',i:'llmchat'},{t:'aiagent',n:'Agente de IA',i:'robot'},
-   {t:'vectordb',n:'Banco Vetorial',i:'vectordb'},{t:'embeddings',n:'Embeddings',i:'embed'},
-   {t:'mcp',n:'Servidor MCP',i:'plug'},{t:'guardrail',n:'Guardrails',i:'shield'},
-   {t:'gpu',n:'GPU / Inferência',i:'gpu'}]},
+   {t:'cosmosdb',n:'Cosmos DB',i:'cosmos'}]},
+ {group:'Azure', cat:'Integração', color:'azure', items:[
+   {t:'servicebus',n:'Service Bus',i:'queue'},{t:'eventhubs',n:'Event Hubs',i:'waves'},
+   {t:'frontdoor',n:'Front Door / CDN',i:'cdn'}]},
+ {group:'Azure', cat:'Identidade & IA', color:'azure', items:[
+   {t:'entra',n:'Entra ID (AD)',i:'idcard'},{t:'azureopenai',n:'Azure OpenAI',i:'sparkle'}]},
+ {group:'IA & LLM', cat:'Modelos & Runtime', color:'ai', items:[
+   {t:'llm',n:'LLM (API)',i:'llmchat'},{t:'gpu',n:'GPU / Inferência',i:'gpu'}]},
+ {group:'IA & LLM', cat:'RAG — Pipeline', color:'ai', items:[
+   {t:'docsource',n:'Fonte de Documentos',i:'docs'},{t:'chunking',n:'Chunking / Split',i:'chunks'},
+   {t:'embeddings',n:'Embeddings',i:'embed'},{t:'vectordb',n:'Banco Vetorial',i:'vectordb'},
+   {t:'retriever',n:'Retriever (top-k)',i:'retrieve'},{t:'reranker',n:'Re-ranker',i:'rank'},
+   {t:'promptbuild',n:'Montagem de Prompt',i:'promptb'},{t:'semcache',n:'Cache Semântico',i:'bolt'}]},
+ {group:'IA & LLM', cat:'Agentes & Orquestração', color:'ai', items:[
+   {t:'aiagent',n:'Agente de IA',i:'robot'},{t:'orchestrator',n:'Orquestrador de Agentes',i:'orch'},
+   {t:'tool',n:'Ferramenta (Tool)',i:'wrench'},{t:'mcp',n:'Servidor MCP',i:'plug'},
+   {t:'aimemory',n:'Memória / Histórico',i:'membubble'}]},
+ {group:'IA & LLM', cat:'Qualidade & Avaliação', color:'ai', items:[
+   {t:'ragas',n:'Avaliação RAG (RAGAS)',i:'evalcheck'},{t:'llmobs',n:'Observabilidade LLM',i:'pulse'},
+   {t:'guardrail',n:'Guardrails',i:'shield'}]},
  {cat:'Serverless & Edge (genérico)', color:'sless', items:[
    {t:'funcao',n:'Função Serverless',i:'fx'},{t:'edgefn',n:'Edge Function',i:'trigger'},
    {t:'faasqueue',n:'Trigger / Evento',i:'bolt'},{t:'container',n:'Container',i:'box'}]},
@@ -402,12 +436,20 @@ canvasOuter.addEventListener('wheel',ev=>{ if(!ev.ctrlKey)return; ev.preventDefa
 function iconSvg(name){ return `<svg viewBox="0 0 24 24">${ICONS[name]||ICONS.hexagon}</svg>`; }
 function renderPalette(filter=''){
   const f=filter.trim().toLowerCase();
-  document.getElementById('palHost').innerHTML = CATALOG.map(g=>{
+  let html='', openProv=null;
+  for(const g of CATALOG){
     const items=g.items.filter(it=>!f||it.n.toLowerCase().includes(f)||it.t.includes(f));
-    if(!items.length) return '';
-    return `<div class="pal-cat" onclick="this.classList.toggle('closed')">${g.cat}</div><div class="pal-group">`+
+    if(g.group!==openProv && openProv){ html+='</div>'; openProv=null; }
+    if(!items.length) continue;
+    if(g.group && g.group!==openProv){
+      html+=`<div class="pal-prov" style="color:var(--${g.color})" onclick="this.classList.toggle('closed')">${g.group}</div><div class="pal-provbody">`;
+      openProv=g.group;
+    }
+    html+=`<div class="pal-cat${g.group?' sub':''}" onclick="this.classList.toggle('closed')">${g.cat}</div><div class="pal-group">`+
       items.map(it=>`<div class="pal-item" onclick="addNode('${it.t}')"><span class="picon i-${g.color}">${iconSvg(it.i)}</span>${it.n}</div>`).join('')+'</div>';
-  }).join('');
+  }
+  if(openProv) html+='</div>';
+  document.getElementById('palHost').innerHTML=html;
 }
 
 /* ============ CRIAÇÃO ============ */
@@ -1116,7 +1158,64 @@ const TEMPLATES=[
  problem:'Dados/sistemas que precisam ficar on-premise (regulação, legado) convivendo com cargas novas na nuvem.',
  why:'Túnel privado (VPN/Direct Connect) liga as redes sem expor nada à internet; o firewall on-prem só aceita o túnel. A nuvem hospeda o que escala; o datacenter mantém o que a regulação exige — e a latência do túnel vira requisito arquitetural declarado (cache do lado da nuvem).',
  cases:['Bancos/seguradoras com core on-prem','Integração com AD corporativo','Migração gradual para nuvem'],
- spec:{boxes:[{id:'op',label:'Data Center on-premise',color:'#9aa3b5'},{id:'cl',label:'Nuvem',color:'#ff9900'}],nodes:[{id:'u',type:'user'},{id:'a',type:'api',label:'API na nuvem',box:'cl'},{id:'ch',type:'cache',label:'Cache (dados do legado)',box:'cl'},{id:'v',type:'vpn',label:'VPN / Direct Connect'},{id:'fw',type:'firewall',box:'op'},{id:'srv',type:'server',label:'Sistema core',box:'op'},{id:'do',type:'dbonprem',label:'Banco regulado',box:'op'},{id:'ad',type:'ad',box:'op'}],edges:[{from:'u',to:'a'},{from:'a',to:'ch',label:'1º'},{from:'a',to:'v',label:'miss / escrita'},{from:'v',to:'fw',label:'túnel privado',dash:true},{from:'fw',to:'srv'},{from:'srv',to:'do'},{from:'a',to:'ad',label:'auth corporativo',dash:true}]}}
+ spec:{boxes:[{id:'op',label:'Data Center on-premise',color:'#9aa3b5'},{id:'cl',label:'Nuvem',color:'#ff9900'}],nodes:[{id:'u',type:'user'},{id:'a',type:'api',label:'API na nuvem',box:'cl'},{id:'ch',type:'cache',label:'Cache (dados do legado)',box:'cl'},{id:'v',type:'vpn',label:'VPN / Direct Connect'},{id:'fw',type:'firewall',box:'op'},{id:'srv',type:'server',label:'Sistema core',box:'op'},{id:'do',type:'dbonprem',label:'Banco regulado',box:'op'},{id:'ad',type:'ad',box:'op'}],edges:[{from:'u',to:'a'},{from:'a',to:'ch',label:'1º'},{from:'a',to:'v',label:'miss / escrita'},{from:'v',to:'fw',label:'túnel privado',dash:true},{from:'fw',to:'srv'},{from:'srv',to:'do'},{from:'a',to:'ad',label:'auth corporativo',dash:true}]}},
+{id:'rag_full',tag:'IA / RAG',title:'RAG completo (ingestão → consulta → avaliação)',
+ problem:'O LLM responde sem conhecer os SEUS documentos — e quando você injeta contexto na mão, não tem como medir se a resposta melhorou ou piorou.',
+ why:'Dois caminhos separados: a INGESTÃO (offline) transforma fontes em chunks com overlap, gera embeddings e indexa no banco vetorial; a CONSULTA (online) busca top-k por similaridade, o re-ranker reordena por relevância real e o prompt é montado com contexto + histórico. O cache semântico corta custo de perguntas repetidas. E o que separa RAG de achismo: RAGAS avalia continuamente (faithfulness, answer relevancy, context precision) usando amostras dos traces — o resultado da avaliação AJUSTA o chunking, fechando o ciclo de melhoria.',
+ cases:['Assistente sobre documentação interna','Suporte com base de conhecimento','Busca semântica em contratos e normas'],
+ spec:{boxes:[{id:'ing',label:'Ingestão (offline)'},{id:'onl',label:'Consulta (online)'},{id:'qa',label:'Qualidade & Avaliação',color:'#f87171'}],
+  nodes:[
+   {id:'src',type:'docsource',label:'Documentos (S3/Drive)',box:'ing',x:130,y:150},
+   {id:'ck',type:'chunking',label:'Chunking + metadados',box:'ing',x:360,y:150},
+   {id:'em',type:'embeddings',label:'Embeddings',box:'ing',x:590,y:150},
+   {id:'vdb',type:'vectordb',label:'Banco Vetorial',x:850,y:150},
+   {id:'u',type:'user',x:130,y:480},
+   {id:'api',type:'api',label:'API do assistente',box:'onl',x:360,y:480},
+   {id:'rt',type:'retriever',label:'Retriever (top-k)',box:'onl',x:590,y:480},
+   {id:'rr',type:'reranker',label:'Re-ranker',box:'onl',x:820,y:480},
+   {id:'pb',type:'promptbuild',label:'Prompt + contexto',box:'onl',x:1050,y:480},
+   {id:'sc',type:'semcache',label:'Cache semântico',box:'onl',x:360,y:660},
+   {id:'mem',type:'aimemory',label:'Histórico da conversa',box:'onl',x:590,y:660},
+   {id:'llm',type:'llm',label:'LLM',x:1290,y:480},
+   {id:'obs',type:'llmobs',label:'Traces de LLM',box:'qa',x:1290,y:700},
+   {id:'rg',type:'ragas',label:'RAGAS (métricas)',box:'qa',x:1290,y:870}],
+  edges:[
+   {from:'src',to:'ck'},{from:'ck',to:'em'},{from:'em',to:'vdb',label:'indexa'},
+   {from:'u',to:'api'},{from:'api',to:'sc',label:'1º: hit?',dash:true},{from:'api',to:'rt'},
+   {from:'rt',to:'vdb',label:'top-k'},{from:'rt',to:'rr'},{from:'rr',to:'pb'},
+   {from:'api',to:'mem',label:'histórico',dash:true},{from:'pb',to:'llm',label:'prompt+contexto'},
+   {from:'llm',to:'obs',label:'traces',dash:true},{from:'obs',to:'rg',label:'amostras',dash:true},
+   {from:'rg',to:'ck',label:'ajusta chunking',dash:true}],
+  texts:[
+   {text:'Chunk pequeno demais perde contexto; grande demais dilui a busca — deixe o RAGAS decidir (faithfulness, answer relevancy, context precision).',x:130,y:990},
+   {text:'Cache semântico corta custo/latência de perguntas repetidas; invalide ao reindexar.',x:130,y:1130}]}},
+{id:'agent_orch',tag:'IA / AGENTES',title:'Orquestração de agentes (multi-agente)',
+ problem:'Uma tarefa complexa (pesquisar, codar, revisar) num agente só vira um prompt gigante que erra — sem controle de ferramentas, custo ou segurança.',
+ why:'Um orquestrador (grafo de estados) decompõe a tarefa e delega a agentes especializados — cada um com UMA responsabilidade e o mínimo de ferramentas (single responsibility para agentes). Ferramentas entram por MCP (contrato padronizado, plugável); a memória compartilhada carrega estado entre passos; guardrails validam entrada/saída; e a observabilidade de LLM rastreia cada passo e custo. O agente revisor devolve "aprova/refaz" ao orquestrador — e ação irreversível exige aprovação humana.',
+ cases:['Pesquisa + síntese com fontes','Automação de PRs (codar → testar → revisar)','Atendimento com escalação para humano'],
+ spec:{boxes:[{id:'core',label:'Orquestração'},{id:'ags',label:'Agentes especializados',color:'#f472b6'}],
+  nodes:[
+   {id:'u',type:'user',x:130,y:430},
+   {id:'orc',type:'orchestrator',label:'Orquestrador (grafo)',box:'core',x:400,y:430},
+   {id:'gr',type:'guardrail',label:'Guardrails E/S',box:'core',x:400,y:620},
+   {id:'mem',type:'aimemory',label:'Memória compartilhada',box:'core',x:640,y:620},
+   {id:'a1',type:'aiagent',label:'Agente Pesquisador',box:'ags',x:940,y:200},
+   {id:'a2',type:'aiagent',label:'Agente Programador',box:'ags',x:940,y:430},
+   {id:'a3',type:'aiagent',label:'Agente Revisor',box:'ags',x:940,y:660},
+   {id:'mcp',type:'mcp',label:'Ferramentas via MCP',x:1240,y:315},
+   {id:'llm',type:'llm',label:'LLM',x:1240,y:545},
+   {id:'obs',type:'llmobs',label:'Traces por passo',x:660,y:840}],
+  edges:[
+   {from:'u',to:'orc',label:'tarefa'},
+   {from:'orc',to:'gr',label:'valida E/S',dash:true},
+   {from:'orc',to:'a1',label:'delega'},{from:'orc',to:'a2',label:'delega'},{from:'orc',to:'a3',label:'delega'},
+   {from:'a1',to:'mcp',label:'buscar'},{from:'a2',to:'mcp',label:'executar'},
+   {from:'a2',to:'llm'},
+   {from:'a3',to:'orc',label:'aprova / refaz',dash:true},
+   {from:'orc',to:'mem'},{from:'orc',to:'obs',dash:true}],
+  texts:[
+   {text:'Um agente = UMA responsabilidade e o mínimo de ferramentas. O orquestrador decide; os agentes executam.',x:130,y:970},
+   {text:'Ação irreversível (deploy, e-mail, pagamento) exige aprovação humana — human-in-the-loop.',x:130,y:1100}]}}
 ];
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
 function openTemplates(){
@@ -1162,7 +1261,7 @@ function iacPrompt(kind){
 `3. Tipos de cliente/on-premise (user, browser, mobile, iot, partner, server, mainframe, dbonprem, ad, firewall, dc) NÃO viram recurso — são contexto. "extern" vira endpoint + secret. "outbox" é padrão de aplicação: comentário/tabela, não serviço.`,
 `4. Entregue um projeto completo e compilável, nomes derivados dos labels, criptografia em repouso, tags, e termine com duas listas curtas: "Decisões assumidas" e "Pendências humanas" (domínios, segredos, tamanhos).`,
 `5. Trate os "texts" do diagrama como requisitos.`,
-`6. Tipos GCP (cloudrun, gke, cloudfn, gce, gcs, cloudsql, firestore, bigquery, pubsub, memorystore, vertexai) e Azure (appservice, aks, azfunc, azvm, blob, azsql, cosmosdb, servicebus, eventhubs, frontdoor, entra) ⇒ gere Terraform com o provider google/azurerm (CDK clássico é só AWS — se pedirem CDK com esses nós, proponha Terraform ou CDKTF). Tipos de IA: llm→endpoint+secret (Bedrock/Vertex/Azure OpenAI conforme a nuvem do box), aiagent→serviço que hospeda o agente, vectordb→gerenciado equivalente (OpenSearch/pgvector/Pinecone), embeddings→função, mcp→container pequeno, gpu→instância/node pool GPU, guardrail→camada de aplicação.`,
+`6. Tipos GCP (cloudrun, gke, cloudfn, gce, gcs, cloudsql, firestore, bigquery, pubsub, memorystore, vertexai) e Azure (appservice, aks, azfunc, azvm, blob, azsql, cosmosdb, servicebus, eventhubs, frontdoor, entra, azureopenai) ⇒ gere Terraform com o provider google/azurerm (CDK clássico é só AWS — se pedirem CDK com esses nós, proponha Terraform ou CDKTF). Tipos de IA: llm/bedrock/vertexai/azureopenai→serviço gerenciado ou endpoint+secret conforme a nuvem, sagemaker→endpoint de inferência, aiagent/orchestrator→o compute que os hospeda, vectordb→gerenciado equivalente (OpenSearch/pgvector/Pinecone), embeddings→função, mcp→container pequeno, gpu→instância/node pool GPU, semcache→Redis, aimemory→tabela NoSQL (DynamoDB/Firestore/Cosmos), docsource→bucket de origem, llmobs→container (Langfuse) ou SaaS extern. Conceitos de aplicação (chunking, retriever, reranker, promptbuild, ragas, tool, guardrail) NÃO viram recurso — gere módulos/comentários no código.`,
 ``,
 `DIAGRAMA (ArchStudio):`,
 JSON.stringify(exportSpec(),null,1)
