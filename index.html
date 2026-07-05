@@ -13,7 +13,7 @@
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="%230e1017"/><path d="M12 4.5l6.5 3.75v7.5L12 19.5l-6.5-3.75v-7.5z" fill="none" stroke="%23a679ff" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.8 12h6.4M12.4 9.6L14.8 12l-2.4 2.4" stroke="%23a679ff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Inter:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0e1017;--panel:#151824;--panel2:#1c2032;--border:#2a2f47;
@@ -23,6 +23,7 @@
   --nodebg:#1a1d2e;--gridline:rgba(166,121,255,.05);--shadow:rgba(0,0,0,.4);--edge:#6b72a3;
   --mono:'Cascadia Code','JetBrains Mono',Consolas,monospace;
   --sans:'Segoe UI',system-ui,sans-serif;
+  --uifont:'Inter','Segoe UI',system-ui,sans-serif;
 }
 body[data-theme="light"]{
   --bg:#f2f3f9;--panel:#ffffff;--panel2:#eceef7;--border:#d5d9ea;
@@ -32,32 +33,50 @@ body[data-theme="light"]{
   --nodebg:#ffffff;--gridline:rgba(90,70,180,.08);--shadow:rgba(40,45,80,.14);--edge:#8a90b8;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;height:100vh;overflow:hidden;transition:background .2s}
-.topbar{height:54px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;padding:0 12px;overflow-x:auto}
-.logo{font-family:var(--mono);font-weight:700;font-size:16px;white-space:nowrap}
+body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:14px;height:100vh;overflow:hidden;transition:background .2s;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.topbar{height:52px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 14px;overflow-x:auto;overflow-y:visible}
+.logo{font-family:var(--mono);font-weight:700;font-size:15.5px;letter-spacing:-.3px;white-space:nowrap;margin-right:2px}
 .logo .kw{color:var(--accent)}
-.title-input{background:var(--panel2);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:7px 12px;font-size:14px;min-width:100px;max-width:230px;flex:1}
+.title-input{background:var(--panel2);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 12px;font:500 13px var(--uifont);width:190px;min-width:110px}
 .title-input:focus{outline:none;border-color:var(--accent)}
-.mode-btn,.tool-btn,.zoom-btn{font-family:var(--mono);font-size:12px;border-radius:6px;padding:7px 10px;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--dim);white-space:nowrap}
-.mode-btn.active{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.mode-btn,.tool-btn,.zoom-btn{font:500 12.5px var(--uifont);border-radius:8px;padding:7px 11px;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--dim);white-space:nowrap;transition:border-color .12s,color .12s,background .12s}
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
+.seg .mode-btn{border:none;border-radius:0;background:var(--panel2)}
+.seg .mode-btn+.mode-btn{border-left:1px solid var(--border)}
+.mode-btn.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 13%,transparent);font-weight:600}
 .tool-btn{color:var(--ink)}
-.tool-btn:hover,.zoom-btn:hover{border-color:var(--accent)}
-.tool-btn.primary{background:var(--accent);color:#fff;border:none;font-weight:700}
-.zoom-group{display:flex;align-items:center;gap:3px}
-.zoom-pct{font-family:var(--mono);font-size:11.5px;color:var(--dim);min-width:42px;text-align:center;cursor:pointer}
+.tool-btn.icon{padding:7px 9px;font-size:13px}
+.tool-btn:hover,.zoom-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tool-btn.primary{background:var(--accent);color:#fff;border:1px solid var(--accent);font-weight:600}
+.tool-btn.primary:hover{color:#fff;filter:brightness(1.08)}
+.tb-sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
+.tb-flex{flex:1;min-width:8px}
+.zoom-group{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--panel2);flex-shrink:0}
+.zoom-btn{border:none;background:none;padding:7px 9px}
+.zoom-pct{font:500 11.5px var(--mono);color:var(--dim);min-width:42px;text-align:center;cursor:pointer}
 .chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--dim);white-space:nowrap;cursor:pointer;user-select:none}
 .hintbar{height:24px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px}
-.hint{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint{font:400 11px var(--uifont);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.1px}
 .propsbar{min-height:0;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 12px;overflow-x:auto;transition:min-height .15s}
 .propsbar.show{min-height:42px}
 .props-label{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap;margin-right:4px}
-.pbtn{font-family:var(--mono);font-size:11.5px;border-radius:6px;padding:5px 10px;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--ink);white-space:nowrap}
+.pbtn{font:500 12px var(--uifont);border-radius:7px;padding:5px 10px;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--ink);white-space:nowrap}
 .pbtn:hover{border-color:var(--accent)}
 .pbtn.danger:hover{border-color:var(--red);color:var(--red)}
 .pbtn.on{border-color:var(--accent);color:var(--accent)}
+.menu{position:relative;flex-shrink:0}
+.menu-panel{position:fixed;right:12px;top:56px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px var(--shadow);padding:6px;min-width:238px;display:none;flex-direction:column;gap:1px;z-index:300}
+.menu.open .menu-panel{display:flex}
+.menu-label{font:600 9.5px var(--mono);letter-spacing:1.4px;color:var(--dim);text-transform:uppercase;padding:8px 10px 4px}
+.menu-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font:500 12.5px var(--uifont);color:var(--ink);background:none;border:none;text-align:left;width:100%;text-decoration:none;white-space:nowrap}
+.menu-item:hover{background:var(--panel2)}
+.menu-item.danger{color:var(--red)}
+.menu-sep{height:1px;background:var(--border);margin:5px 6px}
+.menu-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;font:500 12.5px var(--uifont);color:var(--ink)}
+.menu-row select{background:var(--panel2);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:5px 7px;font:500 12px var(--uifont);max-width:132px}
 
-.layout{display:flex;height:calc(100vh - 78px)}
-.propsbar.show ~ .layout{height:calc(100vh - 120px)}
+.layout{display:flex;height:calc(100vh - 76px)}
+.propsbar.show ~ .layout{height:calc(100vh - 118px)}
 .palette{width:232px;min-width:232px;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:8px}
 .pal-search{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--ink);border-radius:7px;padding:7px 10px;font-size:12.5px;margin-bottom:8px}
 .pal-search:focus{outline:none;border-color:var(--accent)}
@@ -155,32 +174,47 @@ body.clean .layout{height:100vh}
 </head>
 <body data-theme="dark">
 <div class="topbar">
-  <div class="logo"><span class="kw">ArchStudio</span></div>
+  <div class="logo"><span class="kw">Arch</span>Studio</div>
   <input class="title-input" id="diagTitle" placeholder="Nome do diagrama..." value="Minha Arquitetura">
-  <button class="mode-btn active" id="modeMove" onclick="setMode('move')">✥ Mover</button>
-  <button class="mode-btn" id="modeConn" onclick="setMode('connect')">→ Conectar</button>
+  <div class="seg">
+    <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar">✥ Mover</button>
+    <button class="mode-btn" id="modeConn" onclick="setMode('connect')" title="clique em dois componentes para conectar">→ Conectar</button>
+  </div>
+  <span class="tb-sep"></span>
   <button class="tool-btn" onclick="addBox()">▭ Caixa</button>
-  <button class="tool-btn" onclick="addArrow()">↗ Seta livre</button>
+  <button class="tool-btn" onclick="addArrow()">↗ Seta</button>
   <button class="tool-btn" onclick="addText()">T Texto</button>
-  <button class="tool-btn" onclick="undo()" title="Ctrl+Z">↩</button>
-  <button class="tool-btn" onclick="redo()" title="Ctrl+Y">↪</button>
+  <span class="tb-sep"></span>
+  <button class="tool-btn icon" onclick="undo()" title="Desfazer (Ctrl+Z)">↩</button>
+  <button class="tool-btn icon" onclick="redo()" title="Refazer (Ctrl+Y)">↪</button>
+  <span class="tb-sep"></span>
   <button class="tool-btn" onclick="openTemplates()">📋 Modelos</button>
   <button class="tool-btn" onclick="openAgent()">🤖 Agente</button>
-  <select class="tool-btn" id="fontSel" onchange="setFont(this.value)" title="fonte do diagrama"></select>
+  <div class="tb-flex"></div>
   <div class="zoom-group">
     <button class="zoom-btn" onclick="setZoom(zoom-0.1)">−</button>
     <span class="zoom-pct" id="zoomPct" onclick="setZoom(1)" title="clique para 100%">100%</span>
     <button class="zoom-btn" onclick="setZoom(zoom+0.1)">+</button>
   </div>
-  <label class="chk"><input type="checkbox" id="snapChk" checked> imã</label>
-  <button class="tool-btn" id="themeBtn" onclick="toggleTheme()">☀ Claro</button>
-  <button class="tool-btn" onclick="saveFile()">💾 Salvar</button>
-  <button class="tool-btn" onclick="document.getElementById('fileInput').click()">📂 Carregar</button>
-  <button class="tool-btn" onclick="shareLink(this)" title="copia um link que abre este diagrama">🔗 Link</button>
-  <button class="tool-btn" onclick="exportSvg()">⬇ SVG</button>
+  <button class="tool-btn icon" id="themeBtn" onclick="toggleTheme()" title="alternar tema claro/escuro">☀</button>
   <button class="tool-btn primary" onclick="exportPng()">⬇ PNG</button>
-  <button class="tool-btn" onclick="if(confirm('Limpar todo o diagrama?')){pushUndo();clearCanvas()}">Limpar</button>
-  <a class="tool-btn" href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener" style="text-decoration:none" title="código-fonte no GitHub">★ GitHub</a>
+  <div class="menu" id="moreMenu">
+    <button class="tool-btn" onclick="document.getElementById('moreMenu').classList.toggle('open')" title="arquivo e preferências">⋯ Mais</button>
+    <div class="menu-panel">
+      <div class="menu-label">Arquivo</div>
+      <button class="menu-item" onclick="saveFile();closeMenu()">💾 Salvar .json</button>
+      <button class="menu-item" onclick="document.getElementById('fileInput').click();closeMenu()">📂 Carregar .json</button>
+      <button class="menu-item" onclick="shareLink(this)" title="copia um link que abre este diagrama">🔗 Copiar link do diagrama</button>
+      <button class="menu-item" onclick="exportSvg();closeMenu()">⬇ Exportar SVG</button>
+      <div class="menu-sep"></div>
+      <div class="menu-label">Preferências</div>
+      <div class="menu-row"><span>Fonte do diagrama</span><select id="fontSel" onchange="setFont(this.value)"></select></div>
+      <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="snapChk" checked> Grade magnética (imã)</label>
+      <div class="menu-sep"></div>
+      <button class="menu-item danger" onclick="if(confirm('Limpar todo o diagrama?')){pushUndo();clearCanvas();closeMenu()}">🗑 Limpar canvas</button>
+      <a class="menu-item" href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener">★ GitHub — código aberto</a>
+    </div>
+  </div>
   <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
 </div>
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"></div>
@@ -392,13 +426,13 @@ for(const g of CATALOG) for(const it of g.items) TYPE_INDEX[it.t] = {...it, colo
 /* ============ ESTADO ============ */
 let mode='move', zoom=1, connSrc=null, sel=null, fontId='system';
 const FONTS=[
- {id:'system', n:'Fonte: Sistema',        css:"'Segoe UI',system-ui,sans-serif"},
- {id:'inter',  n:'Fonte: Inter',          css:"'Inter',sans-serif",          g:'Inter:wght@400;600;700'},
- {id:'space',  n:'Fonte: Space Grotesk',  css:"'Space Grotesk',sans-serif",  g:'Space+Grotesk:wght@400;600;700'},
- {id:'plex',   n:'Fonte: IBM Plex Sans',  css:"'IBM Plex Sans',sans-serif",  g:'IBM+Plex+Sans:wght@400;600;700'},
- {id:'caveat', n:'Fonte: Caveat ✍rascunho',css:"'Caveat',cursive",           g:'Caveat:wght@500;700'},
- {id:'patrick',n:'Fonte: Patrick Hand ✍', css:"'Patrick Hand',cursive",      g:'Patrick+Hand'},
- {id:'mono',   n:'Fonte: JetBrains Mono', css:"'JetBrains Mono',monospace",  g:'JetBrains+Mono:wght@400;700'}];
+ {id:'system', n:'Sistema',         css:"'Segoe UI',system-ui,sans-serif"},
+ {id:'inter',  n:'Inter',           css:"'Inter',sans-serif",          g:'Inter:wght@400;600;700'},
+ {id:'space',  n:'Space Grotesk',   css:"'Space Grotesk',sans-serif",  g:'Space+Grotesk:wght@400;600;700'},
+ {id:'plex',   n:'IBM Plex Sans',   css:"'IBM Plex Sans',sans-serif",  g:'IBM+Plex+Sans:wght@400;600;700'},
+ {id:'caveat', n:'Caveat ✍ rascunho',css:"'Caveat',cursive",           g:'Caveat:wght@500;700'},
+ {id:'patrick',n:'Patrick Hand ✍',  css:"'Patrick Hand',cursive",      g:'Patrick+Hand'},
+ {id:'mono',   n:'JetBrains Mono',  css:"'JetBrains Mono',monospace",  g:'JetBrains+Mono:wght@400;700'}];
 const fontCache={};
 function curFont(){ return FONTS.find(f=>f.id===fontId)||FONTS[0]; }
 function setFont(id){ fontId=id; canvas.style.setProperty('--dfont', curFont().css); document.getElementById('fontSel').value=id; persist(); }
@@ -422,9 +456,14 @@ function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify(sta
 function toggleTheme(){
   const t = theme()==='dark'?'light':'dark';
   document.body.dataset.theme=t;
-  document.getElementById('themeBtn').textContent = t==='dark'?'☀ Claro':'🌙 Escuro';
+  document.getElementById('themeBtn').textContent = t==='dark'?'☀':'🌙';
   persist();
 }
+function closeMenu(){ document.getElementById('moreMenu').classList.remove('open'); }
+document.addEventListener('pointerdown', ev=>{
+  const m=document.getElementById('moreMenu');
+  if(m && m.classList.contains('open') && !m.contains(ev.target)) m.classList.remove('open');
+});
 function setZoom(z){
   zoom=Math.max(0.4,Math.min(2,Math.round(z*10)/10));
   canvas.style.transform=`scale(${zoom})`;
@@ -436,16 +475,17 @@ canvasOuter.addEventListener('wheel',ev=>{ if(!ev.ctrlKey)return; ev.preventDefa
 function iconSvg(name){ return `<svg viewBox="0 0 24 24">${ICONS[name]||ICONS.hexagon}</svg>`; }
 function renderPalette(filter=''){
   const f=filter.trim().toLowerCase();
+  const closed = f ? '' : ' closed';   /* tudo recolhido por padrão; busca expande */
   let html='', openProv=null;
   for(const g of CATALOG){
     const items=g.items.filter(it=>!f||it.n.toLowerCase().includes(f)||it.t.includes(f));
     if(g.group!==openProv && openProv){ html+='</div>'; openProv=null; }
     if(!items.length) continue;
     if(g.group && g.group!==openProv){
-      html+=`<div class="pal-prov" style="color:var(--${g.color})" onclick="this.classList.toggle('closed')">${g.group}</div><div class="pal-provbody">`;
+      html+=`<div class="pal-prov${closed}" style="color:var(--${g.color})" onclick="this.classList.toggle('closed')">${g.group}</div><div class="pal-provbody">`;
       openProv=g.group;
     }
-    html+=`<div class="pal-cat${g.group?' sub':''}" onclick="this.classList.toggle('closed')">${g.cat}</div><div class="pal-group">`+
+    html+=`<div class="pal-cat${g.group?' sub':closed}" onclick="this.classList.toggle('closed')">${g.cat}</div><div class="pal-group">`+
       items.map(it=>`<div class="pal-item" onclick="addNode('${it.t}')"><span class="picon i-${g.color}">${iconSvg(it.i)}</span>${it.n}</div>`).join('')+'</div>';
   }
   if(openProv) html+='</div>';
