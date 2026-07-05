@@ -106,7 +106,7 @@ Aceite qualquer uma destas formas — todas carregam os mesmos `nodes`/`edges`:
 - um arquivo salvo pelo app (`{"format":"archstudio","version":3,"state":{nodes,edges,boxes,...}}` — ids numéricos, membership de box é geométrico: ignore posições, use os labels);
 - um link `#d=z:...`/`#d=j:...` — decodifique: `j:` é base64url do JSON; `z:` é base64url de deflate-raw (`node -e` com `zlib.inflateRawSync`).
 
-**Antes de gerar, confirme 1 coisa só:** CDK (TypeScript) ou Terraform? Se o usuário já disse, não pergunte. Depois gere tudo; liste pendências no final em vez de entrevistar.
+**Antes de gerar, confirme 1 coisa só:** CDK (TypeScript) ou Terraform? Se o usuário já disse, não pergunte. Depois gere tudo; liste pendências no final em vez de fazer mil perguntas.
 
 ### Mapeamento nó → recurso
 

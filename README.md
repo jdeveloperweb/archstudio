@@ -25,7 +25,7 @@
 
 ## Why
 
-I was studying **software architecture** and **system design interviews**, and kept hitting the same friction: heavyweight tools to sketch a simple idea, and no good way to let an **AI agent draw with me**. Describing an architecture in chat is easy — turning that description into a clean, editable diagram is not.
+While deepening my studies in **software architecture and system design**, I went looking for the best tool to sketch systems — and kept hitting the same friction: heavyweight tools for a simple idea, and no good way to let an **AI agent draw with me**. Describing an architecture in chat is easy — turning that description into a clean, editable diagram is not.
 
 ArchStudio closes that gap. It is a canvas that **speaks JSON**: you (or your AI agent) describe the system as a small spec, and the app lays it out, renders it in a hand-crafted visual style, and exports it. No account, no build step, no server-side anything.
 
