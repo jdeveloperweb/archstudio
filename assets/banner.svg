@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(166,121,255,0.055)" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow" cx="0.18" cy="0.12" r="0.75">
+      <stop offset="0%" stop-color="#a679ff" stop-opacity="0.13"/>
+      <stop offset="55%" stop-color="#a679ff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#a679ff" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b72a3"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0e1017"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+
+  <!-- ===== texto (esquerda) ===== -->
+  <text x="84" y="150" font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="14" letter-spacing="4" fill="#8f94ad">OPEN SOURCE · MIT</text>
+
+  <text x="80" y="228" font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="68" font-weight="700">
+    <tspan fill="#a679ff">Arch</tspan><tspan fill="#e6e8f2">Studio</tspan>
+  </text>
+
+  <text x="84" y="290" font-family="Segoe UI, system-ui, sans-serif" font-size="27" fill="#c9cde3">Architecture diagrams for</text>
+  <text x="84" y="328" font-family="Segoe UI, system-ui, sans-serif" font-size="27" fill="#c9cde3">humans <tspan fill="#a679ff" font-weight="600">&amp;</tspan> AI agents.</text>
+
+  <!-- chips -->
+  <g font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="13.5">
+    <rect x="84" y="376" width="152" height="34" rx="8" fill="#1c2032" stroke="#2a2f47"/>
+    <text x="160" y="398" fill="#e6e8f2" text-anchor="middle">1 HTML file</text>
+    <rect x="248" y="376" width="152" height="34" rx="8" fill="#1c2032" stroke="#2a2f47"/>
+    <text x="324" y="398" fill="#e6e8f2" text-anchor="middle">zero deps</text>
+    <rect x="412" y="376" width="182" height="34" rx="8" fill="#1c2032" stroke="#2a2f47"/>
+    <text x="503" y="398" fill="#e6e8f2" text-anchor="middle">AI-native JSON</text>
+  </g>
+
+  <text x="84" y="560" font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="19" fill="#a679ff">▶ archstudio.mjolnix.com.br</text>
+  <text x="1196" y="608" font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="13" fill="#8f94ad" text-anchor="end">github.com/jdeveloperweb/archstudio</text>
+
+  <!-- ===== mini diagrama (direita), no estilo do app ===== -->
+  <!-- caixa AWS -->
+  <rect x="800" y="130" width="424" height="316" rx="14" fill="rgba(255,153,0,0.05)" stroke="#ff9900" stroke-width="2" stroke-dasharray="10 7"/>
+  <rect x="814" y="119" width="118" height="20" rx="5" fill="#0e1017"/>
+  <text x="823" y="134" font-family="Cascadia Code, JetBrains Mono, Consolas, monospace" font-size="11.5" font-weight="700" fill="#ff9900">AWS us-east-1</text>
+
+  <!-- edges -->
+  <g stroke="#6b72a3" stroke-width="2" fill="none">
+    <path d="M 762 291 L 828 250" marker-end="url(#ar)"/>
+    <path d="M 962 216 L 1040 216" marker-end="url(#ar)"/>
+    <path d="M 1105 260 L 1105 320" marker-end="url(#ar)"/>
+    <path d="M 1040 366 L 962 366" marker-end="url(#ar)" stroke-dasharray="8 6"/>
+    <path d="M 897 322 L 897 262" marker-end="url(#ar)" stroke-dasharray="8 6"/>
+  </g>
+  <text x="1001" y="204" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#e6e8f2" text-anchor="middle">invoca</text>
+  <text x="1001" y="356" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#e6e8f2" text-anchor="middle">consome</text>
+
+  <!-- nó: Usuário (fora da caixa) -->
+  <g>
+    <rect x="632" y="264" width="130" height="76" rx="11" fill="#1a1d2e" stroke="#2a2f47"/>
+    <rect x="632" y="264" width="130" height="4" rx="2" fill="#7c9eff"/>
+    <g transform="translate(682,274) scale(1.15)" stroke="#7c9eff" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.4-3.6 4.2-5.3 7.5-5.3s6.1 1.7 7.5 5.3"/>
+    </g>
+    <text x="697" y="330" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#e6e8f2" text-anchor="middle">Usuário</text>
+  </g>
+
+  <!-- nó: API Gateway -->
+  <g>
+    <rect x="832" y="178" width="130" height="76" rx="11" fill="#1a1d2e" stroke="#2a2f47"/>
+    <rect x="832" y="178" width="130" height="4" rx="2" fill="#ff9900"/>
+    <g transform="translate(882,188) scale(1.15)" stroke="#ff9900" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 5h16l-6 7v6l-4 2v-8z"/>
+    </g>
+    <text x="897" y="244" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#e6e8f2" text-anchor="middle">API Gateway</text>
+  </g>
+
+  <!-- nó: Lambda -->
+  <g>
+    <rect x="1040" y="178" width="130" height="76" rx="11" fill="#1a1d2e" stroke="#2a2f47"/>
+    <rect x="1040" y="178" width="130" height="4" rx="2" fill="#ff9900"/>
+    <g transform="translate(1090,188) scale(1.15)" stroke="#ff9900" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 4.5h3.2L15 19.5h3M14 12.5l-5 7"/>
+    </g>
+    <text x="1105" y="244" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#e6e8f2" text-anchor="middle">Lambda</text>
+  </g>
+
+  <!-- nó: Fila -->
+  <g>
+    <rect x="832" y="328" width="130" height="76" rx="11" fill="#1a1d2e" stroke="#2a2f47"/>
+    <rect x="832" y="328" width="130" height="4" rx="2" fill="#a679ff"/>
+    <g transform="translate(882,338) scale(1.15)" stroke="#a679ff" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="5" width="12" height="3.4" rx="1"/><rect x="4" y="10.3" width="12" height="3.4" rx="1"/><rect x="4" y="15.6" width="12" height="3.4" rx="1"/><path d="M18.5 12h3M20 10.2l1.8 1.8-1.8 1.8"/>
+    </g>
+    <text x="897" y="394" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#e6e8f2" text-anchor="middle">Fila (SQS)</text>
+  </g>
+
+  <!-- nó: Banco -->
+  <g>
+    <rect x="1040" y="328" width="130" height="76" rx="11" fill="#1a1d2e" stroke="#2a2f47"/>
+    <rect x="1040" y="328" width="130" height="4" rx="2" fill="#a679ff"/>
+    <g transform="translate(1090,338) scale(1.15)" stroke="#a679ff" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v13c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-13"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/>
+    </g>
+    <text x="1105" y="394" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#e6e8f2" text-anchor="middle">Banco</text>
+  </g>
+</svg>

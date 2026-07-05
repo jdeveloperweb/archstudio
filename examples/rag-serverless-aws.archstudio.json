@@ -1,0 +1,40 @@
+{
+  "name": "Assistente com RAG — Serverless na AWS",
+  "boxes": [
+    { "id": "aws", "label": "AWS", "color": "#ff9900" },
+    { "id": "ingest", "label": "Ingestão de documentos", "color": "#4ade80" }
+  ],
+  "nodes": [
+    { "id": "u", "type": "user", "label": "Usuário" },
+    { "id": "spa", "type": "browser", "label": "SPA (chat)" },
+    { "id": "cf", "type": "cloudfront", "box": "aws" },
+    { "id": "cog", "type": "cognito", "label": "Cognito (login)", "box": "aws" },
+    { "id": "gw", "type": "apigw", "label": "API Gateway", "box": "aws" },
+    { "id": "chat", "type": "lambda", "label": "Lambda Chat (RAG)", "box": "aws" },
+    { "id": "vec", "type": "opensearch", "label": "OpenSearch (vetores)", "box": "aws" },
+    { "id": "hist", "type": "dynamodb", "label": "DynamoDB (histórico)", "box": "aws" },
+    { "id": "llm", "type": "extern", "label": "API do LLM (Claude)" },
+    { "id": "up", "type": "s3", "label": "S3 documentos", "box": "ingest" },
+    { "id": "q", "type": "sqs", "label": "Fila de ingestão", "box": "ingest" },
+    { "id": "emb", "type": "lambda", "label": "Lambda embeddings", "box": "ingest" },
+    { "id": "cw", "type": "cloudwatch", "label": "CloudWatch", "box": "aws" }
+  ],
+  "edges": [
+    { "from": "u", "to": "spa" },
+    { "from": "spa", "to": "cf" },
+    { "from": "cf", "to": "gw" },
+    { "from": "spa", "to": "cog", "label": "OAuth", "dash": true },
+    { "from": "gw", "to": "chat" },
+    { "from": "chat", "to": "vec", "label": "busca top-k" },
+    { "from": "chat", "to": "hist", "label": "conversa" },
+    { "from": "chat", "to": "llm", "label": "prompt + contexto" },
+    { "from": "up", "to": "q", "label": "evento S3" },
+    { "from": "q", "to": "emb" },
+    { "from": "emb", "to": "vec", "label": "indexa" },
+    { "from": "chat", "to": "cw", "dash": true }
+  ],
+  "texts": [
+    { "text": "Upload direto ao S3 via URL pré-assinada; a ingestão escala pelo tamanho da fila." },
+    { "text": "Timeout + retry com backoff na chamada ao LLM; resposta em streaming para o usuário." }
+  ]
+}
