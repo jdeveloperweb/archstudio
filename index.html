@@ -64,6 +64,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .pbtn:hover{border-color:var(--accent)}
 .pbtn.danger:hover{border-color:var(--red);color:var(--red)}
 .pbtn.on{border-color:var(--accent);color:var(--accent)}
+.cfield{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--uifont);color:var(--ink);border:1px solid var(--border);background:var(--panel2);border-radius:7px;padding:3px 7px 3px 9px;white-space:nowrap;cursor:pointer}
+.cswatch{width:24px;height:22px;padding:0;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer}
+.cswatch::-webkit-color-swatch-wrapper{padding:2px}
+.cswatch::-webkit-color-swatch{border:none;border-radius:4px}
+.cswatch::-moz-color-swatch{border:none;border-radius:4px}
 .menu{position:relative;flex-shrink:0}
 .menu-panel{position:fixed;right:12px;top:56px;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 40px var(--shadow);padding:6px;min-width:238px;display:none;flex-direction:column;gap:1px;z-index:300}
 .menu.open .menu-panel{display:flex}
@@ -241,6 +246,7 @@ body.clean .layout{height:100vh}
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge)"/></marker>
             <marker id="arrowA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker>
+            <marker id="arrowC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>
           </defs>
         </svg>
       </div>
@@ -588,21 +594,24 @@ function renderAll(){
     const el=document.createElement('div');
     el.className=`node b-${def.color}`+(ic?' st-icon':'')+(connSrc===n.id?' sel':'')+(sel&&sel.kind==='node'&&sel.id===n.id?' sel':'');
     el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`;
+    if(n.color&&!ic) el.style.borderTopColor=n.color;
     el.dataset.id=n.id;
-    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>`;
+    const icClr=n.color?`;color:${n.color}`:'';
+    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>`;
     el.addEventListener('dblclick',()=>renameNode(n.id));
     canvas.appendChild(el);
   }
   renderEdges();
   renderProps();
 }
-function mkPath(cls,d,dash,w,heads,isSel){
+function mkPath(cls,d,dash,w,heads,isSel,color){
   const p=document.createElementNS(SVGNS,'path');
   p.setAttribute('class',cls);
   p.setAttribute('d',d);
   p.setAttribute('stroke-width',w||2);
   if(dash) p.setAttribute('stroke-dasharray','8 6');
-  const m = isSel?'url(#arrowA)':'url(#arrow)';
+  if(color) p.style.stroke=color;   /* inline style vence a regra .edge do CSS (.edge.sel !important ainda sobrepõe quando selecionado) */
+  const m = color?'url(#arrowC)':(isSel?'url(#arrowA)':'url(#arrow)');
   if(heads==='end'||heads==='both') p.setAttribute('marker-end',m);
   if(heads==='both') p.setAttribute('marker-start',m);
   return p;
@@ -622,14 +631,14 @@ function renderEdges(){
     if(!a||!b) continue;
     const isSel = sel&&sel.kind==='edge'&&sel.id===e.id;
     const L=trimLine(centerOf(a),centerOf(b),52*(a.s||1),68*(b.s||1));
-    const p=mkPath('edge'+(isSel?' sel':''),`M ${L.x1} ${L.y1} L ${L.x2} ${L.y2}`,e.dash,e.w,e.heads??'end',isSel);
+    const p=mkPath('edge'+(isSel?' sel':''),`M ${L.x1} ${L.y1} L ${L.x2} ${L.y2}`,e.dash,e.w,e.heads??'end',isSel,e.color);
     p.addEventListener('pointerdown',ev=>{ev.stopPropagation();sel={kind:'edge',id:e.id};renderAll();});
     edgeLayer.appendChild(p);
     if(e.label) { const lb=edgeLabelEl((L.x1+L.x2)/2,(L.y1+L.y2)/2,e.label); lb.addEventListener('pointerdown',ev=>{ev.stopPropagation();sel={kind:'edge',id:e.id};renderAll();}); edgeLayer.appendChild(lb); }
   }
   for(const a of state.arrows){
     const isSel = sel&&sel.kind==='arrow'&&sel.id===a.id;
-    const p=mkPath('edge'+(isSel?' sel':''),`M ${a.x1} ${a.y1} L ${a.x2} ${a.y2}`,a.dash,a.w,a.heads,isSel);
+    const p=mkPath('edge'+(isSel?' sel':''),`M ${a.x1} ${a.y1} L ${a.x2} ${a.y2}`,a.dash,a.w,a.heads,isSel,a.color);
     p.addEventListener('pointerdown',ev=>{ev.stopPropagation();sel={kind:'arrow',id:a.id};renderAll();});
     edgeLayer.appendChild(p);
     if(a.label){ const lb=edgeLabelEl((a.x1+a.x2)/2,(a.y1+a.y2)/2,a.label); lb.addEventListener('pointerdown',ev=>{ev.stopPropagation();sel={kind:'arrow',id:a.id};renderAll();}); edgeLayer.appendChild(lb); }
@@ -658,18 +667,19 @@ function renderProps(){
   bar.className='propsbar show';
   let html='';
   if(sel.kind==='node'){
+    const def=TYPE_INDEX[o.type]||{color:'gen'};
     html=`<span class="props-label">◈ ${escapeHtml(o.label)}</span>
       <button class="pbtn" onclick="propScale(-0.1)">− menor</button>
       <button class="pbtn" onclick="propScale(0.1)">+ maior</button>
       <button class="pbtn ${o.st==='icon'?'on':''}" onclick="propStyle()">${o.st==='icon'?'◻ só ícone':'▣ cartão'}</button>
+      ${colorField('cor', o.color||catColor(def.color), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
       <button class="pbtn" onclick="propDup()">⧉ duplicar</button>
-      <button class="pbtn" onclick="renameNode(${o.id})">✎ renomear</button>
-      <span class="props-label" style="color:var(--dim)">ou arraste o quadradinho roxo do canto do componente</span>`;
+      <button class="pbtn" onclick="renameNode(${o.id})">✎ renomear</button>`;
   } else if(sel.kind==='box'){
     html=`<span class="props-label">▭ ${escapeHtml(o.label)}</span>
       <button class="pbtn" onclick="renameBox(${o.id})">✎ nome</button>
-      <button class="pbtn" onclick="propBoxColor()" style="color:${o.color};border-color:${o.color}">● cor</button>
-      <span class="props-label" style="color:var(--dim)">arraste o quadradinho do canto para redimensionar · mover a caixa move o conteúdo</span>`;
+      ${colorField('cor', o.color, 'setSelColor(this.value)', '')}
+      <span class="props-label" style="color:var(--dim)">arraste o canto p/ redimensionar</span>`;
   } else if(sel.kind==='arrow'||sel.kind==='edge'){
     const tag = sel.kind==='arrow'?'↗ seta livre':'→ conexão';
     html=`<span class="props-label">${tag}</span>
@@ -677,18 +687,19 @@ function renderProps(){
       <button class="pbtn" onclick="propCycleHeads()">ponta: ${ {end:'→',both:'↔',none:'—'}[o.heads??'end'] }</button>
       <button class="pbtn" onclick="propWidth(-0.5)">− fina</button>
       <button class="pbtn" onclick="propWidth(0.5)">+ grossa</button>
+      ${colorField('cor', o.color||cssVar('--edge'), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
       <button class="pbtn ${o.label?'on':''}" onclick="propEdgeLabel()">✎ rótulo</button>
-      ${sel.kind==='arrow'?'<span class="props-label" style="color:var(--dim)">arraste as bolinhas das pontas para posicionar/esticar</span>':''}`;
+      ${sel.kind==='arrow'?'<span class="props-label" style="color:var(--dim)">arraste as bolinhas das pontas</span>':''}`;
   } else if(sel.kind==='text'){
     html=`<span class="props-label">${o.frame?'▭ caixa de texto':'T texto'}</span>
       <button class="pbtn ${o.b?'on':''}" style="font-weight:700" onclick="propTextBold()">B</button>
       <button class="pbtn ${o.it?'on':''}" style="font-style:italic" onclick="propTextItalic()">I</button>
       <button class="pbtn" onclick="propTextSize(-2)">A−</button>
       <button class="pbtn" onclick="propTextSize(2)">A+</button>
-      <button class="pbtn" onclick="propTextColor()" style="color:${o.color||'var(--ink)'};border-color:${o.color||'var(--border)'}">● cor</button>
+      ${colorField('texto', o.color||cssVar('--ink'), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
       <button class="pbtn" onclick="propTextAlign()">${({left:'⯇ esquerda',center:'↔ centro',right:'⯈ direita'})[o.align||'left']}</button>
       <button class="pbtn ${o.frame?'on':''}" onclick="propTextFrame()" title="fundo e borda">▭ moldura</button>
-      ${o.frame?`<button class="pbtn" onclick="propTextBg()" style="border-color:${o.bg||'var(--border)'};color:${o.bg||'var(--ink)'}">▧ fundo</button>`:''}
+      ${o.frame?colorField('fundo', o.bg||cssVar('--nodebg'), 'setTextBg(this.value)', o.bg?'clearTextBg()':''):''}
       <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
       <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
   }
@@ -696,6 +707,14 @@ function renderProps(){
     <button class="pbtn" onclick="sel=null;renderAll()">fechar</button>`;
   bar.innerHTML=html;
 }
+function cssVar(n){ return (getComputedStyle(document.body).getPropertyValue(n)||'').trim()||'#888888'; }
+function colorField(label,cur,onchange,onclear){
+  return `<span class="cfield">${label}<input type="color" class="cswatch" value="${cur}" onchange="${onchange}">${onclear?`<span onclick="${onclear}" title="voltar à cor padrão" style="cursor:pointer;color:var(--dim);padding:0 1px">✕</span>`:''}</span>`;
+}
+function setSelColor(v){ const o=selRef(); if(!o)return; pushUndo(); o.color=v; persist(); renderAll(); }
+function clearSelColor(){ const o=selRef(); if(!o)return; pushUndo(); delete o.color; persist(); renderAll(); }
+function setTextBg(v){ const o=selRef(); if(!o)return; pushUndo(); o.bg=v; persist(); renderAll(); }
+function clearTextBg(){ const o=selRef(); if(!o)return; pushUndo(); delete o.bg; persist(); renderAll(); }
 function propStyle(){ const o=selRef(); if(!o)return; pushUndo(); o.st = o.st==='icon' ? 'card' : 'icon'; persist(); renderAll(); }
 function propScale(d){ const o=selRef(); if(!o)return; pushUndo(); o.s=Math.max(0.6,Math.min(1.8,Math.round(((o.s||1)+d)*10)/10)); persist(); renderAll(); }
 function propDup(){ const o=selRef(); if(!o)return; pushUndo(); const c={...o,id:++state.seq,x:o.x+30,y:o.y+30}; state.nodes.push(c); sel={kind:'node',id:c.id}; persist(); renderAll(); }
@@ -781,10 +800,21 @@ function editText(id, isNew){
 /* ============ INTERAÇÃO ============ */
 function canvasPoint(ev){ const r=canvas.getBoundingClientRect(); return {x:(ev.clientX-r.left)/zoom,y:(ev.clientY-r.top)/zoom}; }
 function dragSession(onMove,onUp){
-  const move=e2=>onMove(e2);
-  const up=e2=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); onUp&&onUp(e2); persist(); renderAll(); };
+  /* só empurra undo e re-renderiza se houve movimento de fato — clique sem
+     arrasto preserva o elemento no DOM (senão o duplo-clique nunca dispara) */
+  let moved=false;
+  const move=e2=>{ if(!moved){ moved=true; pushUndo(); } onMove(e2); };
+  const up=e2=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); onUp&&onUp(e2); if(moved){ persist(); renderAll(); } };
   document.addEventListener('pointermove',move);
   document.addEventListener('pointerup',up);
+}
+function paintSel(){
+  canvas.querySelectorAll('.node.sel,.gbox.sel,.ftext.sel').forEach(e=>e.classList.remove('sel'));
+  if(sel){
+    const q={node:'.node',box:'.gbox',text:'.ftext'}[sel.kind];
+    if(q){ const el=canvas.querySelector(`${q}[data-id="${sel.id}"]`); if(el) el.classList.add('sel'); }
+  }
+  renderProps();
 }
 
 canvas.addEventListener('pointerdown', ev=>{
@@ -794,7 +824,6 @@ canvas.addEventListener('pointerdown', ev=>{
   if(t.classList&&t.classList.contains('ah')){
     ev.preventDefault();
     const a=state.arrows.find(x=>x.id===+t.dataset.arrow), end=t.dataset.end;
-    pushUndo();
     dragSession(e2=>{ const p=canvasPoint(e2); a['x'+end]=gsnap(p.x); a['y'+end]=gsnap(p.y); renderEdges(); });
     return;
   }
@@ -814,7 +843,7 @@ canvas.addEventListener('pointerdown', ev=>{
   if(t.classList&&t.classList.contains('bres') && boxEl){
     ev.preventDefault();
     const b=state.boxes.find(x=>x.id===+boxEl.dataset.id);
-    pushUndo(); sel={kind:'box',id:b.id};
+    sel={kind:'box',id:b.id}; paintSel();
     dragSession(e2=>{ const p=canvasPoint(e2); b.w=Math.max(140,gsnap(p.x-b.x)); b.h=Math.max(90,gsnap(p.y-b.y)); boxEl.style.width=b.w+'px'; boxEl.style.height=b.h+'px'; });
     return;
   }
@@ -823,7 +852,7 @@ canvas.addEventListener('pointerdown', ev=>{
     const n=state.nodes.find(x=>x.id===+nodeEl.dataset.id);
     if(t.classList&&t.classList.contains('nres')){
       ev.preventDefault();
-      pushUndo(); sel={kind:'node',id:n.id};
+      sel={kind:'node',id:n.id}; paintSel();
       const sx=ev.clientX, s0=n.s||1;
       dragSession(e2=>{
         n.s=Math.max(0.6,Math.min(2.2,Math.round((s0+(e2.clientX-sx)/zoom/110)*20)/20));
@@ -842,7 +871,6 @@ canvas.addEventListener('pointerdown', ev=>{
     }
     ev.preventDefault();
     sel={kind:'node',id:n.id};
-    pushUndo();
     const sx=ev.clientX,sy=ev.clientY,nx0=n.x,ny0=n.y;
     dragSession(e2=>{
       n.x=Math.max(0,Math.min(2200-nodeW(n),gsnap(nx0+(e2.clientX-sx)/zoom)));
@@ -850,20 +878,18 @@ canvas.addEventListener('pointerdown', ev=>{
       nodeEl.style.left=n.x+'px'; nodeEl.style.top=n.y+'px';
       renderEdges();
     });
-    renderAll0nly(nodeEl,n); return;
+    paintSel(); return;
   }
   /* texto */
   if(textEl){
     ev.preventDefault();
     const tx=state.texts.find(x=>x.id===+textEl.dataset.id);
-    sel={kind:'text',id:tx.id};
+    sel={kind:'text',id:tx.id}; paintSel();
     if(t.classList&&t.classList.contains('tres')){
-      pushUndo();
       const sx=ev.clientX, w0=tx.w||200;
       dragSession(e2=>{ tx.w=Math.max(90,Math.min(600,Math.round(w0+(e2.clientX-sx)/zoom))); textEl.style.width=tx.w+'px'; });
       return;
     }
-    pushUndo();
     const sx=ev.clientX,sy=ev.clientY,x0=tx.x,y0=tx.y;
     dragSession(e2=>{ tx.x=gsnap(x0+(e2.clientX-sx)/zoom); tx.y=gsnap(y0+(e2.clientY-sy)/zoom); textEl.style.left=tx.x+'px'; textEl.style.top=tx.y+'px'; });
     return;
@@ -872,8 +898,7 @@ canvas.addEventListener('pointerdown', ev=>{
   if(boxEl){
     ev.preventDefault();
     const b=state.boxes.find(x=>x.id===+boxEl.dataset.id);
-    sel={kind:'box',id:b.id};
-    pushUndo();
+    sel={kind:'box',id:b.id}; paintSel();
     const inside=state.nodes.filter(n=>{ const c=centerOf(n); return c.x>=b.x&&c.x<=b.x+b.w&&c.y>=b.y&&c.y<=b.y+b.h; })
       .map(n=>({n,x0:n.x,y0:n.y}));
     const insideTx=state.texts.filter(tx=>tx.x>=b.x&&tx.x<=b.x+b.w&&tx.y>=b.y&&tx.y<=b.y+b.h)
@@ -963,12 +988,15 @@ function normalizeSpec(spec){
   for(const n of spec.nodes||[]){
     const t=TYPE_INDEX[n.type]?n.type:'api';
     const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,42),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
+    if(n.color&&/^#[0-9a-fA-F]{6}$/.test(n.color)) nn.color=n.color;
     idMap[String(n.id??st.seq)]=nn.id;
     st.nodes.push(nn);
   }
   for(const e of spec.edges||[]){
     const f=idMap[String(e.from)], t=idMap[String(e.to)];
-    if(f&&t) st.edges.push({id:++st.seq,from:f,to:t,label:(e.label||'').slice(0,40),dash:!!e.dash,heads:['end','both','none'].includes(e.heads)?e.heads:'end',w:Math.max(1,Math.min(6,e.w||2))});
+    if(f&&t){ const ne={id:++st.seq,from:f,to:t,label:(e.label||'').slice(0,40),dash:!!e.dash,heads:['end','both','none'].includes(e.heads)?e.heads:'end',w:Math.max(1,Math.min(6,e.w||2))};
+      if(e.color&&/^#[0-9a-fA-F]{6}$/.test(e.color)) ne.color=e.color;
+      st.edges.push(ne); }
   }
   if(st.nodes.some(n=>n.x==null||n.y==null)) autoLayout(st);
   for(const bd of boxDefs){
@@ -1154,6 +1182,7 @@ function buildSvg(fontCss){
   const title=svgEscape(document.getElementById('diagTitle').value||'Arquitetura');
   let s=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${curFont().css.replace(/\x27/g,"&#39;")}">`;
   s+=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${P.edge}"/></marker>
+  <marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>
   <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M 28 0 L 0 0 0 28" fill="none" stroke="${P.grid}" stroke-width="1"/></pattern>${fontCss||''}</defs>`;
   s+=`<rect width="${W}" height="${H}" fill="${P.bg}"/><rect width="${W}" height="${H}" fill="url(#grid)"/>`;
   s+=`<text x="28" y="42" font-size="24" font-weight="700" fill="${P.ink}">${title}</text>`;
@@ -1167,9 +1196,10 @@ function buildSvg(fontCss){
   /* conexões + setas livres */
   const lineSvg=(x1,y1,x2,y2,o)=>{
     const dash=o.dash?` stroke-dasharray="8 6"`:'';
-    const me=(o.heads==='end'||o.heads==='both')?` marker-end="url(#ar)"`:'';
-    const ms=o.heads==='both'?` marker-start="url(#ar)"`:'';
-    let out=`<path d="M ${x1} ${y1} L ${x2} ${y2}" stroke="${P.edge}" stroke-width="${o.w||2}" fill="none"${dash}${me}${ms}/>`;
+    const mk=o.color?'url(#arC)':'url(#ar)';
+    const me=(o.heads==='end'||o.heads==='both')?` marker-end="${mk}"`:'';
+    const ms=o.heads==='both'?` marker-start="${mk}"`:'';
+    let out=`<path d="M ${x1} ${y1} L ${x2} ${y2}" stroke="${o.color||P.edge}" stroke-width="${o.w||2}" fill="none"${dash}${me}${ms}/>`;
     if(o.label) out+=`<text x="${(x1+x2)/2}" y="${(y1+y2)/2-8}" font-size="11" fill="${P.ink}" text-anchor="middle" paint-order="stroke" stroke="${P.bg}" stroke-width="4">${svgEscape(o.label)}</text>`;
     return out;
   };
@@ -1184,7 +1214,7 @@ function buildSvg(fontCss){
   /* nós */
   for(const n of state.nodes){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
-    const col=catColor(def.color), sc=n.s||1, ic=n.st==='icon';
+    const col=n.color||catColor(def.color), sc=n.s||1, ic=n.st==='icon';
     const x=n.x+ox, y=n.y+oy, w=nodeW(n), h=nodeH(n), cx=x+w/2;
     if(ic){
       /* modo só ícone: sem cartão — ícone grande + nome, fiel ao canvas */
@@ -1454,10 +1484,10 @@ Se x/y forem omitidos, o auto-layout organiza o fluxo da esquerda para a direita
   "name": "Título do diagrama",
   "boxes": [ { "id": "aws", "label": "AWS us-east-1", "color": "#ff9900" } ],
   "nodes": [
-    { "id": "api1", "type": "api", "label": "API Pedidos", "box": "aws", "s": 1, "style": "card|icon" }
+    { "id": "api1", "type": "api", "label": "API Pedidos", "box": "aws", "s": 1, "style": "card|icon", "color": "#a679ff" }
   ],
   "edges": [
-    { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end|both|none", "w": 2 }
+    { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end|both|none", "w": 2, "color": "#f87171" }
   ],
   "texts": [ { "text": "Anotação livre", "size": 14, "bold": true, "italic": false, "color": "#f87171", "align": "left|center|right", "frame": true, "w": 220, "bg": "#a679ff" } ]
 }
