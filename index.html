@@ -119,6 +119,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 
 .ftext{position:absolute;z-index:3;font-family:var(--sans);color:var(--ink);cursor:grab;user-select:none;touch-action:none;white-space:pre-wrap;max-width:420px;line-height:1.35}
 .ftext.sel{outline:1.5px dashed var(--accent);outline-offset:4px}
+.editing{outline:1.5px solid var(--accent)!important;outline-offset:3px;border-radius:4px;cursor:text!important;user-select:text!important;-webkit-user-select:text!important;white-space:pre-wrap;min-width:24px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.editing:focus{outline:1.5px solid var(--accent)}
 
 .node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:11px;text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
 .node:active{cursor:grabbing}
@@ -220,7 +222,7 @@ body.clean .layout{height:100vh}
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"></div>
 <div style="display:none">
 </div>
-<div class="hintbar"><span class="hint">Clique seleciona (barra de propriedades aparece) · arraste para mover · pontinho roxo conecta · caixas carregam o que está dentro · duplo-clique renomeia · Delete apaga a seleção · Ctrl+Z desfaz · Ctrl+scroll = zoom</span></div>
+<div class="hintbar"><span class="hint">Clique seleciona (barra de propriedades aparece) · arraste para mover · pontinho roxo conecta · caixas carregam o que está dentro · duplo-clique edita o texto no lugar (Enter confirma, Esc cancela) · Delete apaga a seleção · Ctrl+Z desfaz · Ctrl+scroll = zoom</span></div>
 <div class="propsbar" id="propsBar"></div>
 <div class="layout">
   <div class="palette">
@@ -520,11 +522,10 @@ function addArrow(){
 function addText(){
   pushUndo();
   const c=viewCenter();
-  const txt = prompt('Texto da anotação:', 'Anotação');
-  if(txt===null) { undoStack.pop(); return; }
-  state.texts.push({ id:++state.seq, x:gsnap(c.x-60), y:gsnap(c.y-10), text:txt||'...', size:14 });
+  state.texts.push({ id:++state.seq, x:gsnap(c.x-60), y:gsnap(c.y-10), text:'Texto', size:14 });
   sel={kind:'text',id:state.seq};
   persist(); renderAll();
+  editText(state.seq, true);
 }
 function clearCanvas(){ state={seq:0,nodes:[],edges:[],boxes:[],arrows:[],texts:[]}; sel=null; connSrc=null; persist(); renderAll(); }
 function setMode(m){
@@ -558,7 +559,7 @@ function renderAll(){
   for(const t of state.texts){
     const el=document.createElement('div');
     el.className='ftext'+(sel&&sel.kind==='text'&&sel.id===t.id?' sel':'');
-    el.style.cssText=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px`;
+    el.style.cssText=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}`;
     el.dataset.id=t.id;
     el.textContent=t.text;
     el.addEventListener('dblclick',()=>editText(t.id));
@@ -663,9 +664,14 @@ function renderProps(){
       ${sel.kind==='arrow'?'<span class="props-label" style="color:var(--dim)">arraste as bolinhas das pontas para posicionar/esticar</span>':''}`;
   } else if(sel.kind==='text'){
     html=`<span class="props-label">T texto</span>
+      <button class="pbtn ${o.b?'on':''}" style="font-weight:700" onclick="propTextBold()">B</button>
+      <button class="pbtn ${o.it?'on':''}" style="font-style:italic" onclick="propTextItalic()">I</button>
       <button class="pbtn" onclick="propTextSize(-2)">A−</button>
       <button class="pbtn" onclick="propTextSize(2)">A+</button>
-      <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>`;
+      <button class="pbtn" onclick="propTextColor()" style="color:${o.color||'var(--ink)'};border-color:${o.color||'var(--border)'}">● cor</button>
+      <button class="pbtn" onclick="propTextAlign()">${({left:'⯇ esquerda',center:'↔ centro',right:'⯈ direita'})[o.align||'left']}</button>
+      <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
+      <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar</span>`;
   }
   html+=`<button class="pbtn danger" onclick="delSel()">🗑 excluir</button>
     <button class="pbtn" onclick="sel=null;renderAll()">fechar</button>`;
@@ -680,6 +686,11 @@ function propCycleHeads(){ const o=selRef(); if(!o)return; pushUndo(); const ord
 function propWidth(d){ const o=selRef(); if(!o)return; pushUndo(); o.w=Math.max(1,Math.min(6,(o.w||2)+d)); persist(); renderAll(); }
 function propEdgeLabel(){ const o=selRef(); if(!o)return; const t=prompt('Rótulo da seta (vazio remove):', o.label||''); if(t===null)return; pushUndo(); o.label=t.trim().slice(0,40); persist(); renderAll(); }
 function propTextSize(d){ const o=selRef(); if(!o)return; pushUndo(); o.size=Math.max(10,Math.min(34,(o.size||14)+d)); persist(); renderAll(); }
+const TEXT_COLORS=[null,'#a679ff','#ff9900','#7c9eff','#22d3ee','#4ade80','#f472b6','#f87171','#8f94ad'];
+function propTextBold(){ const o=selRef(); if(!o)return; pushUndo(); o.b=!o.b; if(!o.b) delete o.b; persist(); renderAll(); }
+function propTextItalic(){ const o=selRef(); if(!o)return; pushUndo(); o.it=!o.it; if(!o.it) delete o.it; persist(); renderAll(); }
+function propTextColor(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXT_COLORS[(TEXT_COLORS.indexOf(o.color||null)+1)%TEXT_COLORS.length]; if(nx) o.color=nx; else delete o.color; persist(); renderAll(); }
+function propTextAlign(){ const o=selRef(); if(!o)return; pushUndo(); const order=['left','center','right']; const nx=order[(order.indexOf(o.align||'left')+1)%3]; if(nx==='left') delete o.align; else o.align=nx; persist(); renderAll(); }
 function delSel(){
   const o=selRef(); if(!o)return;
   pushUndo();
@@ -690,9 +701,60 @@ function delSel(){
   else if(sel.kind==='text') state.texts=state.texts.filter(t=>t.id!==o.id);
   sel=null; persist(); renderAll();
 }
-function renameNode(id){ const n=state.nodes.find(x=>x.id===id); const v=prompt('Nome deste componente:',n.label); if(v!==null&&v.trim()){ pushUndo(); n.label=v.trim().slice(0,42); persist(); renderAll(); } }
-function renameBox(id){ const b=state.boxes.find(x=>x.id===id); const v=prompt('Nome da seção:',b.label); if(v!==null&&v.trim()){ pushUndo(); b.label=v.trim().slice(0,40); persist(); renderAll(); } }
-function editText(id){ const t=state.texts.find(x=>x.id===id); const v=prompt('Texto:',t.text); if(v!==null&&v.trim()){ pushUndo(); t.text=v.trim().slice(0,300); persist(); renderAll(); } }
+/* ============ EDIÇÃO INLINE (duplo-clique edita no lugar) ============ */
+let editingNow=false;
+function beginInline(el, text, opts, onCommit){
+  if(editingNow||!el) return; editingNow=true;
+  el.textContent=text;
+  el.setAttribute('contenteditable','plaintext-only');
+  if(!el.isContentEditable) el.setAttribute('contenteditable','true');
+  el.classList.add('editing');
+  el.focus();
+  const r=document.createRange(); r.selectNodeContents(el);
+  const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+  let done=false;
+  const finish=commit=>{
+    if(done) return; done=true; editingNow=false;
+    const val=(el.innerText||'').replace(/\u00a0/g,' ');
+    el.removeAttribute('contenteditable'); el.classList.remove('editing');
+    el.removeEventListener('blur',onBlur); el.removeEventListener('keydown',onKey);
+    onCommit(commit?val:null);
+  };
+  const onBlur=()=>finish(true);
+  const onKey=ev=>{
+    ev.stopPropagation();
+    if(ev.key==='Escape'){ ev.preventDefault(); finish(false); }
+    else if(ev.key==='Enter'&&!opts.multiline){ ev.preventDefault(); finish(true); }
+  };
+  el.addEventListener('blur',onBlur);
+  el.addEventListener('keydown',onKey);
+}
+function renameNode(id){
+  const n=state.nodes.find(x=>x.id===id); if(!n) return;
+  beginInline(canvas.querySelector(`.node[data-id="${id}"] .nname`), n.label, {}, v=>{
+    if(v!==null){ v=v.trim().replace(/\s+/g,' ').slice(0,42); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
+    renderAll();
+  });
+}
+function renameBox(id){
+  const b=state.boxes.find(x=>x.id===id); if(!b) return;
+  beginInline(canvas.querySelector(`.gbox[data-id="${id}"] .gtitle`), b.label, {}, v=>{
+    if(v!==null){ v=v.trim().replace(/\s+/g,' ').slice(0,40); if(v&&v!==b.label){ pushUndo(); b.label=v; persist(); } }
+    renderAll();
+  });
+}
+function editText(id, isNew){
+  const t=state.texts.find(x=>x.id===id); if(!t) return;
+  sel={kind:'text',id}; renderProps();
+  beginInline(canvas.querySelector(`.ftext[data-id="${id}"]`), t.text, {multiline:true}, v=>{
+    if(v!==null){
+      v=v.replace(/\n{3,}/g,'\n\n').trim().slice(0,300);
+      if(!v && isNew){ state.texts=state.texts.filter(x=>x.id!==id); sel=null; }
+      else if(v && v!==t.text){ pushUndo(); t.text=v; }
+    } else if(isNew){ state.texts=state.texts.filter(x=>x.id!==id); sel=null; }
+    persist(); renderAll();
+  });
+}
 
 /* ============ INTERAÇÃO ============ */
 function canvasPoint(ev){ const r=canvas.getBoundingClientRect(); return {x:(ev.clientX-r.left)/zoom,y:(ev.clientY-r.top)/zoom}; }
@@ -705,6 +767,7 @@ function dragSession(onMove,onUp){
 
 canvas.addEventListener('pointerdown', ev=>{
   const t=ev.target;
+  if(t.isContentEditable||(t.closest&&t.closest('.editing'))) return;
   /* alça de ponta de seta livre */
   if(t.classList&&t.classList.contains('ah')){
     ev.preventDefault();
@@ -843,7 +906,7 @@ function startLink(fromId, ev){
   document.addEventListener('pointerup',up);
 }
 document.addEventListener('keydown', ev=>{
-  if(ev.target.tagName==='INPUT'||ev.target.tagName==='TEXTAREA') return;
+  if(ev.target.tagName==='INPUT'||ev.target.tagName==='TEXTAREA'||ev.target.isContentEditable) return;
   if(ev.key==='Delete'||ev.key==='Backspace'){ if(sel){ ev.preventDefault(); delSel(); } }
   if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='z'){ ev.preventDefault(); undo(); }
   if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='y'){ ev.preventDefault(); redo(); }
@@ -890,7 +953,12 @@ function normalizeSpec(spec){
   const maxY = st.nodes.length ? Math.max(...st.nodes.map(n=>n.y+nodeH(n))) : 200;
   let ty = maxY+70;
   for(const tx of spec.texts||[]){
-    st.texts.push({id:++st.seq, x:tx.x??130, y:tx.y??(ty+=30)-30===ty-30?ty:ty, text:(tx.text||'').slice(0,300), size:Math.max(10,Math.min(34,tx.size||14))});
+    const t={id:++st.seq, x:tx.x??130, y:(tx.y!=null?tx.y:ty), text:(tx.text||'').slice(0,300), size:Math.max(10,Math.min(34,tx.size||14))};
+    if(tx.bold) t.b=true;
+    if(tx.italic) t.it=true;
+    if(tx.color&&/^#[0-9a-fA-F]{6}$/.test(tx.color)) t.color=tx.color;
+    if(tx.align==='center'||tx.align==='right') t.align=tx.align;
+    st.texts.push(t);
     if(tx.y==null) ty+= (tx.size||14)*1.6+10;
   }
   for(const n of st.nodes) delete n._box;
@@ -1091,7 +1159,13 @@ function buildSvg(fontCss){
   /* textos livres */
   for(const t of state.texts){
     const lines=t.text.split('\n');
-    lines.forEach((ln,i)=>{ s+=`<text x="${t.x+ox}" y="${t.y+oy+t.size*(i+0.9)}" font-size="${t.size}" fill="${P.ink}">${svgEscape(ln)}</text>`; });
+    const fill=t.color||P.ink;
+    const extra=(t.b?' font-weight="700"':'')+(t.it?' font-style="italic"':'');
+    const est=Math.max(...lines.map(l=>l.length))*t.size*0.55;
+    let ax=t.x+ox, anchor='';
+    if(t.align==='center'){ ax+=est/2; anchor=' text-anchor="middle"'; }
+    else if(t.align==='right'){ ax+=est; anchor=' text-anchor="end"'; }
+    lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+t.size*(i+0.9)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
   }
   s+='</svg>';
   return {svg:s,W,H};
@@ -1331,7 +1405,7 @@ Se x/y forem omitidos, o auto-layout organiza o fluxo da esquerda para a direita
   "edges": [
     { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end|both|none", "w": 2 }
   ],
-  "texts": [ { "text": "Anotação livre", "size": 14 } ]
+  "texts": [ { "text": "Anotação livre", "size": 14, "bold": true, "italic": false, "color": "#f87171", "align": "left|center|right" } ]
 }
 
 TIPOS DE COMPONENTE (campo "type"):

@@ -59,7 +59,7 @@ Aumente `--window-size` para diagramas grandes. **Sempre leia o PNG gerado** ant
   "edges": [
     { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end" }
   ],
-  "texts": [ { "text": "Decisão arquitetural importante em uma frase." } ]
+  "texts": [ { "text": "Decisão arquitetural importante em uma frase.", "size": 14, "bold": false, "italic": false, "color": "#f87171", "align": "left" } ]
 }
 ```
 

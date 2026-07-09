@@ -90,6 +90,10 @@
         "properties": {
           "text": { "type": "string", "maxLength": 300 },
           "size": { "type": "number", "minimum": 10, "maximum": 34, "default": 14 },
+          "bold": { "type": "boolean", "default": false },
+          "italic": { "type": "boolean", "default": false },
+          "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional hex color; defaults to the theme ink color." },
+          "align": { "type": "string", "enum": ["left", "center", "right"], "default": "left" },
           "x": { "type": "number" },
           "y": { "type": "number" }
         }
