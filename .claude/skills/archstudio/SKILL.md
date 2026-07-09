@@ -70,7 +70,7 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 - **`boxes`** para agrupar por ambiente/domínio (AWS, on-premise, "processamento assíncrono"...). Nós entram com `"box": "<id>"`.
 - **`dash: true`** para caminhos assíncronos, de fallback ou de observabilidade.
 - **Labels de edge curtos** — protocolo ou ação: `"SQL"`, `"publica"`, `"202 Accepted"`, `"fallback"`.
-- **`texts`** para as 1–3 decisões que justificam o desenho (idempotência, ordem por chave, TTL...).
+- **`texts`** para as 1–3 decisões que justificam o desenho (idempotência, ordem por chave, TTL...). Cada texto aceita `bold`, `italic`, `color` (hex), `align` (left/center/right) — use para destacar a decisão crítica. Para um destaque em bloco, use `"frame": true` (vira uma caixa de texto com fundo/borda), com `w` (largura) e `bg` (cor de fundo, hex) opcionais.
 - Cores de box: AWS `#ff9900`, on-prem `#9aa3b5`, novo/nuvem `#4ade80`, crítico `#f87171`, padrão `#a679ff`.
 
 ### Tipos de componente (campo `type`)

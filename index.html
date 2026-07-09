@@ -121,6 +121,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .ftext.sel{outline:1.5px dashed var(--accent);outline-offset:4px}
 .editing{outline:1.5px solid var(--accent)!important;outline-offset:3px;border-radius:4px;cursor:text!important;user-select:text!important;-webkit-user-select:text!important;white-space:pre-wrap;min-width:24px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .editing:focus{outline:1.5px solid var(--accent)}
+.ftext.frame{border:1px solid var(--border);border-radius:10px;padding:9px 13px;box-shadow:0 2px 12px var(--shadow);overflow-wrap:break-word;max-width:none}
+.ftext.frame.editing{background:var(--nodebg)!important}
+.ftext .tres{position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;border-radius:4px;background:var(--accent);border:2px solid var(--bg);cursor:nwse-resize;display:none;z-index:6}
+.ftext.frame.sel .tres{display:block}
 
 .node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:11px;text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
 .node:active{cursor:grabbing}
@@ -185,7 +189,8 @@ body.clean .layout{height:100vh}
   <span class="tb-sep"></span>
   <button class="tool-btn" onclick="addBox()">▭ Caixa</button>
   <button class="tool-btn" onclick="addArrow()">↗ Seta</button>
-  <button class="tool-btn" onclick="addText()">T Texto</button>
+  <button class="tool-btn" onclick="addText()" title="anotação de texto solta">T Texto</button>
+  <button class="tool-btn" onclick="addTextBox()" title="caixa de texto com fundo e borda">▭ Cx. texto</button>
   <span class="tb-sep"></span>
   <button class="tool-btn icon" onclick="undo()" title="Desfazer (Ctrl+Z)">↩</button>
   <button class="tool-btn icon" onclick="redo()" title="Refazer (Ctrl+Y)">↪</button>
@@ -527,6 +532,14 @@ function addText(){
   persist(); renderAll();
   editText(state.seq, true);
 }
+function addTextBox(){
+  pushUndo();
+  const c=viewCenter();
+  state.texts.push({ id:++state.seq, x:gsnap(c.x-100), y:gsnap(c.y-26), text:'Caixa de texto', size:14, frame:true, w:200 });
+  sel={kind:'text',id:state.seq};
+  persist(); renderAll();
+  editText(state.seq, true);
+}
 function clearCanvas(){ state={seq:0,nodes:[],edges:[],boxes:[],arrows:[],texts:[]}; sel=null; connSrc=null; persist(); renderAll(); }
 function setMode(m){
   mode=m; connSrc=null;
@@ -558,10 +571,14 @@ function renderAll(){
   }
   for(const t of state.texts){
     const el=document.createElement('div');
-    el.className='ftext'+(sel&&sel.kind==='text'&&sel.id===t.id?' sel':'');
-    el.style.cssText=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}`;
+    const fr=!!t.frame;
+    el.className='ftext'+(fr?' frame':'')+(sel&&sel.kind==='text'&&sel.id===t.id?' sel':'');
+    let css=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}`;
+    if(fr) css+=`;width:${t.w||200}px;background:${t.bg?t.bg+'22':'var(--nodebg)'};border-color:${t.bg||'var(--border)'}`;
+    el.style.cssText=css;
     el.dataset.id=t.id;
     el.textContent=t.text;
+    if(fr){ const h=document.createElement('span'); h.className='tres'; h.title='arraste para redimensionar a largura'; el.appendChild(h); }
     el.addEventListener('dblclick',()=>editText(t.id));
     canvas.appendChild(el);
   }
@@ -663,15 +680,17 @@ function renderProps(){
       <button class="pbtn ${o.label?'on':''}" onclick="propEdgeLabel()">✎ rótulo</button>
       ${sel.kind==='arrow'?'<span class="props-label" style="color:var(--dim)">arraste as bolinhas das pontas para posicionar/esticar</span>':''}`;
   } else if(sel.kind==='text'){
-    html=`<span class="props-label">T texto</span>
+    html=`<span class="props-label">${o.frame?'▭ caixa de texto':'T texto'}</span>
       <button class="pbtn ${o.b?'on':''}" style="font-weight:700" onclick="propTextBold()">B</button>
       <button class="pbtn ${o.it?'on':''}" style="font-style:italic" onclick="propTextItalic()">I</button>
       <button class="pbtn" onclick="propTextSize(-2)">A−</button>
       <button class="pbtn" onclick="propTextSize(2)">A+</button>
       <button class="pbtn" onclick="propTextColor()" style="color:${o.color||'var(--ink)'};border-color:${o.color||'var(--border)'}">● cor</button>
       <button class="pbtn" onclick="propTextAlign()">${({left:'⯇ esquerda',center:'↔ centro',right:'⯈ direita'})[o.align||'left']}</button>
+      <button class="pbtn ${o.frame?'on':''}" onclick="propTextFrame()" title="fundo e borda">▭ moldura</button>
+      ${o.frame?`<button class="pbtn" onclick="propTextBg()" style="border-color:${o.bg||'var(--border)'};color:${o.bg||'var(--ink)'}">▧ fundo</button>`:''}
       <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
-      <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar</span>`;
+      <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
   }
   html+=`<button class="pbtn danger" onclick="delSel()">🗑 excluir</button>
     <button class="pbtn" onclick="sel=null;renderAll()">fechar</button>`;
@@ -691,6 +710,9 @@ function propTextBold(){ const o=selRef(); if(!o)return; pushUndo(); o.b=!o.b; i
 function propTextItalic(){ const o=selRef(); if(!o)return; pushUndo(); o.it=!o.it; if(!o.it) delete o.it; persist(); renderAll(); }
 function propTextColor(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXT_COLORS[(TEXT_COLORS.indexOf(o.color||null)+1)%TEXT_COLORS.length]; if(nx) o.color=nx; else delete o.color; persist(); renderAll(); }
 function propTextAlign(){ const o=selRef(); if(!o)return; pushUndo(); const order=['left','center','right']; const nx=order[(order.indexOf(o.align||'left')+1)%3]; if(nx==='left') delete o.align; else o.align=nx; persist(); renderAll(); }
+function propTextFrame(){ const o=selRef(); if(!o)return; pushUndo(); if(o.frame){ delete o.frame; delete o.w; delete o.bg; } else { o.frame=true; o.w=o.w||200; } persist(); renderAll(); }
+const TEXTBOX_BG=[null,'#a679ff','#ff9900','#7c9eff','#22d3ee','#4ade80','#f472b6','#f87171'];
+function propTextBg(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXTBOX_BG[(TEXTBOX_BG.indexOf(o.bg||null)+1)%TEXTBOX_BG.length]; if(nx) o.bg=nx; else delete o.bg; persist(); renderAll(); }
 function delSel(){
   const o=selRef(); if(!o)return;
   pushUndo();
@@ -835,6 +857,12 @@ canvas.addEventListener('pointerdown', ev=>{
     ev.preventDefault();
     const tx=state.texts.find(x=>x.id===+textEl.dataset.id);
     sel={kind:'text',id:tx.id};
+    if(t.classList&&t.classList.contains('tres')){
+      pushUndo();
+      const sx=ev.clientX, w0=tx.w||200;
+      dragSession(e2=>{ tx.w=Math.max(90,Math.min(600,Math.round(w0+(e2.clientX-sx)/zoom))); textEl.style.width=tx.w+'px'; });
+      return;
+    }
     pushUndo();
     const sx=ev.clientX,sy=ev.clientY,x0=tx.x,y0=tx.y;
     dragSession(e2=>{ tx.x=gsnap(x0+(e2.clientX-sx)/zoom); tx.y=gsnap(y0+(e2.clientY-sy)/zoom); textEl.style.left=tx.x+'px'; textEl.style.top=tx.y+'px'; });
@@ -958,6 +986,7 @@ function normalizeSpec(spec){
     if(tx.italic) t.it=true;
     if(tx.color&&/^#[0-9a-fA-F]{6}$/.test(tx.color)) t.color=tx.color;
     if(tx.align==='center'||tx.align==='right') t.align=tx.align;
+    if(tx.frame){ t.frame=true; t.w=Math.max(90,Math.min(600,tx.w||200)); if(tx.bg&&/^#[0-9a-fA-F]{6}$/.test(tx.bg)) t.bg=tx.bg; }
     st.texts.push(t);
     if(tx.y==null) ty+= (tx.size||14)*1.6+10;
   }
@@ -1021,7 +1050,7 @@ function fitView(){
   const all=[...state.nodes.map(n=>({x:n.x,y:n.y,x2:n.x+nodeW(n),y2:n.y+nodeH(n)})),
              ...state.boxes.map(b=>({x:b.x,y:b.y,x2:b.x+b.w,y2:b.y+b.h})),
              ...state.arrows.map(a=>({x:Math.min(a.x1,a.x2),y:Math.min(a.y1,a.y2),x2:Math.max(a.x1,a.x2),y2:Math.max(a.y1,a.y2)})),
-             ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+220,y2:t.y+30}))];
+             ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+(t.frame?(t.w||200):220),y2:t.y+(t.frame?(9*2+wrapTextLines(t.text,t.w||200,t.size).length*t.size*1.42):30)}))];
   if(!all.length) return;
   const minX=Math.min(...all.map(o=>o.x)), minY=Math.min(...all.map(o=>o.y));
   const w=Math.max(...all.map(o=>o.x2))-minX, h=Math.max(...all.map(o=>o.y2))-minY;
@@ -1093,11 +1122,25 @@ function wrapLabel(s,max){
   if(cur)lines.push(cur);
   return lines.slice(0,2);
 }
+function wrapTextLines(text,boxW,size){
+  const maxChars=Math.max(6,Math.floor((boxW-26)/(size*0.55)));
+  const out=[];
+  for(const para of String(text).split('\n')){
+    if(!para){ out.push(''); continue; }
+    let cur='';
+    for(const w of para.split(' ')){
+      if(cur && (cur+' '+w).length>maxChars){ out.push(cur); cur=w; }
+      else cur=cur?cur+' '+w:w;
+    }
+    out.push(cur);
+  }
+  return out;
+}
 function buildSvg(fontCss){
   const all=[...state.nodes.map(n=>({x:n.x,y:n.y,x2:n.x+nodeW(n),y2:n.y+nodeH(n)})),
              ...state.boxes.map(b=>({x:b.x,y:b.y,x2:b.x+b.w,y2:b.y+b.h})),
              ...state.arrows.map(a=>({x:Math.min(a.x1,a.x2),y:Math.min(a.y1,a.y2),x2:Math.max(a.x1,a.x2),y2:Math.max(a.y1,a.y2)})),
-             ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+220,y2:t.y+30}))];
+             ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+(t.frame?(t.w||200):220),y2:t.y+(t.frame?(9*2+wrapTextLines(t.text,t.w||200,t.size).length*t.size*1.42):30)}))];
   if(!all.length) return null;
   const dark=theme()==='dark';
   const P=dark
@@ -1156,11 +1199,22 @@ function buildSvg(fontCss){
       lines.forEach((ln,i)=>{ s+=`<text x="${cx}" y="${y+(50+i*12)*sc}" font-size="${10.5*sc}" fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`; });
     }
   }
-  /* textos livres */
+  /* textos livres e caixas de texto */
   for(const t of state.texts){
-    const lines=t.text.split('\n');
     const fill=t.color||P.ink;
     const extra=(t.b?' font-weight="700"':'')+(t.it?' font-style="italic"':'');
+    if(t.frame){
+      const bw=t.w||200, padX=13, padY=9, lh=t.size*1.42;
+      const lines=wrapTextLines(t.text, bw, t.size);
+      const bh=padY*2+lines.length*lh;
+      s+=`<rect x="${t.x+ox}" y="${t.y+oy}" width="${bw}" height="${bh}" rx="10" fill="${t.bg||P.node}"${t.bg?' fill-opacity="0.13"':''} stroke="${t.bg||P.border}" stroke-width="1"/>`;
+      let ax=t.x+ox+padX, anchor='';
+      if(t.align==='center'){ ax=t.x+ox+bw/2; anchor=' text-anchor="middle"'; }
+      else if(t.align==='right'){ ax=t.x+ox+bw-padX; anchor=' text-anchor="end"'; }
+      lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+padY+lh*(i+0.72)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
+      continue;
+    }
+    const lines=t.text.split('\n');
     const est=Math.max(...lines.map(l=>l.length))*t.size*0.55;
     let ax=t.x+ox, anchor='';
     if(t.align==='center'){ ax+=est/2; anchor=' text-anchor="middle"'; }
@@ -1405,7 +1459,7 @@ Se x/y forem omitidos, o auto-layout organiza o fluxo da esquerda para a direita
   "edges": [
     { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end|both|none", "w": 2 }
   ],
-  "texts": [ { "text": "Anotação livre", "size": 14, "bold": true, "italic": false, "color": "#f87171", "align": "left|center|right" } ]
+  "texts": [ { "text": "Anotação livre", "size": 14, "bold": true, "italic": false, "color": "#f87171", "align": "left|center|right", "frame": true, "w": 220, "bg": "#a679ff" } ]
 }
 
 TIPOS DE COMPONENTE (campo "type"):
