@@ -41,6 +41,15 @@ app:
   mail-enabled: ${MAIL_ENABLED:false}
   mail-from: ${MAIL_FROM:ArchStudio <no-reply@localhost>}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    mail:
+      enabled: false   # SMTP being unconfigured must not mark the service unhealthy
+
 logging:
   level:
     org.springframework.security: INFO
