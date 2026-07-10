@@ -278,6 +278,32 @@ function loadProjects(){ try{ return JSON.parse(store.get(PKEY)||'[]'); }catch{ 
 function saveProjects(list){ store.set(PKEY, JSON.stringify(list)); }
 function touchProject(id,name){ const l=loadProjects(); const m=l.find(p=>p.id===id); if(m){ if(name!=null) m.name=name; m.savedAt=Date.now(); saveProjects(l); } }
 function emptyState(){ return {seq:0,nodes:[],edges:[],boxes:[],arrows:[],texts:[]}; }
+/* ---- Modo embutido (plataforma ArchStudio): a página-mãe controla o carregar/salvar ---- */
+const EMBED = new URLSearchParams(location.search).get('embed')==='1';
+let suppressEmit=false;
+function postToParent(msg){ try{ if(parent && parent!==window) parent.postMessage(msg, location.origin); }catch(e){} }
+function emitChange(){ if(suppressEmit) return; postToParent({type:'archstudio:change', doc:currentDoc()}); }
+function applyEmbedDoc(doc){ suppressEmit=true; try{ applyDoc(doc); }finally{ suppressEmit=false; } }
+function applyEmbedSpec(spec){
+  suppressEmit=true;
+  try{ state=normalizeSpec(spec); if(spec&&spec.name) document.getElementById('diagTitle').value=spec.name;
+    undoStack.length=0; redoStack.length=0; sel=null; connSrc=null; renderAll(); }
+  finally{ suppressEmit=false; }
+  emitChange();
+}
+function onParentMessage(ev){
+  if(ev.origin!==location.origin) return;
+  const m=ev.data||{};
+  if(m.type==='archstudio:load' && m.doc) applyEmbedDoc(m.doc);
+  else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:currentDoc()});
+  else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec);
+}
+function initEmbed(){
+  document.body.classList.add('embed');
+  state=emptyState(); sel=null; connSrc=null; renderAll();
+  window.addEventListener('message', onParentMessage);
+  postToParent({type:'archstudio:ready'});
+}
 
 const ICONS = {
  user:'<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.4-3.6 4.2-5.3 7.5-5.3s6.1 1.7 7.5 5.3"/>',
@@ -478,7 +504,7 @@ const theme = () => document.body.dataset.theme;
 const catColor = c => (theme()==='light'?CAT_COLORS_L:CAT_COLORS_D)[c]||'#a679ff';
 
 function curDocJson(){ return JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state}); }
-function persist(){ if(!curProj) return; const name=document.getElementById('diagTitle').value; store.set(PPFX+curProj, curDocJson()); touchProject(curProj,name); store.set(CKEY,curProj); }
+function persist(){ if(EMBED){ emitChange(); return; } if(!curProj) return; const name=document.getElementById('diagTitle').value; store.set(PPFX+curProj, curDocJson()); touchProject(curProj,name); store.set(CKEY,curProj); }
 document.getElementById('diagTitle').addEventListener('input', persist);
 function pushUndo(){ undoStack.push(JSON.stringify(state)); if(undoStack.length>60) undoStack.shift(); redoStack.length=0; }
 function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify(state)); state=JSON.parse(undoStack.pop()); sel=null; connSrc=null; persist(); renderAll(); }

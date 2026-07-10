@@ -1,0 +1,7 @@
+.git
+**/node_modules
+**/.next
+**/target
+*.log
+infra/.env
+apps/web/public/canvas/index.html

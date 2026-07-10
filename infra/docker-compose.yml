@@ -1,0 +1,65 @@
+name: archstudio
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: archstudio
+      POSTGRES_USER: archstudio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U archstudio -d archstudio"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [asnet]
+
+  api:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/archstudio
+      SPRING_DATASOURCE_USERNAME: archstudio
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      APP_ENC_KEY: ${APP_ENC_KEY}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+      APP_COOKIE_SECURE: ${APP_COOKIE_SECURE:-true}
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASS: ${MAIL_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-ArchStudio <no-reply@studio.mjolnix.com.br>}
+    ports:
+      - "127.0.0.1:8090:8090"
+    networks: [asnet]
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on: [api]
+    environment:
+      # server-side calls from Next route handlers to the API (same docker net)
+      API_INTERNAL_URL: http://api:8090
+      NEXT_PUBLIC_APP_NAME: ArchStudio
+    ports:
+      - "127.0.0.1:3020:3000"
+    networks: [asnet]
+
+volumes:
+  pgdata:
+
+networks:
+  asnet:
+    driver: bridge
