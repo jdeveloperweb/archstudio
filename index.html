@@ -171,6 +171,14 @@ select.tool-btn{appearance:auto}
 .tpl-card p{font-size:11.5px;color:var(--dim);line-height:1.45;margin:0}
 .tpl-tag{font-family:var(--mono);font-size:9px;color:var(--accent);letter-spacing:.8px}
 pre.schema{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:11px;line-height:1.55;overflow-x:auto;white-space:pre-wrap;color:#c9cde3;margin:8px 0}
+.proj-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.proj-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+.proj-row.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel2))}
+.proj-main{flex:1;min-width:0;cursor:pointer}
+.proj-name{font:600 14px var(--uifont);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj-badge{font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.proj-date{font:400 11px var(--uifont);color:var(--dim);margin-top:2px}
+.proj-actions{display:flex;gap:4px;flex-shrink:0}
 body[data-theme="light"] pre.schema{color:#3a3f58}
 body.clean .topbar,body.clean .hintbar,body.clean .propsbar,body.clean .palette{display:none}
 body.clean .layout{height:100vh}
@@ -186,6 +194,7 @@ body.clean .layout{height:100vh}
 <body data-theme="dark">
 <div class="topbar">
   <div class="logo"><span class="kw">Arch</span>Studio</div>
+  <button class="tool-btn" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)">📁 Projetos</button>
   <input class="title-input" id="diagTitle" placeholder="Nome do diagrama..." value="Minha Arquitetura">
   <div class="seg">
     <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar">✥ Mover</button>
@@ -258,8 +267,17 @@ body.clean .layout{height:100vh}
 const mem = {};
 const store = {
   get(k){ try { return localStorage.getItem(k) ?? mem[k] ?? null; } catch { return mem[k] ?? null; } },
-  set(k,v){ mem[k]=v; try { localStorage.setItem(k,v); } catch {} }
+  set(k,v){ mem[k]=v; try { localStorage.setItem(k,v); } catch {} },
+  remove(k){ delete mem[k]; try { localStorage.removeItem(k); } catch {} }
 };
+/* ---- Projetos (cada navegador é privado; múltiplos diagramas isolados) ---- */
+const PKEY='as_projects', CKEY='as_current', PPFX='as_proj_';
+let curProj=null;
+function newId(){ return 'p'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function loadProjects(){ try{ return JSON.parse(store.get(PKEY)||'[]'); }catch{ return []; } }
+function saveProjects(list){ store.set(PKEY, JSON.stringify(list)); }
+function touchProject(id,name){ const l=loadProjects(); const m=l.find(p=>p.id===id); if(m){ if(name!=null) m.name=name; m.savedAt=Date.now(); saveProjects(l); } }
+function emptyState(){ return {seq:0,nodes:[],edges:[],boxes:[],arrows:[],texts:[]}; }
 
 const ICONS = {
  user:'<circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.4-3.6 4.2-5.3 7.5-5.3s6.1 1.7 7.5 5.3"/>',
@@ -459,7 +477,8 @@ const gsnap = v => snapOn() ? Math.round(v/14)*14 : Math.round(v);
 const theme = () => document.body.dataset.theme;
 const catColor = c => (theme()==='light'?CAT_COLORS_L:CAT_COLORS_D)[c]||'#a679ff';
 
-function persist(){ store.set('as_doc', JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state})); }
+function curDocJson(){ return JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state}); }
+function persist(){ if(!curProj) return; const name=document.getElementById('diagTitle').value; store.set(PPFX+curProj, curDocJson()); touchProject(curProj,name); store.set(CKEY,curProj); }
 document.getElementById('diagTitle').addEventListener('input', persist);
 function pushUndo(){ undoStack.push(JSON.stringify(state)); if(undoStack.length>60) undoStack.shift(); redoStack.length=0; }
 function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify(state)); state=JSON.parse(undoStack.pop()); sel=null; connSrc=null; persist(); renderAll(); }
@@ -1021,11 +1040,106 @@ function normalizeSpec(spec){
   for(const n of st.nodes) delete n._box;
   return st;
 }
+/* ============ PROJETOS (múltiplos diagramas isolados por navegador) ============ */
+function applyDoc(doc){
+  state=(doc && doc.version>=3 && doc.state)?doc.state:emptyState();
+  state.boxes=state.boxes||[]; state.arrows=state.arrows||[]; state.texts=state.texts||[];
+  for(const n of state.nodes){ if(!n.label) n.label=(TYPE_INDEX[n.type]||{n:n.type}).n; if(!n.s) n.s=1; }
+  for(const e of state.edges){ if(!e.id) e.id=++state.seq; }
+  document.getElementById('diagTitle').value=(doc&&doc.name)||'Diagrama';
+  if(doc&&doc.theme&&doc.theme!==theme()) toggleTheme();
+  fontId=(doc&&doc.font&&FONTS.some(f=>f.id===doc.font))?doc.font:fontId;
+  setFont(fontId);
+  undoStack.length=0; redoStack.length=0; sel=null; connSrc=null;
+  renderAll();
+}
+function newProjectRecord(name){
+  const id=newId(); const l=loadProjects();
+  l.unshift({id,name:name||'Novo diagrama',savedAt:Date.now()}); saveProjects(l);
+  curProj=id; store.set(CKEY,id); return id;
+}
+function newProject(name){
+  const nm=name||'Novo diagrama';
+  newProjectRecord(nm);
+  applyDoc({format:'archstudio',version:3,name:nm,theme:theme(),font:fontId,state:emptyState()});
+  persist(); closeModal();
+}
+function openProject(id){
+  const raw=store.get(PPFX+id); if(!raw) return;
+  let doc; try{ doc=JSON.parse(raw); }catch{ return; }
+  curProj=id; store.set(CKEY,id); applyDoc(doc);
+}
+function duplicateProject(id){
+  const raw=store.get(PPFX+id); if(!raw) return;
+  let doc; try{ doc=JSON.parse(raw); }catch{ return; }
+  doc.name=(doc.name||'Diagrama')+' (cópia)';
+  const nid=newProjectRecord(doc.name);
+  store.set(PPFX+nid, JSON.stringify(doc)); applyDoc(doc); openProjectsModal();
+}
+function renameProject(id){
+  const l=loadProjects(); const p=l.find(x=>x.id===id); if(!p) return;
+  const v=prompt('Nome do diagrama:', p.name||''); if(v===null) return;
+  p.name=(v.trim().slice(0,60))||p.name; saveProjects(l);
+  const raw=store.get(PPFX+id); if(raw){ try{ const d=JSON.parse(raw); d.name=p.name; store.set(PPFX+id,JSON.stringify(d)); }catch{} }
+  if(id===curProj) document.getElementById('diagTitle').value=p.name;
+  openProjectsModal();
+}
+function deleteProject(id){
+  const l=loadProjects();
+  if(l.length<=1){ alert('Este é o seu único diagrama — crie outro antes de excluí-lo.'); return; }
+  const p=l.find(x=>x.id===id);
+  if(!confirm('Excluir "'+((p&&p.name)||'diagrama')+'"? Esta ação não pode ser desfeita.')) return;
+  store.remove(PPFX+id);
+  const nl=l.filter(x=>x.id!==id); saveProjects(nl);
+  if(curProj===id) openProject(nl[0].id);
+  openProjectsModal();
+}
+function initProjects(){
+  let l=loadProjects();
+  if(!l.length){
+    const id=newId(); const old=store.get('as_doc');
+    if(old){ store.set(PPFX+id, old); let nm='Meu diagrama'; try{ nm=JSON.parse(old).name||nm; }catch{}; l=[{id,name:nm,savedAt:Date.now()}]; store.remove('as_doc'); }
+    else { store.set(PPFX+id, JSON.stringify({format:'archstudio',version:3,name:'Minha Arquitetura',theme:'dark',font:'system',state:emptyState()})); l=[{id,name:'Minha Arquitetura',savedAt:Date.now()}]; }
+    saveProjects(l); curProj=id; store.set(CKEY,id);
+  } else {
+    curProj=store.get(CKEY);
+    if(!curProj || !l.find(p=>p.id===curProj)) curProj=l[0].id;
+  }
+  const raw=store.get(PPFX+curProj);
+  if(raw){ try{ applyDoc(JSON.parse(raw)); }catch{} }
+}
+function fmtDate(ts){ if(!ts) return ''; try{ return new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch{ return ''; } }
+function openProjectsModal(){
+  const list=loadProjects().slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  const rows=list.map(p=>{
+    const active=p.id===curProj;
+    return `<div class="proj-row${active?' active':''}">
+      <div class="proj-main" onclick="openProject('${p.id}');closeModal()" title="abrir este diagrama">
+        <div class="proj-name">${escapeHtml(p.name||'Sem nome')}${active?' <span class="proj-badge">atual</span>':''}</div>
+        <div class="proj-date">editado ${fmtDate(p.savedAt)}</div>
+      </div>
+      <div class="proj-actions">
+        <button class="pbtn" onclick="renameProject('${p.id}')" title="renomear">✎</button>
+        <button class="pbtn" onclick="duplicateProject('${p.id}')" title="duplicar">⧉</button>
+        <button class="pbtn danger" onclick="deleteProject('${p.id}')" title="excluir">🗑</button>
+      </div></div>`;
+  }).join('');
+  const m=document.getElementById('modal');
+  m.innerHTML=`<div class="mcard">
+    <button class="pbtn" style="float:right" onclick="closeModal()">✕ fechar</button>
+    <h2>📁 Meus diagramas</h2>
+    <div class="sub">Cada diagrama é um espaço separado, salvo só neste navegador — ninguém mais vê os seus. Crie quantos quiser.</div>
+    <button class="pbtn" style="margin:16px 0;background:var(--accent);color:#fff;border:none;font-weight:600;padding:9px 16px" onclick="newProject()">＋ Novo diagrama</button>
+    <div class="proj-list">${rows}</div></div>`;
+  m.classList.add('show'); m.scrollTop=0;
+}
 function loadSpec(spec, name){
-  pushUndo();
-  state = normalizeSpec(spec);
-  if(name||spec.name) document.getElementById('diagTitle').value = name||spec.name;
-  sel=null; connSrc=null; persist(); renderAll();
+  const st=normalizeSpec(spec);
+  const nm=name||spec.name||'Diagrama';
+  newProjectRecord(nm);
+  state=st; document.getElementById('diagTitle').value=nm;
+  undoStack.length=0; redoStack.length=0; sel=null; connSrc=null;
+  persist(); renderAll();
 }
 
 /* ============ LINK COMPARTILHÁVEL (URL) ============ */
@@ -1058,19 +1172,9 @@ async function shareLink(btn){
     if(btn){ const t=btn.textContent; btn.textContent='✓ copiado!'; setTimeout(()=>btn.textContent=t,1600); }
   }catch{ prompt('Copie o link:', url); }
 }
+function importDoc(doc){ newProjectRecord(doc.name||'Diagrama importado'); applyDoc(doc); persist(); }
 function loadDoc(doc){
-  if(doc && doc.format==='archstudio' && doc.version>=3 && doc.state){
-    pushUndo();
-    state=doc.state;
-    state.boxes=state.boxes||[]; state.arrows=state.arrows||[]; state.texts=state.texts||[];
-    for(const n of state.nodes){ if(!n.label) n.label=(TYPE_INDEX[n.type]||{n:n.type}).n; if(!n.s) n.s=1; }
-    for(const e of state.edges){ if(!e.id) e.id=++state.seq; }
-    if(doc.name) document.getElementById('diagTitle').value=doc.name;
-    if(doc.theme && doc.theme!==theme()) toggleTheme();
-    if(doc.font && FONTS.some(f=>f.id===doc.font)) setFont(doc.font);
-    sel=null; connSrc=null; persist(); renderAll();
-    return true;
-  }
+  if(doc && doc.format==='archstudio' && doc.version>=3 && doc.state){ importDoc(doc); return true; }
   if(doc && Array.isArray(doc.nodes)){ loadSpec(doc); return true; }
   return false;
 }
@@ -1127,15 +1231,12 @@ document.getElementById('fileInput').addEventListener('change', ev=>{
         if(Array.isArray(doc.nodes)){ loadSpec(doc); ev.target.value=''; return; }
         throw 0;
       }
-      pushUndo();
-      if(doc.version>=3 && doc.state){ state=doc.state; }
-      else { state={seq:doc.seq||0,nodes:doc.nodes||[],edges:(doc.edges||[]).map(e=>({id:++state.seq,dash:false,heads:'end',w:2,label:'',...e})),boxes:[],arrows:[],texts:[]}; }
-      state.boxes=state.boxes||[]; state.arrows=state.arrows||[]; state.texts=state.texts||[];
-      for(const n of state.nodes){ if(!n.label) n.label=(TYPE_INDEX[n.type]||{n:n.type}).n; if(!n.s) n.s=1; }
-      for(const e of state.edges){ if(!e.id) e.id=++state.seq; }
-      document.getElementById('diagTitle').value=doc.name||'Diagrama carregado';
-      if(doc.theme&&doc.theme!==theme()) toggleTheme();
-      sel=null; persist(); renderAll();
+      if(doc.version>=3 && doc.state){ importDoc(doc); }
+      else {
+        const st={seq:doc.seq||0,nodes:doc.nodes||[],edges:(doc.edges||[]).map((e,i)=>({id:(doc.seq||0)+i+1,dash:false,heads:'end',w:2,label:'',...e})),boxes:[],arrows:[],texts:[]};
+        st.seq=(doc.seq||0)+(doc.edges||[]).length+1;
+        importDoc({format:'archstudio',version:3,name:doc.name||'Diagrama carregado',theme:doc.theme,state:st});
+      }
     }catch{ alert('Arquivo inválido: esperado um .archstudio.json salvo pelo ArchStudio.'); }
     ev.target.value='';
   };
@@ -1512,25 +1613,10 @@ ${types}`;
 /* ============ INIT ============ */
 (function init(){
   renderPalette();
-  const saved=store.get('as_doc');
-  if(saved){
-    try{
-      const doc=JSON.parse(saved);
-      if(doc.version>=3 && doc.state) state=doc.state;
-      else if(doc.nodes) state={seq:doc.seq||0,nodes:doc.nodes,edges:(doc.edges||[]).map((e,i)=>({id:(doc.seq||0)+i+1,dash:false,heads:'end',w:2,label:'',...e})),boxes:[],arrows:[],texts:[]};
-      if(doc.nodes&&!(doc.version>=3)) state.seq=(doc.seq||0)+(doc.edges||[]).length+1;
-      state.boxes=state.boxes||[]; state.arrows=state.arrows||[]; state.texts=state.texts||[];
-      for(const n of state.nodes){ if(!n.label) n.label=(TYPE_INDEX[n.type]||{n:n.type}).n; if(!n.s) n.s=1; }
-      if(doc.name) document.getElementById('diagTitle').value=doc.name;
-      if(doc.theme==='light') toggleTheme();
-    }catch{}
-  }
   document.getElementById('fontSel').innerHTML = FONTS.map(f=>`<option value="${f.id}">${f.n}</option>`).join('');
-  try{ const d=JSON.parse(store.get('as_doc')||'{}'); if(d.font) fontId=d.font; }catch{}
-  setFont(fontId);
+  initProjects();     /* carrega o projeto atual deste navegador (ou migra o antigo) */
   setZoom(1);
-  renderAll();
-  loadFromUrl();
+  loadFromUrl();      /* link compartilhado (#d=) entra como um NOVO projeto */
 })();
 </script>
 </body>
