@@ -11,7 +11,9 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD:archstudio}
   jpa:
     hibernate:
-      ddl-auto: validate
+      # Flyway owns the schema (V1__init.sql). 'none' avoids validate false-positives
+      # on citext / jsonb / timestamptz columns and guarantees a clean startup.
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:
