@@ -41,6 +41,9 @@ services:
       MAIL_USER: ${MAIL_USER:-}
       MAIL_PASS: ${MAIL_PASS:-}
       MAIL_FROM: ${MAIL_FROM:-ArchStudio <no-reply@studio.mjolnix.com.br>}
+      # Hostinger uses port 465 (implicit SSL), not STARTTLS
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: ${MAIL_SSL:-true}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_STARTTLS:-false}
     ports:
       - "127.0.0.1:8090:8090"
     networks: [asnet]
