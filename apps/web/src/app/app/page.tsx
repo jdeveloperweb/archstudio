@@ -8,7 +8,7 @@ export default async function DashboardPage() {
   const r = await apiServer('/projects');
   const projects: ProjectMeta[] = r.ok && Array.isArray(r.data) ? r.data : [];
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="mb-8 flex items-end justify-between">
         <div>
           <p className="eyebrow">sua prancheta</p>

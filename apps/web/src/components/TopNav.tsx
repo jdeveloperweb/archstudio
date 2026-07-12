@@ -32,7 +32,7 @@ export function TopNav({ userName, avatar }: { userName?: string; avatar?: strin
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/75 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
+      <div className="flex h-14 items-center gap-2 px-4 sm:px-6">
         <Link href="/app" className="btn-focus mr-3 rounded-lg">
           <Logo className="text-base" />
         </Link>

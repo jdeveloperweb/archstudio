@@ -1,12 +1,50 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, PenTool, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/client';
 import type { ChatMsg } from '@/lib/types';
 import { Mark } from '@/components/Brand';
+import { Markdown } from '@/components/Markdown';
 
-type UiMsg = ChatMsg & { applied?: boolean };
+type SpecState = 'pending' | 'applied' | 'dismissed';
+type UiMsg = ChatMsg & { spec?: any; specState?: SpecState };
+
+/** Quantos componentes do spec já existem no desenho atual (mesma heurística do canvas). */
+function countMatches(spec: any, diagram: any): { total: number; matches: number } {
+  const sN: any[] = spec?.nodes || [];
+  const cur: any[] = diagram?.state?.nodes || [];
+  const matches = sN.filter((sn) =>
+    cur.some(
+      (dn) =>
+        (sn.id != null && (String(dn.aid) === String(sn.id) || String(dn.id) === String(sn.id))) ||
+        (!!(sn.label || '').trim() &&
+          (dn.label || '').trim().toLowerCase() === (sn.label || '').trim().toLowerCase()),
+    ),
+  ).length;
+  return { total: sN.length, matches };
+}
+
+/**
+ * Desenho grande ou substituição total pedem confirmação;
+ * ajustes pequenos aplicam direto, sem atrapalhar o fluxo.
+ */
+function needsConfirm(spec: any, diagram: any): boolean {
+  const { total, matches } = countMatches(spec, diagram);
+  if (!total) return false;
+  const curCount = (diagram?.state?.nodes || []).length;
+  if (curCount > 0 && matches === 0) return true; // troca o desenho inteiro
+  return total - matches >= 8; // muitos componentes novos de uma vez
+}
+
+function specSummary(spec: any): string {
+  const n = (spec?.nodes || []).length;
+  const e = (spec?.edges || []).length;
+  const b = (spec?.boxes || []).length;
+  const parts = [`${n} ${n === 1 ? 'componente' : 'componentes'}`, `${e} ${e === 1 ? 'conexão' : 'conexões'}`];
+  if (b) parts.push(`${b} ${b === 1 ? 'caixa' : 'caixas'}`);
+  return parts.join(' · ');
+}
 
 export function ChatPanel({
   getDoc,
@@ -31,6 +69,15 @@ export function ChatPanel({
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
   }
 
+  function setSpecState(idx: number, state: SpecState) {
+    setMessages((xs) => xs.map((m, i) => (i === idx ? { ...m, specState: state } : m)));
+  }
+
+  function applySpecAt(idx: number, spec: any) {
+    onApplySpec(spec);
+    setSpecState(idx, 'applied');
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
@@ -49,9 +96,19 @@ export function ChatPanel({
         method: 'POST',
         body: { messages: payload, diagram },
       });
-      const applied = !!res.spec;
-      if (applied) onApplySpec(res.spec);
-      setMessages((xs) => [...xs, { role: 'assistant', content: res.reply || '…', applied }]);
+      if (res.spec && needsConfirm(res.spec, diagram)) {
+        // arquitetura grande: mostra o resumo e espera o OK antes de desenhar
+        setMessages((xs) => [
+          ...xs,
+          { role: 'assistant', content: res.reply || '…', spec: res.spec, specState: 'pending' },
+        ]);
+      } else {
+        if (res.spec) onApplySpec(res.spec);
+        setMessages((xs) => [
+          ...xs,
+          { role: 'assistant', content: res.reply || '…', spec: res.spec, specState: res.spec ? 'applied' : undefined },
+        ]);
+      }
       scrollDown();
     } catch (e: any) {
       if (e instanceof ApiError && e.code === 'NO_API_KEY') {
@@ -83,15 +140,50 @@ export function ChatPanel({
         {messages.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                 m.role === 'user'
-                  ? 'rounded-br-md bg-gradient-to-b from-accent to-[#8b5cf6] text-white'
+                  ? 'whitespace-pre-wrap rounded-br-md bg-gradient-to-b from-accent to-[#8b5cf6] text-white'
                   : 'rounded-bl-md border border-border bg-panel2 text-ink'
               }`}
             >
-              {m.content}
-              {m.applied && (
+              {m.role === 'user' ? m.content : <Markdown text={m.content} />}
+
+              {m.specState === 'pending' && (
+                <div className="mt-2.5 rounded-xl border border-accent/40 bg-accent/10 p-3">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-accent">
+                    <PenTool size={12} /> desenho grande à vista
+                  </div>
+                  <div className="mt-1 text-xs text-dim">
+                    {specSummary(m.spec)}. Quer que eu desenhe no canvas agora?
+                  </div>
+                  <div className="mt-2.5 flex gap-2">
+                    <button
+                      onClick={() => applySpecAt(i, m.spec)}
+                      className="btn-focus inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-accent to-[#8b5cf6] px-3 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+                    >
+                      <PenTool size={12} /> Desenhar agora
+                    </button>
+                    <button
+                      onClick={() => setSpecState(i, 'dismissed')}
+                      className="btn-focus inline-flex items-center gap-1.5 rounded-lg border border-border bg-panel px-3 py-1.5 text-xs text-dim transition hover:text-ink"
+                    >
+                      <X size={12} /> Agora não
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {m.specState === 'applied' && (
                 <div className="mt-1.5 font-mono text-xs text-sless">✓ aplicado ao desenho</div>
+              )}
+
+              {m.specState === 'dismissed' && (
+                <div className="mt-1.5 font-mono text-xs text-dim">
+                  desenho não aplicado ·{' '}
+                  <button onClick={() => applySpecAt(i, m.spec)} className="underline transition hover:text-ink">
+                    desenhar mesmo assim
+                  </button>
+                </div>
               )}
             </div>
           </div>

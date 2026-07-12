@@ -107,7 +107,7 @@ export function EditorClient({ id }: { id: string }) {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      <div className="flex items-center gap-3 border-b border-border/80 bg-panel/80 px-4 py-2 backdrop-blur-md">
+      <div className="flex items-center gap-3 border-b border-border/80 bg-panel/80 px-4 py-2 backdrop-blur-md sm:px-6">
         <Link
           href="/app"
           className="btn-focus rounded-lg px-2 py-1 font-mono text-xs text-dim transition hover:text-ink"
