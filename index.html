@@ -177,6 +177,14 @@ pre.schema{background:var(--bg);border:1px solid var(--border);border-radius:8px
 .proj-main{flex:1;min-width:0;cursor:pointer}
 .proj-name{font:600 14px var(--uifont);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .proj-badge{font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+/* ---- Modo embutido (plataforma): a página-mãe já tem título, projetos e salvar ---- */
+body.embed .topbar .logo,body.embed #btnProjects,body.embed #diagTitle{display:none}
+/* ---- IA desenhando ao vivo: cada elemento surge como um traço de caneta ---- */
+.node.aidraw,.gbox.aidraw,.ftext.aidraw{animation:aidrawPop .4s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes aidrawPop{from{opacity:0;transform:scale(.55)}}
+path.edge.aidraw{animation:aidrawIn .28s ease both}
+@keyframes aidrawIn{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.node.aidraw,.gbox.aidraw,.ftext.aidraw,path.edge.aidraw{animation:none}}
 .proj-date{font:400 11px var(--uifont);color:var(--dim);margin-top:2px}
 .proj-actions{display:flex;gap:4px;flex-shrink:0}
 body[data-theme="light"] pre.schema{color:#3a3f58}
@@ -194,7 +202,7 @@ body.clean .layout{height:100vh}
 <body data-theme="dark">
 <div class="topbar">
   <div class="logo"><span class="kw">Arch</span>Studio</div>
-  <button class="tool-btn" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)">📁 Projetos</button>
+  <button class="tool-btn" id="btnProjects" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)">📁 Projetos</button>
   <input class="title-input" id="diagTitle" placeholder="Nome do diagrama..." value="Minha Arquitetura">
   <div class="seg">
     <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar">✥ Mover</button>
@@ -283,19 +291,69 @@ const EMBED = new URLSearchParams(location.search).get('embed')==='1';
 let suppressEmit=false;
 function postToParent(msg){ try{ if(parent && parent!==window) parent.postMessage(msg, location.origin); }catch(e){} }
 function emitChange(){ if(suppressEmit) return; postToParent({type:'archstudio:change', doc:currentDoc()}); }
-function applyEmbedDoc(doc){ suppressEmit=true; try{ applyDoc(doc); }finally{ suppressEmit=false; } }
+function applyEmbedDoc(doc){ cancelEmbedAnim(); suppressEmit=true; try{ applyDoc(doc); }finally{ suppressEmit=false; } }
+/* A IA desenha como uma pessoa: caixas → componentes na ordem do fluxo → conexões → notas */
+let embedAnim=null;
+function cancelEmbedAnim(){
+  if(!embedAnim) return;
+  clearTimeout(embedAnim.timer);
+  state=embedAnim.final; embedAnim=null; suppressEmit=false; renderAll();
+}
+function embedDoc(){ return embedAnim
+  ? {format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state:embedAnim.final}
+  : currentDoc(); }
+function aidrawFlash(kind,item){
+  if(kind==='edges'||kind==='arrows'){
+    const paths=edgeLayer.querySelectorAll('path.edge');
+    const p=paths[kind==='edges'?state.edges.length-1:state.edges.length+state.arrows.length-1];
+    if(!p) return;
+    p.classList.add('aidraw');
+    if(!item.dash&&p.getTotalLength){       /* traço que se desenha (dash-offset) */
+      const len=p.getTotalLength();
+      p.style.strokeDasharray=len; p.style.strokeDashoffset=len;
+      p.getBoundingClientRect();
+      p.style.transition='stroke-dashoffset .26s ease'; p.style.strokeDashoffset='0';
+      setTimeout(()=>{ if(p.isConnected){ p.style.strokeDasharray=''; p.style.strokeDashoffset=''; p.style.transition=''; } },300);
+    }
+  } else {
+    const cls=kind==='nodes'?'.node':kind==='boxes'?'.gbox':'.ftext';
+    const el=canvas.querySelector(`${cls}[data-id="${item.id}"]`);
+    if(el) el.classList.add('aidraw');
+  }
+}
 function applyEmbedSpec(spec){
-  suppressEmit=true;
-  try{ state=normalizeSpec(spec); if(spec&&spec.name) document.getElementById('diagTitle').value=spec.name;
-    undoStack.length=0; redoStack.length=0; sel=null; connSrc=null; renderAll(); }
-  finally{ suppressEmit=false; }
-  emitChange();
+  cancelEmbedAnim();
+  const st=normalizeSpec(spec);
+  if(spec&&spec.name) document.getElementById('diagTitle').value=spec.name;
+  undoStack.length=0; redoStack.length=0; sel=null; connSrc=null;
+  const steps=[];
+  for(const b of st.boxes) steps.push(['boxes',b,420]);
+  for(const n of [...st.nodes].sort((a,b)=>(a.x-b.x)||(a.y-b.y))) steps.push(['nodes',n,340]);
+  for(const e of st.edges) steps.push(['edges',e,230]);
+  for(const a of st.arrows) steps.push(['arrows',a,230]);
+  for(const t of st.texts) steps.push(['texts',t,300]);
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!steps.length||reduced){
+    suppressEmit=true; try{ state=st; renderAll(); }finally{ suppressEmit=false; }
+    emitChange(); return;
+  }
+  state={seq:st.seq,nodes:[],edges:[],boxes:[],arrows:[],texts:[]};
+  suppressEmit=true; renderAll();
+  const speed=steps.length>24?0.55:steps.length>14?0.75:1;  /* diagramas grandes desenham mais rápido */
+  let i=0;
+  const tick=()=>{
+    const [kind,item,dur]=steps[i++];
+    state[kind].push(item); renderAll(); aidrawFlash(kind,item);
+    if(i<steps.length){ embedAnim.timer=setTimeout(tick,dur*speed); }
+    else{ embedAnim=null; suppressEmit=false; emitChange(); }
+  };
+  embedAnim={final:st,timer:setTimeout(tick,180)};
 }
 function onParentMessage(ev){
   if(ev.origin!==location.origin) return;
   const m=ev.data||{};
   if(m.type==='archstudio:load' && m.doc) applyEmbedDoc(m.doc);
-  else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:currentDoc()});
+  else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:embedDoc()});
   else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec);
 }
 function initEmbed(){
@@ -1640,8 +1698,9 @@ ${types}`;
 (function init(){
   renderPalette();
   document.getElementById('fontSel').innerHTML = FONTS.map(f=>`<option value="${f.id}">${f.n}</option>`).join('');
-  initProjects();     /* carrega o projeto atual deste navegador (ou migra o antigo) */
   setZoom(1);
+  if(EMBED){ initEmbed(); return; }   /* plataforma: a página-mãe injeta o doc via postMessage */
+  initProjects();     /* carrega o projeto atual deste navegador (ou migra o antigo) */
   loadFromUrl();      /* link compartilhado (#d=) entra como um NOVO projeto */
 })();
 </script>
