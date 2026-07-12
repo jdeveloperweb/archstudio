@@ -30,7 +30,12 @@ Turns the single-file ArchStudio canvas into a multi-tenant SaaS **without break
 - `POST /auth/logout` → 200, clears cookie.
 - `POST /auth/forgot` `{email}` → 200 always. Sends reset link (dev: logs).
 - `POST /auth/reset` `{token,password}` → 200.
-- `GET  /me` → 200 `{id,name,email,createdAt}` (401 if no/invalid cookie).
+- `GET  /me` → 200 `{id,name,email,avatar,createdAt}` (401 if no/invalid cookie).
+
+### Profile (auth required)
+- `PUT    /me` `{name?, avatar?}` → 200 `{id,name,email,avatar,createdAt}`. `avatar` = data URL `image/*;base64` ≤ ~300 KB (client resizes to 256px); `""` remove a foto; ausente mantém.
+- `PUT    /me/password` `{current, next}` → 200. 400 `BAD_PASSWORD` se a senha atual não confere; `next` ≥ 8 chars.
+- `DELETE /me` `{password}` → 200 + limpa o cookie. Apaga a conta e tudo dela (projects, settings e tokens caem por `ON DELETE CASCADE`). 400 `BAD_PASSWORD` se a senha não confere.
 
 ### Projects (auth required; scoped to current user)
 - `GET    /projects` → `[{id,name,updatedAt}]` (newest first).
@@ -64,8 +69,8 @@ The AI system prompt instructs the model to converse about architecture in Portu
 \`\`\`
 Spec format = the ArchStudio agent schema (see repo `schema/archstudio.schema.json`). Auto-layout means x/y are optional.
 
-## DB (Flyway V1)
-- `users(id uuid pk, name, email unique citext, password_hash, email_verified bool, created_at, updated_at)`
+## DB (Flyway V1 + V2)
+- `users(id uuid pk, name, email unique citext, password_hash, email_verified bool, avatar text (V2), created_at, updated_at)`
 - `email_tokens(id uuid pk, user_id fk, token unique, type ['VERIFY'|'RESET'], expires_at, used bool, created_at)`
 - `projects(id uuid pk, user_id fk, name, doc jsonb, created_at, updated_at)`
 - `user_settings(user_id uuid pk fk, provider, model, base_url, api_key_enc, updated_at)`

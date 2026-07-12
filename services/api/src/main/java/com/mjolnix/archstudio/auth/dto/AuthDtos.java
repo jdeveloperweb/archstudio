@@ -26,9 +26,19 @@ public final class AuthDtos {
             @NotBlank String token,
             @Size(min = 8, message = "A senha deve ter ao menos 8 caracteres") String password) {}
 
-    public record UserResponse(String id, String name, String email, Instant createdAt) {
+    public record UserResponse(String id, String name, String email, String avatar, Instant createdAt) {
         public static UserResponse from(User u) {
-            return new UserResponse(u.getId().toString(), u.getName(), u.getEmail(), u.getCreatedAt());
+            return new UserResponse(u.getId().toString(), u.getName(), u.getEmail(), u.getAvatar(),
+                    u.getCreatedAt());
         }
     }
+
+    /** name null = mantém; avatar null = mantém, "" = remove, senão data URL de imagem. */
+    public record UpdateMeRequest(String name, String avatar) {}
+
+    public record ChangePasswordRequest(
+            @NotBlank(message = "Informe a senha atual") String current,
+            @Size(min = 8, message = "A nova senha deve ter ao menos 8 caracteres") String next) {}
+
+    public record DeleteAccountRequest(@NotBlank(message = "Confirme sua senha") String password) {}
 }

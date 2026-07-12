@@ -38,6 +38,10 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
+    // Data URL (image/*;base64) já redimensionada no cliente; null = sem foto.
+    @Column(name = "avatar", columnDefinition = "text")
+    private String avatar;
+
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "timestamptz")
     private Instant createdAt;
 
@@ -97,6 +101,14 @@ public class User {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
     }
 
     public boolean isEmailVerified() {

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/client';
 import { Button } from '@/components/ui';
 import type { ProjectMeta } from '@/lib/types';
@@ -134,8 +135,8 @@ export function ProjectGrid({ initial }: { initial: ProjectMeta[] }) {
         disabled={busy}
         className="btn-focus tilt flex min-h-[170px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-panel/30 text-dim transition hover:border-accent hover:text-accent"
       >
-        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-current text-2xl leading-none">
-          ＋
+        <span className="flex h-11 w-11 items-center justify-center rounded-full border border-current">
+          <Plus size={22} />
         </span>
         <span className="mt-3 text-sm font-medium">Novo diagrama</span>
         <span className="mt-1 font-mono text-xs opacity-70">a prancheta em branco</span>
@@ -156,14 +157,14 @@ export function ProjectGrid({ initial }: { initial: ProjectMeta[] }) {
             </div>
           </a>
           <div className="absolute bottom-3 right-3 flex gap-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
-            <Button variant="ghost" className="px-2 py-1 text-xs" title="Renomear" onClick={() => rename(p)}>
-              ✎
+            <Button variant="ghost" className="px-2 py-1.5" title="Renomear" aria-label="Renomear" onClick={() => rename(p)}>
+              <Pencil size={13} />
             </Button>
-            <Button variant="ghost" className="px-2 py-1 text-xs" title="Duplicar" onClick={() => duplicate(p)}>
-              ⧉
+            <Button variant="ghost" className="px-2 py-1.5" title="Duplicar" aria-label="Duplicar" onClick={() => duplicate(p)}>
+              <Copy size={13} />
             </Button>
-            <Button variant="danger" className="px-2 py-1 text-xs" title="Excluir" onClick={() => remove(p)}>
-              🗑
+            <Button variant="danger" className="px-2 py-1.5" title="Excluir" aria-label="Excluir" onClick={() => remove(p)}>
+              <Trash2 size={13} />
             </Button>
           </div>
         </div>

@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { Logo } from './Brand';
 import { api } from '@/lib/client';
 
-export function TopNav({ userName }: { userName?: string }) {
+export function TopNav({ userName, avatar }: { userName?: string; avatar?: string | null }) {
   const router = useRouter();
   const path = usePathname();
 
@@ -39,17 +40,27 @@ export function TopNav({ userName }: { userName?: string }) {
         {link('/app/settings', 'Configurações')}
         <div className="flex-1" />
         {userName && (
-          <span className="hidden items-center gap-2 sm:flex">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-accent to-[#8b5cf6] font-mono text-xs font-bold text-white">
-              {userName.trim().charAt(0).toUpperCase()}
-            </span>
+          <Link
+            href="/app/settings"
+            className="btn-focus hidden items-center gap-2 rounded-lg px-2 py-1 transition hover:bg-panel2 sm:flex"
+            title="Seu perfil"
+          >
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatar} alt="" className="h-7 w-7 rounded-full border border-border object-cover" />
+            ) : (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-accent to-[#8b5cf6] font-mono text-xs font-bold text-white">
+                {userName.trim().charAt(0).toUpperCase()}
+              </span>
+            )}
             <span className="text-sm text-dim">{userName}</span>
-          </span>
+          </Link>
         )}
         <button
           onClick={logout}
-          className="btn-focus rounded-lg px-3 py-1.5 text-sm text-dim transition hover:text-red"
+          className="btn-focus flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-dim transition hover:text-red"
         >
+          <LogOut size={14} />
           Sair
         </button>
       </div>

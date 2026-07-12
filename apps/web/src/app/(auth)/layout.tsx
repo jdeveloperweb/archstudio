@@ -4,15 +4,20 @@ import { Logo } from '@/components/Brand';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg px-4 py-12 text-ink">
+    <main className="light relative flex min-h-screen items-center justify-center overflow-hidden bg-bg px-4 py-12 text-ink">
       {/* prancheta em perspectiva */}
       <div className="floor-3d" aria-hidden />
 
-      {/* brilho de tinta no topo */}
+      {/* aurora suave no topo */}
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-[-8rem] h-72 w-[36rem] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
-        style={{ background: 'radial-gradient(circle at center, rgba(166,121,255,0.35), transparent 65%)' }}
+        className="animate-blob pointer-events-none absolute left-[30%] top-[-10rem] h-96 w-[36rem] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{ background: 'radial-gradient(circle at center, #c4b5fd, transparent 65%)' }}
+      />
+      <div
+        aria-hidden
+        className="animate-blob pointer-events-none absolute right-[-6rem] top-[30%] h-80 w-80 rounded-full opacity-40 blur-3xl"
+        style={{ background: 'radial-gradient(circle at center, #a5f3fc, transparent 65%)', animationDelay: '-6s' }}
       />
 
       {/* nós flutuando fora de foco, como um desenho ao fundo */}

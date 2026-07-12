@@ -2,7 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+/* ---- Tokens: estúdio escuro por padrão; .light = entrada clara e colorida ---- */
+:root {
+  color-scheme: dark;
+  --c-void: 6 7 13;
+  --c-bg: 11 14 26;
+  --c-panel: 18 22 40;
+  --c-panel2: 26 31 56;
+  --c-border: 39 46 82;
+  --c-ink: 237 239 250;
+  --c-dim: 141 147 184;
+  --c-accent: 166 121 255;
+  --c-pulse: 94 231 255;
+  --c-aws: 255 180 84;
+  --c-sless: 74 222 128;
+  --c-red: 248 113 113;
+}
+.light {
+  color-scheme: light;
+  --c-void: 255 255 255;
+  --c-bg: 250 250 255;
+  --c-panel: 255 255 255;
+  --c-panel2: 244 243 255;
+  --c-border: 226 224 245;
+  --c-ink: 30 27 46;
+  --c-dim: 100 98 130;
+  --c-accent: 124 58 237;
+  --c-pulse: 8 145 178;
+  --c-aws: 217 119 6;
+  --c-sless: 22 163 74;
+  --c-red: 220 38 38;
+}
 
 html, body { height: 100%; }
 body {
@@ -19,8 +49,13 @@ body {
     linear-gradient(90deg, rgba(166, 121, 255, 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+.light .grid-bg {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+}
 
-/* Piso 3D em perspectiva (CSS puro) usado nos fundos de auth/CTA */
+/* Piso 3D em perspectiva (CSS puro) */
 .floor-3d {
   position: absolute;
   inset: auto 0 0 0;
@@ -35,6 +70,11 @@ body {
   mask-image: linear-gradient(to top, black 30%, transparent 92%);
   pointer-events: none;
 }
+.light .floor-3d {
+  background-image:
+    linear-gradient(rgba(8, 145, 178, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.12) 1px, transparent 1px);
+}
 
 @layer utilities {
   .btn-focus { @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg; }
@@ -43,10 +83,6 @@ body {
   .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.22em] text-dim; }
 
   .glass { @apply border border-border/80 bg-panel/70 backdrop-blur-md; }
-
-  /* Texto com brilho de tinta viva */
-  .ink-glow { text-shadow: 0 0 24px rgba(166, 121, 255, 0.45); }
-  .pulse-glow { text-shadow: 0 0 20px rgba(94, 231, 255, 0.5); }
 }
 
 /* Revelação ao rolar (ativada por .is-in via IntersectionObserver) */
@@ -65,13 +101,19 @@ body {
 /* Cartões com leve inclinação 3D no hover */
 .tilt { transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.35s, box-shadow 0.35s; transform-style: preserve-3d; }
 .tilt:hover { transform: perspective(900px) rotateX(2.5deg) rotateY(-2deg) translateY(-4px); box-shadow: 0 18px 44px -18px rgba(6, 7, 13, 0.9); }
+.light .tilt:hover { box-shadow: 0 22px 48px -20px rgba(124, 58, 237, 0.35); }
+
+/* Camadas de parallax (transform aplicado por JS via data-depth/data-mouse) */
+.plx { will-change: transform; }
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
-  .marquee-track, .animate-rise, .animate-caret, .animate-dash, .animate-floaty { animation: none !important; }
+  .marquee-track, .animate-rise, .animate-caret, .animate-dash, .animate-floaty, .animate-blob { animation: none !important; }
   .tilt, .tilt:hover { transform: none; transition: none; }
+  .plx { transform: none !important; }
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
 
 * { -webkit-font-smoothing: antialiased; }
 ::selection { background: rgba(166, 121, 255, 0.35); }
+.light ::selection { background: rgba(124, 58, 237, 0.22); }

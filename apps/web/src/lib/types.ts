@@ -1,4 +1,4 @@
-export type User = { id: string; name: string; email: string; createdAt: string };
+export type User = { id: string; name: string; email: string; avatar?: string | null; createdAt: string };
 export type ProjectMeta = { id: string; name: string; updatedAt: string };
 export type ProjectFull = { id: string; name: string; doc: any; updatedAt: string };
 export type Provider =

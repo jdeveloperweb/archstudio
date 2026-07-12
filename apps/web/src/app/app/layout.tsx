@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!me) redirect('/login');
   return (
     <div className="min-h-screen">
-      <TopNav userName={me.name} />
+      <TopNav userName={me.name} avatar={me.avatar} />
       {children}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Card } from '@/components/ui';
 
 export default function VerifyInfoPage() {
@@ -11,8 +12,10 @@ export default function VerifyInfoPage() {
   }, []);
   return (
     <Card className="p-7 text-center">
-      <div className="text-3xl">{ok === false ? '⚠️' : '✅'}</div>
-      <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">
+      <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${ok === false ? 'bg-red/10 text-red' : 'bg-sless/10 text-sless'}`}>
+        {ok === false ? <AlertTriangle size={22} /> : <CheckCircle2 size={22} />}
+      </span>
+      <h1 className="mt-3 font-display text-2xl font-bold tracking-tight">
         {ok === false ? 'Link inválido' : 'Confirmação de e-mail'}
       </h1>
       <p className="mt-2 text-sm text-dim">

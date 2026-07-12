@@ -129,7 +129,7 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 type Chip = { typed: string; state: 'typing' | 'thinking' | 'applied' };
 
-export function Hero3D({ className = '' }: { className?: string }) {
+export function Hero3D({ className = '', light = false }: { className?: string; light?: boolean }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [chip, setChip] = useState<Chip>({ typed: '', state: 'typing' });
@@ -139,6 +139,35 @@ export function Hero3D({ className = '' }: { className?: string }) {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* paleta da cena: estúdio escuro ou entrada clara */
+    const P = light
+      ? {
+          cat: { network: '#4f6ef7', compute: '#7c3aed', data: '#0891b2', queue: '#d97706', ai: '#c026d3' } as Record<Cat, string>,
+          grid: 'rgba(124,58,237,0.15)',
+          fade0: 'rgba(250,250,255,0)',
+          fade1: 'rgba(250,250,255,0.97)',
+          edgeRGB: '8,145,178',
+          edgeA: 0.55,
+          pulse: '#0891b2',
+          label: '30,27,46',
+          labelShadow: 'rgba(255,255,255,0.95)',
+          shadowRGB: '30,27,46',
+          shadowA: 0.16,
+        }
+      : {
+          cat: CAT_COLOR,
+          grid: 'rgba(166,121,255,0.10)',
+          fade0: 'rgba(11,14,26,0)',
+          fade1: 'rgba(11,14,26,0.96)',
+          edgeRGB: '94,231,255',
+          edgeA: 0.4,
+          pulse: '#5ee7ff',
+          label: '237,239,250',
+          labelShadow: 'rgba(6,7,13,0.9)',
+          shadowRGB: '6,7,13',
+          shadowA: 0.32,
+        };
 
     let W = 0;
     let H = 0;
@@ -215,7 +244,7 @@ export function Hero3D({ className = '' }: { className?: string }) {
         const a2 = proj(view(i, 0, R, yaw, pitch), unit);
         const b1 = proj(view(-R, 0, i, yaw, pitch), unit);
         const b2 = proj(view(R, 0, i, yaw, pitch), unit);
-        ctx.strokeStyle = 'rgba(166,121,255,0.10)';
+        ctx.strokeStyle = P.grid;
         ctx.beginPath();
         ctx.moveTo(a1.x, a1.y);
         ctx.lineTo(a2.x, a2.y);
@@ -225,8 +254,8 @@ export function Hero3D({ className = '' }: { className?: string }) {
       }
       // esmaece a grade nas bordas
       const g = ctx.createRadialGradient(W / 2, H * 0.55, Math.min(W, H) * 0.18, W / 2, H * 0.55, Math.max(W, H) * 0.62);
-      g.addColorStop(0, 'rgba(11,14,26,0)');
-      g.addColorStop(1, 'rgba(11,14,26,0.96)');
+      g.addColorStop(0, P.fade0);
+      g.addColorStop(1, P.fade1);
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, H);
 
@@ -249,7 +278,7 @@ export function Hero3D({ className = '' }: { className?: string }) {
         if (p <= 0) return;
         const s = proj(view(n.x, 0, n.z, yaw, pitch), unit);
         const w = ((n.w ?? 88) / 2) * s.k * unit * easeOutBack(p);
-        ctx.fillStyle = `rgba(6,7,13,${0.32 * p * fade})`;
+        ctx.fillStyle = `rgba(${P.shadowRGB},${P.shadowA * p * fade})`;
         ctx.beginPath();
         ctx.ellipse(s.x, s.y, Math.max(2, w), Math.max(1, w * 0.34), 0, 0, Math.PI * 2);
         ctx.fill();
@@ -273,7 +302,7 @@ export function Hero3D({ className = '' }: { className?: string }) {
           const wz = iu * iu * A.z + 2 * iu * u * mid.z + u * u * B.z;
           pts.push(proj(view(wx, wy, wz, yaw, pitch), unit));
         }
-        ctx.strokeStyle = `rgba(94,231,255,${0.4 * fade})`;
+        ctx.strokeStyle = `rgba(${P.edgeRGB},${P.edgeA * fade})`;
         ctx.lineWidth = 1.3;
         ctx.beginPath();
         pts.forEach((pt, i) => (i ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
@@ -289,9 +318,9 @@ export function Hero3D({ className = '' }: { className?: string }) {
             const wz = iu * iu * A.z + 2 * iu * u * mid.z + u * u * B.z;
             const s = proj(view(wx, wy, wz, yaw, pitch), unit);
             ctx.save();
-            ctx.shadowColor = '#5ee7ff';
+            ctx.shadowColor = P.pulse;
             ctx.shadowBlur = 10;
-            ctx.fillStyle = `rgba(94,231,255,${0.95 * fade})`;
+            ctx.fillStyle = `rgba(${P.edgeRGB},${0.95 * fade})`;
             ctx.beginPath();
             ctx.arc(s.x, s.y, 2.4 * s.k, 0, Math.PI * 2);
             ctx.fill();
@@ -314,7 +343,7 @@ export function Hero3D({ className = '' }: { className?: string }) {
         const w = ((n.w ?? 88) / 2) * scale;
         const d = ((n.d ?? 56) / 2) * scale;
         const h = 11 * scale;
-        const col = CAT_COLOR[n.cat];
+        const col = P.cat[n.cat];
         const alpha = p * fade;
 
         // pino ancorando o nó à prancheta
@@ -362,16 +391,16 @@ export function Hero3D({ className = '' }: { className?: string }) {
         if (p <= 0) return;
         const c = pos.get(n.id)!;
         const h = 11 * easeOutBack(p);
-        const col = CAT_COLOR[n.cat];
+        const col = P.cat[n.cat];
         const alpha = p * fade;
         const top = proj(view(c.x, c.y + h + 16, c.z, yaw, pitch), unit);
         const fs = Math.max(9, 11.5 * top.k * Math.min(1.15, unit));
         ctx.font = `500 ${fs}px "JetBrains Mono", monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.shadowColor = 'rgba(6,7,13,0.9)';
+        ctx.shadowColor = P.labelShadow;
         ctx.shadowBlur = 6;
-        ctx.fillStyle = `rgba(237,239,250,${0.92 * alpha})`;
+        ctx.fillStyle = `rgba(${P.label},${0.92 * alpha})`;
         ctx.fillText(n.label, top.x + 4, top.y);
         ctx.shadowBlur = 0;
         ctx.fillStyle = hexA(col, alpha);
@@ -458,7 +487,8 @@ export function Hero3D({ className = '' }: { className?: string }) {
       wrap.removeEventListener('pointermove', onPointer);
       wrap.removeEventListener('pointerleave', onLeave);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [light]);
 
   return (
     <div

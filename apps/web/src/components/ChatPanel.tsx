@@ -1,6 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { ArrowUp } from 'lucide-react';
 import { api, ApiError } from '@/lib/client';
 import type { ChatMsg } from '@/lib/types';
 import { Mark } from '@/components/Brand';
@@ -58,7 +59,7 @@ export function ChatPanel({
       }
       setMessages((xs) => [
         ...xs,
-        { role: 'assistant', content: '⚠️ ' + (e.message || 'Falha ao falar com a IA.') },
+        { role: 'assistant', content: 'Algo deu errado: ' + (e.message || 'falha ao falar com a IA.') },
       ]);
       scrollDown();
     } finally {
@@ -133,9 +134,9 @@ export function ChatPanel({
             onClick={send}
             disabled={loading || !input.trim()}
             aria-label="Enviar mensagem"
-            className="btn-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-accent to-[#8b5cf6] text-lg text-white shadow-[0_4px_18px_-6px_rgba(166,121,255,0.6)] transition hover:brightness-110 disabled:opacity-40"
+            className="btn-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-accent to-[#8b5cf6] text-white shadow-[0_4px_18px_-6px_rgba(166,121,255,0.6)] transition hover:brightness-110 disabled:opacity-40"
           >
-            ↑
+            <ArrowUp size={17} />
           </button>
         </div>
         <p className="mt-1.5 font-mono text-[10px] text-dim/70">Enter envia · Shift+Enter quebra linha</p>

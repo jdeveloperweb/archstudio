@@ -117,4 +117,51 @@ public class AuthService {
         return users.findById(id)
                 .orElseThrow(() -> new ApiException("USER_NOT_FOUND", HttpStatus.NOT_FOUND, "Usuário não encontrado."));
     }
+
+    private static final int AVATAR_MAX_CHARS = 400_000; // ~300 KB de imagem em base64
+
+    @Transactional
+    public User updateProfile(UUID id, String name, String avatar) {
+        User user = require(id);
+        if (name != null) {
+            String n = name.trim();
+            if (n.isEmpty() || n.length() > 120) {
+                throw new ApiException("BAD_NAME", HttpStatus.BAD_REQUEST, "Nome inválido (1 a 120 caracteres).");
+            }
+            user.setName(n);
+        }
+        if (avatar != null) {
+            if (avatar.isBlank()) {
+                user.setAvatar(null);
+            } else {
+                if (!avatar.startsWith("data:image/") || !avatar.contains(";base64,")
+                        || avatar.length() > AVATAR_MAX_CHARS) {
+                    throw new ApiException("BAD_AVATAR", HttpStatus.BAD_REQUEST,
+                            "Foto inválida. Envie uma imagem de até ~300 KB.");
+                }
+                user.setAvatar(avatar);
+            }
+        }
+        return users.save(user);
+    }
+
+    @Transactional
+    public void changePassword(UUID id, String current, String next) {
+        User user = require(id);
+        if (!encoder.matches(current, user.getPasswordHash())) {
+            throw new ApiException("BAD_PASSWORD", HttpStatus.BAD_REQUEST, "Senha atual incorreta.");
+        }
+        user.setPasswordHash(encoder.encode(next));
+        users.save(user);
+    }
+
+    /** Apaga a conta e tudo que pertence a ela (projetos, settings e tokens caem por cascade). */
+    @Transactional
+    public void deleteAccount(UUID id, String password) {
+        User user = require(id);
+        if (!encoder.matches(password, user.getPasswordHash())) {
+            throw new ApiException("BAD_PASSWORD", HttpStatus.BAD_REQUEST, "Senha incorreta.");
+        }
+        users.delete(user);
+    }
 }

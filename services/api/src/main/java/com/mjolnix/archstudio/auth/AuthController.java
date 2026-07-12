@@ -84,4 +84,26 @@ public class AuthController {
         AuthUser principal = CurrentUser.get();
         return UserResponse.from(auth.require(principal.id()));
     }
+
+    @PutMapping("/me")
+    public UserResponse updateMe(@Valid @RequestBody UpdateMeRequest req) {
+        AuthUser principal = CurrentUser.get();
+        return UserResponse.from(auth.updateProfile(principal.id(), req.name(), req.avatar()));
+    }
+
+    @PutMapping("/me/password")
+    public Map<String, String> changePassword(@Valid @RequestBody ChangePasswordRequest req) {
+        AuthUser principal = CurrentUser.get();
+        auth.changePassword(principal.id(), req.current(), req.next());
+        return Map.of("message", "Senha alterada.");
+    }
+
+    @DeleteMapping("/me")
+    public Map<String, String> deleteMe(@Valid @RequestBody DeleteAccountRequest req, HttpServletResponse res) {
+        AuthUser principal = CurrentUser.get();
+        auth.deleteAccount(principal.id(), req.password());
+        res.addHeader(HttpHeaders.SET_COOKIE,
+                CookieUtil.clear(props.cookieName(), props.cookieSecure()).toString());
+        return Map.of("message", "Conta excluída.");
+    }
 }

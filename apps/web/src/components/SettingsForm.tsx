@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { AlertTriangle, LockKeyhole } from 'lucide-react';
 import { api } from '@/lib/client';
 import { Button, Card, Field, Input } from '@/components/ui';
 import { PROVIDERS, type Provider, type Settings } from '@/lib/types';
@@ -114,8 +115,16 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           <Button type="submit" loading={loading}>
             Salvar
           </Button>
-          <span className="font-mono text-xs text-dim">
-            {hasKey ? '🔒 chave configurada' : '⚠️ sem chave — o assistente não funcionará'}
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-dim">
+            {hasKey ? (
+              <>
+                <LockKeyhole size={13} className="text-sless" /> chave configurada
+              </>
+            ) : (
+              <>
+                <AlertTriangle size={13} className="text-aws" /> sem chave — o assistente não funcionará
+              </>
+            )}
           </span>
         </div>
       </form>

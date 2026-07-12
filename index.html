@@ -177,6 +177,8 @@ pre.schema{background:var(--bg);border:1px solid var(--border);border-radius:8px
 .proj-main{flex:1;min-width:0;cursor:pointer}
 .proj-name{font:600 14px var(--uifont);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .proj-badge{font:600 9px var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+/* ícones inline da UI (sem dependências) */
+.ti{width:14px;height:14px;vertical-align:-2px}
 /* ---- Modo embutido (plataforma): a página-mãe já tem título, projetos e salvar ---- */
 body.embed .topbar .logo,body.embed #btnProjects,body.embed #diagTitle{display:none}
 /* ---- IA desenhando ao vivo: cada elemento surge como um traço de caneta ---- */
@@ -202,7 +204,7 @@ body.clean .layout{height:100vh}
 <body data-theme="dark">
 <div class="topbar">
   <div class="logo"><span class="kw">Arch</span>Studio</div>
-  <button class="tool-btn" id="btnProjects" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)">📁 Projetos</button>
+  <button class="tool-btn" id="btnProjects" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg> Projetos</button>
   <input class="title-input" id="diagTitle" placeholder="Nome do diagrama..." value="Minha Arquitetura">
   <div class="seg">
     <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar">✥ Mover</button>
@@ -217,31 +219,31 @@ body.clean .layout{height:100vh}
   <button class="tool-btn icon" onclick="undo()" title="Desfazer (Ctrl+Z)">↩</button>
   <button class="tool-btn icon" onclick="redo()" title="Refazer (Ctrl+Y)">↪</button>
   <span class="tb-sep"></span>
-  <button class="tool-btn" onclick="openTemplates()">📋 Modelos</button>
-  <button class="tool-btn" onclick="openAgent()">🤖 Agente</button>
+  <button class="tool-btn" onclick="openTemplates()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg> Modelos</button>
+  <button class="tool-btn" onclick="openAgent()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg> Agente</button>
   <div class="tb-flex"></div>
   <div class="zoom-group">
     <button class="zoom-btn" onclick="setZoom(zoom-0.1)">−</button>
     <span class="zoom-pct" id="zoomPct" onclick="setZoom(1)" title="clique para 100%">100%</span>
     <button class="zoom-btn" onclick="setZoom(zoom+0.1)">+</button>
   </div>
-  <button class="tool-btn icon" id="themeBtn" onclick="toggleTheme()" title="alternar tema claro/escuro">☀</button>
-  <button class="tool-btn primary" onclick="exportPng()">⬇ PNG</button>
+  <button class="tool-btn icon" id="themeBtn" onclick="toggleTheme()" title="alternar tema claro/escuro"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
+  <button class="tool-btn primary" onclick="exportPng()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> PNG</button>
   <div class="menu" id="moreMenu">
     <button class="tool-btn" onclick="document.getElementById('moreMenu').classList.toggle('open')" title="arquivo e preferências">⋯ Mais</button>
     <div class="menu-panel">
       <div class="menu-label">Arquivo</div>
-      <button class="menu-item" onclick="saveFile();closeMenu()">💾 Salvar .json</button>
-      <button class="menu-item" onclick="document.getElementById('fileInput').click();closeMenu()">📂 Carregar .json</button>
-      <button class="menu-item" onclick="shareLink(this)" title="copia um link que abre este diagrama">🔗 Copiar link do diagrama</button>
-      <button class="menu-item" onclick="exportSvg();closeMenu()">⬇ Exportar SVG</button>
+      <button class="menu-item" onclick="saveFile();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Salvar .json</button>
+      <button class="menu-item" onclick="document.getElementById('fileInput').click();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg> Carregar .json</button>
+      <button class="menu-item" onclick="shareLink(this)" title="copia um link que abre este diagrama"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar link do diagrama</button>
+      <button class="menu-item" onclick="exportSvg();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Exportar SVG</button>
       <div class="menu-sep"></div>
       <div class="menu-label">Preferências</div>
       <div class="menu-row"><span>Fonte do diagrama</span><select id="fontSel" onchange="setFont(this.value)"></select></div>
       <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="snapChk" checked> Grade magnética (imã)</label>
       <div class="menu-sep"></div>
-      <button class="menu-item danger" onclick="if(confirm('Limpar todo o diagrama?')){pushUndo();clearCanvas();closeMenu()}">🗑 Limpar canvas</button>
-      <a class="menu-item" href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener">★ GitHub — código aberto</a>
+      <button class="menu-item danger" onclick="if(confirm('Limpar todo o diagrama?')){pushUndo();clearCanvas();closeMenu()}"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Limpar canvas</button>
+      <a class="menu-item" href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> GitHub — código aberto</a>
     </div>
   </div>
   <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
@@ -253,7 +255,7 @@ body.clean .layout{height:100vh}
 <div class="propsbar" id="propsBar"></div>
 <div class="layout">
   <div class="palette">
-    <input class="pal-search" placeholder="🔍 buscar componente..." oninput="renderPalette(this.value)">
+    <input class="pal-search" placeholder="buscar componente..." oninput="renderPalette(this.value)">
     <div id="palHost"></div>
   </div>
   <div class="center">
@@ -708,7 +710,9 @@ function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify(sta
 function toggleTheme(){
   const t = theme()==='dark'?'light':'dark';
   document.body.dataset.theme=t;
-  document.getElementById('themeBtn').textContent = t==='dark'?'☀':'🌙';
+  document.getElementById('themeBtn').innerHTML = t==='dark'
+    ? '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
+    : '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
   persist();
 }
 function closeMenu(){ document.getElementById('moreMenu').classList.remove('open'); }
@@ -942,7 +946,7 @@ function renderProps(){
       <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
       <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
   }
-  html+=`<button class="pbtn danger" onclick="delSel()">🗑 excluir</button>
+  html+=`<button class="pbtn danger" onclick="delSel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> excluir</button>
     <button class="pbtn" onclick="sel=null;renderAll()">fechar</button>`;
   bar.innerHTML=html;
 }
@@ -1342,13 +1346,13 @@ function openProjectsModal(){
       <div class="proj-actions">
         <button class="pbtn" onclick="renameProject('${p.id}')" title="renomear">✎</button>
         <button class="pbtn" onclick="duplicateProject('${p.id}')" title="duplicar">⧉</button>
-        <button class="pbtn danger" onclick="deleteProject('${p.id}')" title="excluir">🗑</button>
+        <button class="pbtn danger" onclick="deleteProject('${p.id}')" title="excluir"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div></div>`;
   }).join('');
   const m=document.getElementById('modal');
   m.innerHTML=`<div class="mcard">
     <button class="pbtn" style="float:right" onclick="closeModal()">✕ fechar</button>
-    <h2>📁 Meus diagramas</h2>
+    <h2><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg> Meus diagramas</h2>
     <div class="sub">Cada diagrama é um espaço separado, salvo só neste navegador — ninguém mais vê os seus. Crie quantos quiser.</div>
     <button class="pbtn" style="margin:16px 0;background:var(--accent);color:#fff;border:none;font-weight:600;padding:9px 16px" onclick="newProject()">＋ Novo diagrama</button>
     <div class="proj-list">${rows}</div></div>`;
@@ -1741,7 +1745,7 @@ function closeModal(){ document.getElementById('modal').classList.remove('show')
 function openTemplates(){
   const m=document.getElementById('modal');
   m.innerHTML=`<div class="mcard"><button class="pbtn" style="float:right" onclick="closeModal()">✕ fechar</button>
-    <h2>📋 Modelos prontos</h2>
+    <h2><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg> Modelos prontos</h2>
     <div class="sub">Padrões de solução para problemas conhecidos — clique para ver a justificativa e carregar no canvas. Cada modelo é um ponto de partida: adapte, renomeie, adicione o SEU contexto.</div>
     <div class="tpl-grid">${TEMPLATES.map(t=>`<div class="tpl-card" onclick="showTemplate('${t.id}')"><span class="tpl-tag">${t.tag}</span><h4>${t.title}</h4><p>${t.problem}</p></div>`).join('')}</div></div>`;
   m.classList.add('show'); m.scrollTop=0;
@@ -1755,7 +1759,7 @@ function showTemplate(id){
     <h3>// Por que esta solução resolve</h3><p>${t.why}</p>
     <h3>// Casos de uso</h3><ul>${t.cases.map(c=>`<li>${c}</li>`).join('')}</ul>
     <div style="margin-top:18px">
-      <button class="pbtn" style="background:var(--accent);color:#fff;border:none;font-weight:700;padding:9px 18px" onclick="loadSpec(TEMPLATES.find(x=>x.id==='${t.id}').spec,'${t.title.replace(/'/g,'')}');closeModal()">⬇ Carregar no canvas</button>
+      <button class="pbtn" style="background:var(--accent);color:#fff;border:none;font-weight:700;padding:9px 18px" onclick="loadSpec(TEMPLATES.find(x=>x.id==='${t.id}').spec,'${t.title.replace(/'/g,'')}');closeModal()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Carregar no canvas</button>
       <button class="pbtn" onclick="openTemplates()">← voltar aos modelos</button>
     </div></div>`;
   m.scrollTop=0;
@@ -1797,7 +1801,7 @@ async function copyIac(kind,btn){
 function openAgent(){
   const types = CATALOG.map(g=>`// ${g.cat}\n`+g.items.map(i=>`  ${i.t} — ${i.n}`).join('\n')).join('\n');
   const schema = `FORMATO ArchStudio (spec para agentes de IA)
-Gere um arquivo JSON e carregue-o pelo botão 📂 Carregar — ou entregue um LINK direto:
+Gere um arquivo JSON e carregue-o pelo botão "Carregar .json" — ou entregue um LINK direto:
   https://archstudio.mjolnix.com.br/#d=j:<base64url do JSON>   (abre o diagrama na hora)
   https://archstudio.mjolnix.com.br/?src=<url de um JSON cru>   (ex.: raw de um gist)
 Se x/y forem omitidos, o auto-layout organiza o fluxo da esquerda para a direita seguindo as setas.
@@ -1818,8 +1822,8 @@ TIPOS DE COMPONENTE (campo "type"):
 ${types}`;
   const m=document.getElementById('modal');
   m.innerHTML=`<div class="mcard"><button class="pbtn" style="float:right" onclick="closeModal()">✕ fechar</button>
-    <h2>🤖 Modo Agente</h2>
-    <div class="sub">O ArchStudio fala JSON: entregue o schema abaixo a um agente de IA ("desenhe minha arquitetura neste formato"), salve a resposta como .json e carregue pelo 📂 — ou peça um link direto (<code>#d=j:&lt;base64url&gt;</code>). O auto-layout posiciona tudo sozinho — o agente não precisa calcular coordenadas. Usa Claude Code? O repositório <a href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener" style="color:var(--accent)">jdeveloperweb/archstudio</a> traz uma skill pronta: abra o repo e diga "desenhe a arquitetura do meu sistema".</div>
+    <h2><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg> Modo Agente</h2>
+    <div class="sub">O ArchStudio fala JSON: entregue o schema abaixo a um agente de IA ("desenhe minha arquitetura neste formato"), salve a resposta como .json e carregue pelo "Carregar .json" — ou peça um link direto (<code>#d=j:&lt;base64url&gt;</code>). O auto-layout posiciona tudo sozinho — o agente não precisa calcular coordenadas. Usa Claude Code? O repositório <a href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener" style="color:var(--accent)">jdeveloperweb/archstudio</a> traz uma skill pronta: abra o repo e diga "desenhe a arquitetura do meu sistema".</div>
     <div style="margin-top:12px"><button class="pbtn" style="background:var(--accent);color:#fff;border:none;font-weight:700" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.textContent).then(()=>{this.textContent='✓ copiado!'})">⧉ Copiar schema para o agente</button></div>
     <pre class="schema">${schema.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>
     <h3>// Do desenho à infraestrutura (IaC)</h3>
