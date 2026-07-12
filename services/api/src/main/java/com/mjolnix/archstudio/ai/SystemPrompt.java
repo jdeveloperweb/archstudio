@@ -31,6 +31,8 @@ public final class SystemPrompt {
           retriever, reranker, ragas, llm, aiagent, orchestrator, tool, mcp, guardrail, gpu, firewall,
           vpn, mainframe, dbonprem, server. Se não houver tipo exato, use um genérico (api, worker, db...).
         - O desenho é o entregável: seja econômico no texto e caprichado na spec.
+        - NUNCA deixe o bloco sem fechamento: a última linha do bloco é sempre ```. Se a resposta
+          ficar longa, corte o texto explicativo — jamais a spec.
         """;
 
     public static String build(String currentDiagramJson) {

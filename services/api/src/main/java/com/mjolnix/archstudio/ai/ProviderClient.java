@@ -61,7 +61,7 @@ public class ProviderClient {
         for (Msg m : messages) {
             msgs.add(Map.of("role", "assistant".equals(m.role()) ? "assistant" : "user", "content", m.content()));
         }
-        Map<String, Object> body = Map.of("model", p.model(), "max_tokens", 2000, "system", system, "messages", msgs);
+        Map<String, Object> body = Map.of("model", p.model(), "max_tokens", 8000, "system", system, "messages", msgs);
         JsonNode res = http.post().uri(p.baseUrl() + "/messages")
                 .header("x-api-key", p.apiKey())
                 .header("anthropic-version", "2023-06-01")
