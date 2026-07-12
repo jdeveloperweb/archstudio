@@ -10,9 +10,9 @@ export default function VerifyInfoPage() {
     if (q.has('verified')) setOk(q.get('verified') === '1');
   }, []);
   return (
-    <Card className="p-6 text-center">
+    <Card className="p-7 text-center">
       <div className="text-3xl">{ok === false ? '⚠️' : '✅'}</div>
-      <h1 className="mt-2 text-xl font-semibold">
+      <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">
         {ok === false ? 'Link inválido' : 'Confirmação de e-mail'}
       </h1>
       <p className="mt-2 text-sm text-dim">

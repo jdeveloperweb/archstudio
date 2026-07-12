@@ -48,8 +48,8 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="p-6">
-      <h1 className="text-xl font-semibold">Entrar</h1>
+    <Card className="p-7">
+      <h1 className="font-display text-2xl font-bold tracking-tight">Entrar</h1>
       <p className="mt-1 text-sm text-dim">Acesse seus diagramas.</p>
       {banner && (
         <div className="mt-4 rounded-lg border border-sless/40 bg-sless/10 px-3 py-2 text-sm text-sless">

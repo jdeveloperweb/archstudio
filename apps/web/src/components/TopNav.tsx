@@ -20,8 +20,8 @@ export function TopNav({ userName }: { userName?: string }) {
     return (
       <Link
         href={href}
-        className={`rounded-lg px-3 py-1.5 text-sm transition ${
-          active ? 'bg-panel2 text-accent' : 'text-dim hover:text-ink'
+        className={`btn-focus rounded-lg px-3 py-1.5 text-sm transition ${
+          active ? 'bg-accent/15 font-medium text-accent' : 'text-dim hover:text-ink'
         }`}
       >
         {label}
@@ -30,16 +30,26 @@ export function TopNav({ userName }: { userName?: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-panel/80 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/75 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
-        <Link href="/app" className="mr-2">
+        <Link href="/app" className="btn-focus mr-3 rounded-lg">
           <Logo className="text-base" />
         </Link>
         {link('/app', 'Projetos')}
         {link('/app/settings', 'Configurações')}
         <div className="flex-1" />
-        {userName && <span className="hidden text-sm text-dim sm:block">{userName}</span>}
-        <button onClick={logout} className="rounded-lg px-3 py-1.5 text-sm text-dim hover:text-red">
+        {userName && (
+          <span className="hidden items-center gap-2 sm:flex">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-accent to-[#8b5cf6] font-mono text-xs font-bold text-white">
+              {userName.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="text-sm text-dim">{userName}</span>
+          </span>
+        )}
+        <button
+          onClick={logout}
+          className="btn-focus rounded-lg px-3 py-1.5 text-sm text-dim transition hover:text-red"
+        >
           Sair
         </button>
       </div>

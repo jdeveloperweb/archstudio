@@ -7,20 +7,71 @@
 html, body { height: 100%; }
 body {
   background:
-    radial-gradient(1200px 600px at 15% -10%, rgba(166,121,255,0.10), transparent 60%),
-    #0e1017;
+    radial-gradient(1100px 520px at 12% -8%, rgba(166, 121, 255, 0.09), transparent 60%),
+    radial-gradient(900px 480px at 95% 8%, rgba(94, 231, 255, 0.05), transparent 55%),
+    #0b0e1a;
 }
 
+/* Grade de prancheta — o chão de todo desenho no ArchStudio */
 .grid-bg {
   background-image:
-    linear-gradient(rgba(166,121,255,0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(166,121,255,0.05) 1px, transparent 1px);
+    linear-gradient(rgba(166, 121, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166, 121, 255, 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
+/* Piso 3D em perspectiva (CSS puro) usado nos fundos de auth/CTA */
+.floor-3d {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62vh;
+  transform-origin: 50% 100%;
+  transform: perspective(700px) rotateX(62deg) scale(1.6);
+  background-image:
+    linear-gradient(rgba(94, 231, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166, 121, 255, 0.09) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: linear-gradient(to top, black 30%, transparent 92%);
+  mask-image: linear-gradient(to top, black 30%, transparent 92%);
+  pointer-events: none;
+}
+
 @layer utilities {
-  .btn-focus { @apply outline-none focus:ring-2 focus:ring-accent/60 focus:ring-offset-0; }
+  .btn-focus { @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg; }
+
+  /* Rótulo técnico em mono — a "cota" de desenho técnico */
+  .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.22em] text-dim; }
+
+  .glass { @apply border border-border/80 bg-panel/70 backdrop-blur-md; }
+
+  /* Texto com brilho de tinta viva */
+  .ink-glow { text-shadow: 0 0 24px rgba(166, 121, 255, 0.45); }
+  .pulse-glow { text-shadow: 0 0 20px rgba(94, 231, 255, 0.5); }
+}
+
+/* Revelação ao rolar (ativada por .is-in via IntersectionObserver) */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* Fileiras do catálogo em deriva contínua */
+.marquee { overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); }
+.marquee-track { display: flex; gap: 0.625rem; width: max-content; animation: drift var(--marquee-dur, 42s) linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* Cartões com leve inclinação 3D no hover */
+.tilt { transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.35s, box-shadow 0.35s; transform-style: preserve-3d; }
+.tilt:hover { transform: perspective(900px) rotateX(2.5deg) rotateY(-2deg) translateY(-4px); box-shadow: 0 18px 44px -18px rgba(6, 7, 13, 0.9); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .marquee-track, .animate-rise, .animate-caret, .animate-dash, .animate-floaty { animation: none !important; }
+  .tilt, .tilt:hover { transform: none; transition: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
 }
 
 * { -webkit-font-smoothing: antialiased; }
-::selection { background: rgba(166,121,255,0.35); }
+::selection { background: rgba(166, 121, 255, 0.35); }

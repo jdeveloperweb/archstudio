@@ -1,10 +1,14 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ArchStudio — Arquitetura com IA',
+  title: 'ArchStudio — a arquitetura se desenha enquanto você conversa',
   description:
-    'Desenhe arquitetura de software no navegador, com um assistente de IA que projeta e desenha junto. Projetos privados, export PNG/SVG, sua própria chave de API.',
+    'Descreva o sistema em português e veja o diagrama de arquitetura ser desenhado na hora por um assistente de IA. Projetos privados, sua própria chave de API, export PNG/SVG e geração de infra (CDK/Terraform) a partir do desenho.',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0b0e1a',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,11 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-bg text-ink font-sans">{children}</body>
+      <body className="min-h-screen bg-bg font-sans text-ink">{children}</body>
     </html>
   );
 }

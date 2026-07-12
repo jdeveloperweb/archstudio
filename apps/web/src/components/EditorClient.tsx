@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import { ChatPanel } from '@/components/ChatPanel';
+import { Mark } from '@/components/Brand';
 
 type Save = 'idle' | 'saving' | 'saved';
 
@@ -106,25 +107,41 @@ export function EditorClient({ id }: { id: string }) {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-      <div className="flex items-center gap-3 border-b border-border bg-panel px-4 py-2">
-        <Link href="/app" className="text-sm text-dim hover:text-ink">
-          ← Projetos
+      <div className="flex items-center gap-3 border-b border-border/80 bg-panel/80 px-4 py-2 backdrop-blur-md">
+        <Link
+          href="/app"
+          className="btn-focus rounded-lg px-2 py-1 font-mono text-xs text-dim transition hover:text-ink"
+        >
+          ← projetos
         </Link>
+        <span className="h-4 w-px bg-border" aria-hidden />
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={saveName}
-          className="rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold hover:border-border focus:border-accent focus:outline-none"
+          aria-label="Nome do diagrama"
+          className="btn-focus rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold transition hover:border-border focus:border-accent focus:outline-none"
         />
-        <span className="text-xs text-dim">
-          {save === 'saving' ? 'salvando…' : save === 'saved' ? '✓ salvo' : ''}
+        <span
+          className={`flex items-center gap-1.5 font-mono text-xs transition ${
+            save === 'saving' ? 'text-aws' : save === 'saved' ? 'text-sless' : 'text-transparent'
+          }`}
+          aria-live="polite"
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${save === 'saving' ? 'animate-caret bg-aws' : 'bg-sless'}`} />
+          {save === 'saving' ? 'salvando…' : 'salvo'}
         </span>
         <div className="flex-1" />
         <button
           onClick={() => setChatOpen((v) => !v)}
-          className="rounded-lg border border-border bg-panel2 px-3 py-1.5 text-sm text-ink hover:border-accent"
+          className={`btn-focus flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm transition ${
+            chatOpen
+              ? 'border-accent/50 bg-accent/15 text-ink'
+              : 'border-border bg-panel2 text-ink hover:border-accent/60'
+          }`}
         >
-          {chatOpen ? 'Ocultar IA' : '🤖 Assistente'}
+          <Mark size={14} />
+          {chatOpen ? 'Ocultar assistente' : 'Assistente'}
         </button>
       </div>
 

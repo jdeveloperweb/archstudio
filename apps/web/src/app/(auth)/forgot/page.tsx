@@ -20,8 +20,8 @@ export default function ForgotPage() {
   }
 
   return (
-    <Card className="p-6">
-      <h1 className="text-xl font-semibold">Esqueci a senha</h1>
+    <Card className="p-7">
+      <h1 className="font-display text-2xl font-bold tracking-tight">Esqueci a senha</h1>
       {done ? (
         <p className="mt-3 text-sm text-dim">
           Se o e-mail existir, enviamos um link para redefinir sua senha.

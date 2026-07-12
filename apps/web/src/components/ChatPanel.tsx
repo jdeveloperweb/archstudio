@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { api, ApiError } from '@/lib/client';
 import type { ChatMsg } from '@/lib/types';
+import { Mark } from '@/components/Brand';
 
 type UiMsg = ChatMsg & { applied?: boolean };
 
@@ -67,35 +68,43 @@ export function ChatPanel({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <span className="text-lg">🤖</span>
-        <div className="text-sm font-semibold">Assistente de arquitetura</div>
+      <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent/40 bg-accent/10">
+          <Mark size={15} />
+        </span>
+        <div>
+          <div className="text-sm font-semibold leading-tight">Assistente de arquitetura</div>
+          <div className="font-mono text-[10px] text-dim">desenha enquanto responde</div>
+        </div>
       </div>
 
       <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-3">
         {messages.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-                m.role === 'user' ? 'bg-accent text-white' : 'border border-border bg-panel2 text-ink'
+              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                m.role === 'user'
+                  ? 'rounded-br-md bg-gradient-to-b from-accent to-[#8b5cf6] text-white'
+                  : 'rounded-bl-md border border-border bg-panel2 text-ink'
               }`}
             >
               {m.content}
               {m.applied && (
-                <div className="mt-1.5 text-xs text-sless">✎ aplicado ao desenho</div>
+                <div className="mt-1.5 font-mono text-xs text-sless">✓ aplicado ao desenho</div>
               )}
             </div>
           </div>
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl border border-border bg-panel2 px-3 py-2 text-sm text-dim">
+            <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border bg-panel2 px-3.5 py-2 text-sm text-dim">
+              <span className="h-1.5 w-1.5 animate-caret rounded-full bg-pulse" />
               desenhando…
             </div>
           </div>
         )}
         {needKey && (
-          <div className="rounded-lg border border-aws/40 bg-aws/10 px-3 py-2 text-xs text-aws">
+          <div className="rounded-xl border border-aws/40 bg-aws/10 px-3 py-2 text-xs text-aws">
             Você ainda não configurou uma chave de API.{' '}
             <Link href="/app/settings" className="underline">
               Configurar agora
@@ -105,26 +114,31 @@ export function ChatPanel({
       </div>
 
       <div className="border-t border-border p-3">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          rows={2}
-          placeholder="Descreva ou peça uma alteração…  (Enter envia)"
-          className="w-full resize-none rounded-lg border border-border bg-panel2 px-3 py-2 text-sm text-ink placeholder:text-dim focus:border-accent focus:outline-none"
-        />
-        <button
-          onClick={send}
-          disabled={loading || !input.trim()}
-          className="mt-2 w-full rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50"
-        >
-          Enviar
-        </button>
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            rows={2}
+            placeholder="Descreva ou peça uma alteração…"
+            aria-label="Mensagem para o assistente"
+            className="btn-focus w-full resize-none rounded-xl border border-border bg-void/60 px-3.5 py-2.5 text-sm text-ink placeholder:text-dim/70 transition focus:border-accent/70 focus:outline-none"
+          />
+          <button
+            onClick={send}
+            disabled={loading || !input.trim()}
+            aria-label="Enviar mensagem"
+            className="btn-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-accent to-[#8b5cf6] text-lg text-white shadow-[0_4px_18px_-6px_rgba(166,121,255,0.6)] transition hover:brightness-110 disabled:opacity-40"
+          >
+            ↑
+          </button>
+        </div>
+        <p className="mt-1.5 font-mono text-[10px] text-dim/70">Enter envia · Shift+Enter quebra linha</p>
       </div>
     </div>
   );

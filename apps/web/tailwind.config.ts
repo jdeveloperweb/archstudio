@@ -5,20 +5,53 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#0e1017',
-        panel: '#151824',
-        panel2: '#1c2032',
-        border: '#2a2f47',
-        ink: '#e6e8f2',
-        dim: '#8f94ad',
+        // Superfícies — azul-tinta profundo (prancheta), nunca preto puro
+        void: '#06070d',
+        bg: '#0b0e1a',
+        panel: '#121628',
+        panel2: '#1a1f38',
+        border: '#272e52',
+        ink: '#edeffa',
+        dim: '#8d93b8',
+        // Acentos com papel: violeta = IA/conversa, ciano = dados em movimento,
+        // âmbar = infraestrutura gerada
         accent: '#a679ff',
-        aws: '#ff9900',
+        pulse: '#5ee7ff',
+        aws: '#ffb454',
         sless: '#4ade80',
         red: '#f87171',
       },
       fontFamily: {
         sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Cascadia Code', 'Consolas', 'monospace'],
+        display: ['"Bricolage Grotesque"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'Cascadia Code', 'Consolas', 'monospace'],
+      },
+      keyframes: {
+        rise: {
+          from: { opacity: '0', transform: 'translateY(18px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        drift: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
+        caret: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
+        dash: {
+          to: { strokeDashoffset: '-24' },
+        },
+        floaty: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+      },
+      animation: {
+        rise: 'rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        caret: 'caret 1s step-end infinite',
+        dash: 'dash 1.2s linear infinite',
+        floaty: 'floaty 7s ease-in-out infinite',
       },
     },
   },

@@ -28,9 +28,9 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <Card className="p-6 text-center">
+      <Card className="p-7 text-center">
         <div className="text-3xl">📬</div>
-        <h1 className="mt-2 text-xl font-semibold">Confirme seu e-mail</h1>
+        <h1 className="mt-2 font-display text-2xl font-bold tracking-tight">Confirme seu e-mail</h1>
         <p className="mt-2 text-sm text-dim">
           Enviamos um link de confirmação para <span className="text-ink">{email}</span>. Clique nele
           para ativar sua conta e depois faça login.
@@ -43,8 +43,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="p-6">
-      <h1 className="text-xl font-semibold">Criar conta</h1>
+    <Card className="p-7">
+      <h1 className="font-display text-2xl font-bold tracking-tight">Criar conta</h1>
       <p className="mt-1 text-sm text-dim">Grátis. Sem cartão.</p>
       <form onSubmit={submit} className="mt-5 space-y-4">
         <Field label="Nome">
