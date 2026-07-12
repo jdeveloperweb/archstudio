@@ -321,33 +321,169 @@ function aidrawFlash(kind,item){
     if(el) el.classList.add('aidraw');
   }
 }
+/* Ajuste INCREMENTAL: casa o spec com o desenho atual (por id do agente, id do nó
+   ou rótulo). O que já existe fica onde o usuário deixou; rótulo/tipo/cor mudam no
+   lugar; só o que é novo é desenhado (animado); o que o spec não menciona sai.
+   Retorna null quando o spec não tem relação com o desenho atual (outro diagrama). */
+function mergeEmbedSpec(spec){
+  const sNodes=spec.nodes||[], sEdges=spec.edges||[], sBoxes=spec.boxes||[], sTexts=spec.texts||[];
+  const used=new Set(), pairs=[];
+  for(const sn of sNodes){
+    const sid=sn.id!=null?String(sn.id):null;
+    const lbl=(sn.label||'').trim().toLowerCase();
+    let ex=null;
+    if(sid) ex=state.nodes.find(n=>!used.has(n.id)&&(n.aid===sid||String(n.id)===sid));
+    if(!ex&&lbl) ex=state.nodes.find(n=>!used.has(n.id)&&n.type===sn.type&&(n.label||'').trim().toLowerCase()===lbl);
+    if(!ex&&lbl) ex=state.nodes.find(n=>!used.has(n.id)&&(n.label||'').trim().toLowerCase()===lbl);
+    if(ex) used.add(ex.id);
+    pairs.push({sn,ex,node:null});
+  }
+  if(sNodes.length&&!pairs.some(p=>p.ex)) return null;
+  pushUndo();                                  /* o ajuste da IA vira um passo de Ctrl+Z */
+  const final={seq:state.seq,nodes:[],edges:[],boxes:[],arrows:[...state.arrows],texts:[]};
+  const newNodes=[], changed=[];
+  for(const p of pairs){
+    const {sn,ex}=p;
+    if(ex){
+      if(sn.id!=null) ex.aid=String(sn.id);
+      const nl=(sn.label||'').slice(0,42);
+      if(nl&&nl!==ex.label){ ex.label=nl; changed.push(ex.id); }
+      if(TYPE_INDEX[sn.type]&&sn.type!==ex.type){ ex.type=sn.type; changed.push(ex.id); }
+      if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) ex.color=sn.color;
+      p.node=ex;
+    } else {
+      const t=TYPE_INDEX[sn.type]?sn.type:'api';
+      const nn={id:++final.seq,type:t,label:(sn.label||TYPE_INDEX[t].n).slice(0,42),s:Math.max(0.6,Math.min(2.2,sn.s||1)),st:sn.style==='icon'?'icon':'card',x:sn.x,y:sn.y};
+      if(sn.id!=null) nn.aid=String(sn.id);
+      if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) nn.color=sn.color;
+      p.node=nn; newNodes.push(p);
+    }
+    final.nodes.push(p.node);
+  }
+  const nodeOf=sid=>{ const p=pairs.find(q=>String(q.sn.id??'')===String(sid)); return p&&p.node; };
+  /* novos nós nascem perto do vizinho a que se conectam */
+  for(const p of newNodes){
+    const nn=p.node;
+    if(nn.x!=null&&nn.y!=null) continue;
+    let anchor=null, dir=1;
+    for(const se of sEdges){
+      if(p.sn.id!=null&&String(se.from)===String(p.sn.id)){ const o=nodeOf(se.to); if(o&&o.x!=null){anchor=o;dir=-1;break;} }
+      if(p.sn.id!=null&&String(se.to)===String(p.sn.id)){ const o=nodeOf(se.from); if(o&&o.x!=null){anchor=o;dir=1;break;} }
+    }
+    const placed=final.nodes.filter(n=>n!==nn&&n.x!=null&&n.y!=null);
+    let x,y;
+    if(anchor){ x=anchor.x+dir*235; y=anchor.y; }
+    else{ x=placed.length?Math.max(...placed.map(n=>n.x))+235:130; y=placed.length?placed[0].y:150; }
+    while(placed.some(n=>Math.abs(n.x-x)<170&&Math.abs(n.y-y)<110)) y+=145;
+    nn.x=x; nn.y=y;
+  }
+  /* arestas: mantém as que continuam, cria as novas, descarta as que saíram */
+  const usedE=new Set(), newEdges=[];
+  for(const se of sEdges){
+    const f=nodeOf(se.from), t=nodeOf(se.to);
+    if(!f||!t) continue;
+    let ex=state.edges.find(e=>!usedE.has(e.id)&&e.from===f.id&&e.to===t.id);
+    if(ex){
+      usedE.add(ex.id);
+      ex.label=(se.label||'').slice(0,40); ex.dash=!!se.dash;
+      if(['end','both','none'].includes(se.heads)) ex.heads=se.heads;
+      if(se.w) ex.w=Math.max(1,Math.min(6,se.w));
+      if(se.color&&/^#[0-9a-fA-F]{6}$/.test(se.color)) ex.color=se.color;
+      final.edges.push(ex);
+    } else {
+      const ne={id:++final.seq,from:f.id,to:t.id,label:(se.label||'').slice(0,40),dash:!!se.dash,heads:['end','both','none'].includes(se.heads)?se.heads:'end',w:Math.max(1,Math.min(6,se.w||2))};
+      if(se.color&&/^#[0-9a-fA-F]{6}$/.test(se.color)) ne.color=se.color;
+      final.edges.push(ne); newEdges.push(ne);
+    }
+  }
+  /* caixas: casa por id/rótulo e cresce para abraçar os novos membros */
+  const usedB=new Set(), newBoxes=[];
+  for(const sb of sBoxes){
+    const key=String(sb.id??sb.label), lbl=sb.label||String(sb.id);
+    const members=pairs.filter(q=>String(q.sn.box??'')===key).map(q=>q.node).filter(n=>n&&n.x!=null);
+    if(!members.length) continue;
+    const minx=Math.min(...members.map(n=>n.x))-36, miny=Math.min(...members.map(n=>n.y))-48;
+    const maxr=Math.max(...members.map(n=>n.x+nodeW(n)))+36, maxb=Math.max(...members.map(n=>n.y+nodeH(n)))+34;
+    let bx=state.boxes.find(b=>!usedB.has(b.id)&&(b.aid===key||b.label===lbl));
+    if(bx){
+      usedB.add(bx.id); bx.aid=key; bx.label=lbl;
+      const nx=Math.min(bx.x,minx), ny=Math.min(bx.y,miny);
+      const nr=Math.max(bx.x+bx.w,maxr), nb=Math.max(bx.y+bx.h,maxb);
+      bx.x=nx; bx.y=ny; bx.w=nr-nx; bx.h=nb-ny;
+      if(sb.color&&/^#/.test(sb.color)) bx.color=sb.color;
+      final.boxes.push(bx);
+    } else {
+      const nb2={id:++final.seq,x:minx,y:miny,w:maxr-minx,h:maxb-miny,label:lbl,aid:key,
+        color:(sb.color&&/^#/.test(sb.color))?sb.color:BOX_COLORS[(state.boxes.length+newBoxes.length)%BOX_COLORS.length]};
+      final.boxes.push(nb2); newBoxes.push(nb2);
+    }
+  }
+  /* textos: casa pelo conteúdo */
+  const usedT=new Set(), newTexts=[];
+  let ty=(final.nodes.length?Math.max(...final.nodes.map(n=>n.y+nodeH(n))):200)+70;
+  for(const tx of sTexts){
+    const key=(tx.text||'').trim();
+    if(!key) continue;
+    let ex=state.texts.find(t=>!usedT.has(t.id)&&t.text.trim()===key);
+    if(ex){ usedT.add(ex.id); final.texts.push(ex); }
+    else{
+      const t={id:++final.seq,x:tx.x??130,y:tx.y!=null?tx.y:ty,text:key.slice(0,300),size:Math.max(10,Math.min(34,tx.size||14))};
+      if(tx.bold) t.b=true; if(tx.italic) t.it=true;
+      if(tx.color&&/^#[0-9a-fA-F]{6}$/.test(tx.color)) t.color=tx.color;
+      if(tx.align==='center'||tx.align==='right') t.align=tx.align;
+      if(tx.frame){ t.frame=true; t.w=Math.max(90,Math.min(600,tx.w||200)); if(tx.bg&&/^#[0-9a-fA-F]{6}$/.test(tx.bg)) t.bg=tx.bg; }
+      if(tx.y==null) ty+=(tx.size||14)*1.6+10;
+      final.texts.push(t); newTexts.push(t);
+    }
+  }
+  const nN=new Set(newNodes.map(p=>p.node.id)), nE=new Set(newEdges.map(e=>e.id)),
+        nB=new Set(newBoxes.map(b=>b.id)), nT=new Set(newTexts.map(t=>t.id));
+  const base={seq:final.seq,
+    nodes:final.nodes.filter(n=>!nN.has(n.id)), edges:final.edges.filter(e=>!nE.has(e.id)),
+    boxes:final.boxes.filter(b=>!nB.has(b.id)), arrows:[...final.arrows],
+    texts:final.texts.filter(t=>!nT.has(t.id))};
+  const steps=[];
+  for(const b of final.boxes) if(nB.has(b.id)) steps.push(['boxes',b,420]);
+  for(const p of newNodes.sort((a,b)=>(a.node.x-b.node.x)||(a.node.y-b.node.y))) steps.push(['nodes',p.node,340]);
+  for(const e of final.edges) if(nE.has(e.id)) steps.push(['edges',e,230]);
+  for(const t of final.texts) if(nT.has(t.id)) steps.push(['texts',t,300]);
+  return {base,final,steps,changed};
+}
 function applyEmbedSpec(spec){
   cancelEmbedAnim();
-  const st=normalizeSpec(spec);
   if(spec&&spec.name) document.getElementById('diagTitle').value=spec.name;
-  undoStack.length=0; redoStack.length=0; sel=null; connSrc=null;
-  const steps=[];
-  for(const b of st.boxes) steps.push(['boxes',b,420]);
-  for(const n of [...st.nodes].sort((a,b)=>(a.x-b.x)||(a.y-b.y))) steps.push(['nodes',n,340]);
-  for(const e of st.edges) steps.push(['edges',e,230]);
-  for(const a of st.arrows) steps.push(['arrows',a,230]);
-  for(const t of st.texts) steps.push(['texts',t,300]);
+  sel=null; connSrc=null;
+  const empty=!state.nodes.length&&!state.boxes.length&&!state.texts.length;
+  let plan=empty?null:mergeEmbedSpec(spec);
+  if(!plan){                       /* canvas vazio ou diagrama sem relação: desenha do zero */
+    if(!empty) pushUndo();
+    const st=normalizeSpec(spec);
+    const steps=[];
+    for(const b of st.boxes) steps.push(['boxes',b,420]);
+    for(const n of [...st.nodes].sort((a,b)=>(a.x-b.x)||(a.y-b.y))) steps.push(['nodes',n,340]);
+    for(const e of st.edges) steps.push(['edges',e,230]);
+    for(const t of st.texts) steps.push(['texts',t,300]);
+    plan={base:{seq:st.seq,nodes:[],edges:[],boxes:[],arrows:[],texts:[]},final:st,steps,changed:[]};
+  }
+  startEmbedDraw(plan);
+}
+function startEmbedDraw({base,final,steps,changed}){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(!steps.length||reduced){
-    suppressEmit=true; try{ state=st; renderAll(); }finally{ suppressEmit=false; }
+    suppressEmit=true; try{ state=final; renderAll(); }finally{ suppressEmit=false; }
     emitChange(); return;
   }
-  state={seq:st.seq,nodes:[],edges:[],boxes:[],arrows:[],texts:[]};
-  suppressEmit=true; renderAll();
+  state=base; suppressEmit=true; renderAll();
+  (changed||[]).forEach(id=>{ const el=canvas.querySelector(`.node[data-id="${id}"]`); if(el) el.classList.add('aidraw'); });
   const speed=steps.length>24?0.55:steps.length>14?0.75:1;  /* diagramas grandes desenham mais rápido */
   let i=0;
   const tick=()=>{
     const [kind,item,dur]=steps[i++];
     state[kind].push(item); renderAll(); aidrawFlash(kind,item);
     if(i<steps.length){ embedAnim.timer=setTimeout(tick,dur*speed); }
-    else{ embedAnim=null; suppressEmit=false; emitChange(); }
+    else{ state=final; embedAnim=null; suppressEmit=false; renderAll(); emitChange(); }
   };
-  embedAnim={final:st,timer:setTimeout(tick,180)};
+  embedAnim={final,timer:setTimeout(tick,180)};
 }
 function onParentMessage(ev){
   if(ev.origin!==location.origin) return;
@@ -1091,6 +1227,7 @@ function normalizeSpec(spec){
   for(const n of spec.nodes||[]){
     const t=TYPE_INDEX[n.type]?n.type:'api';
     const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,42),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
+    if(n.id!=null) nn.aid=String(n.id);   /* id do agente: permite ajustes incrementais depois */
     if(n.color&&/^#[0-9a-fA-F]{6}$/.test(n.color)) nn.color=n.color;
     idMap[String(n.id??st.seq)]=nn.id;
     st.nodes.push(nn);
@@ -1106,7 +1243,7 @@ function normalizeSpec(spec){
     const mem=st.nodes.filter(n=>String(n._box)===String(bd.key));
     if(!mem.length) continue;
     const minx=Math.min(...mem.map(n=>n.x))-36, miny=Math.min(...mem.map(n=>n.y))-48;
-    st.boxes.push({id:++st.seq,x:minx,y:miny,label:bd.label,color:bd.color,
+    st.boxes.push({id:++st.seq,x:minx,y:miny,label:bd.label,color:bd.color,aid:String(bd.key),
       w:Math.max(...mem.map(n=>n.x+nodeW(n)))-minx+36, h:Math.max(...mem.map(n=>n.y+nodeH(n)))-miny+34});
   }
   const maxY = st.nodes.length ? Math.max(...st.nodes.map(n=>n.y+nodeH(n))) : 200;
