@@ -8,17 +8,21 @@
 
 <p align="center">
   Um editor de diagramas de arquitetura de software que cabe em <strong>um único arquivo HTML</strong> — feito para humanos <em>e</em> agentes de IA.
+  <br>
+  Agora também uma <strong>plataforma hospedada</strong> com contas, projetos privados na nuvem e a <strong>Ari</strong> — uma assistente de IA que projeta e <em>desenha</em> com você.
   <br><br>
-  <a href="https://archstudio.mjolnix.com.br"><strong>▶ Demo ao vivo — archstudio.mjolnix.com.br</strong></a>
+  <a href="https://studio.mjolnix.com.br"><strong>✦ Plataforma (contas + IA) — studio.mjolnix.com.br</strong></a>
+  ·
+  <a href="https://archstudio.mjolnix.com.br"><strong>▶ Canvas standalone — archstudio.mjolnix.com.br</strong></a>
   ·
   <a href="README.md">🇺🇸 Read in English</a>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-a679ff.svg" alt="licença MIT"></a>
-  <img src="https://img.shields.io/badge/depend%C3%AAncias-zero-4ade80.svg" alt="zero dependências">
-  <img src="https://img.shields.io/badge/app-1%20arquivo%20HTML-ff9900.svg" alt="um único arquivo HTML">
+  <img src="https://img.shields.io/badge/canvas-1%20arquivo%20HTML%20·%20zero%20deps-ff9900.svg" alt="um único arquivo HTML, zero dependências">
   <img src="https://img.shields.io/badge/IA-agent%20native-7c9eff.svg" alt="nativo para agentes de IA">
+  <img src="https://img.shields.io/badge/plataforma-Next.js%20·%20Spring%20·%20Postgres-5ee7ff.svg" alt="stack da plataforma">
 </p>
 
 ---
@@ -48,6 +52,22 @@ O ArchStudio fecha esse buraco. É um canvas que **fala JSON**: você (ou seu ag
   <br>
   <em>Desenhado por um agente de IA a partir de <a href="examples/rag-serverless-aws.archstudio.json">uma spec JSON</a>, renderizado headless com <code>&view=clean</code> — nenhum humano arrastou uma caixa sequer.</em>
 </p>
+
+## A plataforma hospedada — [studio.mjolnix.com.br](https://studio.mjolnix.com.br)
+
+O mesmo canvas, agora um produto completo: você entra, guarda seus diagramas na nuvem e projeta com a **Ari**, uma assistente de IA que desenha junto com você.
+
+- **Contas & privacidade** — cadastro com confirmação de e-mail, redefinição de senha e projetos privados por usuário. Senhas com BCrypt(12); a sessão vive num cookie httpOnly + SameSite.
+- **Ari, a assistente de IA** — um painel lateral no editor que discute trade-offs e **desenha no canvas**. Descreva um sistema (*"um checkout resiliente na AWS com fila e fallback de pagamento"*) e veja aparecer. A Ari edita de forma **incremental** — preserva o seu layout, muda só o que precisa e anima as partes novas (caixas → nós → setas).
+- **Sua própria chave** — escolha o provedor (OpenAI, Anthropic/Claude, Google/Gemini, Groq, Mistral, DeepSeek, OpenRouter, ou qualquer endpoint OpenAI-compatível como Ollama) e cole sua chave de API. Ela é guardada **cifrada (AES-256-GCM)** e usada só para chamar o modelo em seu nome.
+- **Perfil & configurações** — foto, nome, troca de senha, exclusão de conta, e a configuração do provedor de IA.
+- **Temas** — Claro (padrão), Escuro, Meia-noite, ou seguir o sistema; o canvas do editor acompanha o tema do app.
+- **Sobre o canvas** — a plataforma embute o mesmo motor [`index.html`](index.html) via `<iframe>` + ponte `postMessage` (nada de fork). O canvas open-source standalone continua funcionando igual.
+
+**Stack:** Next.js 14 · Spring Boot 3 / Java 17 · Postgres 16 · Docker Compose · nginx — código em [`apps/web/`](apps/web/), [`services/api/`](services/api/) e [`infra/`](infra/).
+**Hospede você mesmo:** `bash infra/deploy.sh` builda e sobe db + api + web. Veja [`platform/README.md`](platform/README.md) e o contrato completo de API/DB/auth em [`platform/CONTRACT.md`](platform/CONTRACT.md).
+
+> A plataforma vive na branch **`platform`** e é **aditiva**: o `index.html` na raiz continua um arquivo único, sem dependências.
 
 ## Começando
 
