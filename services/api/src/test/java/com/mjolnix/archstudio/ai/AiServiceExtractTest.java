@@ -75,4 +75,12 @@ class AiServiceExtractTest {
         String tricky = "{\"nodes\":[{\"id\":\"a\",\"label\":\"chaves { } e aspas \\\" no rótulo\"}]}";
         assertEquals(tricky, AiService.balancedJson(tricky + " resto"));
     }
+
+    @Test
+    void promptNomeiaAriEReforcaEvolucaoDoDesenho() {
+        String prompt = SystemPrompt.build("{\"nodes\":[{\"id\":\"api\",\"type\":\"api\"}]}");
+        assertTrue(prompt.contains("Ari"));
+        assertTrue(prompt.contains("melhorar"));
+        assertTrue(prompt.contains("DIAGRAMA ATUAL"));
+    }
 }

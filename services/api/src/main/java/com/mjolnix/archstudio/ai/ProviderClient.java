@@ -23,6 +23,8 @@ public class ProviderClient {
             .codecs(c -> c.defaultCodecs().maxInMemorySize(4 * 1024 * 1024))
             .build();
     private static final Duration TIMEOUT = Duration.ofSeconds(90);
+    private static final double TEMPERATURE = 0.35;
+    private static final int MAX_OUTPUT_TOKENS = 8000;
 
     public String complete(ResolvedProvider p, String system, List<Msg> messages) {
         try {
@@ -49,7 +51,11 @@ public class ProviderClient {
         for (Msg m : messages) {
             msgs.add(Map.of("role", "assistant".equals(m.role()) ? "assistant" : "user", "content", m.content()));
         }
-        Map<String, Object> body = Map.of("model", p.model(), "messages", msgs, "temperature", 0.4);
+        Map<String, Object> body = Map.of(
+                "model", p.model(),
+                "messages", msgs,
+                "temperature", TEMPERATURE,
+                "max_tokens", MAX_OUTPUT_TOKENS);
         JsonNode res = http.post().uri(p.baseUrl() + "/chat/completions")
                 .header("Authorization", "Bearer " + p.apiKey())
                 .bodyValue(body).retrieve().bodyToMono(JsonNode.class).block(TIMEOUT);
@@ -61,7 +67,12 @@ public class ProviderClient {
         for (Msg m : messages) {
             msgs.add(Map.of("role", "assistant".equals(m.role()) ? "assistant" : "user", "content", m.content()));
         }
-        Map<String, Object> body = Map.of("model", p.model(), "max_tokens", 8000, "system", system, "messages", msgs);
+        Map<String, Object> body = Map.of(
+                "model", p.model(),
+                "max_tokens", MAX_OUTPUT_TOKENS,
+                "temperature", TEMPERATURE,
+                "system", system,
+                "messages", msgs);
         JsonNode res = http.post().uri(p.baseUrl() + "/messages")
                 .header("x-api-key", p.apiKey())
                 .header("anthropic-version", "2023-06-01")
@@ -78,7 +89,10 @@ public class ProviderClient {
         }
         Map<String, Object> body = Map.of(
                 "systemInstruction", Map.of("parts", List.of(Map.of("text", system))),
-                "contents", contents);
+                "contents", contents,
+                "generationConfig", Map.of(
+                        "temperature", TEMPERATURE,
+                        "maxOutputTokens", MAX_OUTPUT_TOKENS));
         String url = p.baseUrl() + "/models/" + p.model() + ":generateContent?key=" + p.apiKey();
         JsonNode res = http.post().uri(url)
                 .bodyValue(body).retrieve().bodyToMono(JsonNode.class).block(TIMEOUT);

@@ -173,12 +173,12 @@ export default function Landing() {
           </div>
 
           <div className="relative" style={{ perspective: '1400px' }}>
-            {/* painel de vidro em perspectiva que inclina com o ponteiro */}
+            {/* cena viva em perspectiva, sem moldura ao redor */}
             <div
               data-tilt="2.4"
-              className="gradient-ring relative rounded-3xl border border-border/70 bg-panel/40 p-2 shadow-[0_40px_90px_-40px_rgb(var(--c-accent)/0.5)] backdrop-blur-sm"
+              className="relative"
             >
-              <Hero3D light className="h-[420px] w-full rounded-2xl sm:h-[500px] lg:h-[600px]" />
+              <Hero3D light className="h-[420px] w-full sm:h-[500px] lg:h-[600px]" />
             </div>
             {/* componentes pairando em profundidades diferentes */}
             <FloatChip icon={Cloud} label="CloudFront" className="left-[-2%] top-[6%] max-lg:hidden" mouse="0.9" />

@@ -146,7 +146,7 @@ export function Hero3D({ className = '', light = false }: { className?: string; 
           cat: { network: '#4f6ef7', compute: '#7c3aed', data: '#0891b2', queue: '#d97706', ai: '#c026d3' } as Record<Cat, string>,
           grid: 'rgba(124,58,237,0.15)',
           fade0: 'rgba(250,250,255,0)',
-          fade1: 'rgba(250,250,255,0.97)',
+          fade1: 'rgba(250,250,255,0)',
           edgeRGB: '8,145,178',
           edgeA: 0.55,
           pulse: '#0891b2',

@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'ArchStudio — a arquitetura se desenha enquanto você conversa',
   description:
     'Descreva o sistema em português e veja o diagrama de arquitetura ser desenhado na hora por um assistente de IA. Projetos privados, sua própria chave de API, export PNG/SVG e geração de infra (CDK/Terraform) a partir do desenho.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: ['/favicon.svg'],
+  },
 };
 
 export const viewport: Viewport = {

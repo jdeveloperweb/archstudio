@@ -155,7 +155,7 @@ export function EditorClient({ id }: { id: string }) {
           }`}
         >
           <Mark size={14} />
-          {chatOpen ? 'Ocultar assistente' : 'Assistente'}
+          {chatOpen ? 'Ocultar Ari' : 'Ari'}
         </button>
       </div>
 

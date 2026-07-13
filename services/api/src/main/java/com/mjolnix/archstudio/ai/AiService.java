@@ -35,10 +35,11 @@ public class AiService {
     private static final Pattern DRAW_INTENT = Pattern.compile(
             "(?iu)desenh|diagram|arquitetur|adicion|inclu|coloc|cri[ae]|remov|apag|tir[ae]|delet"
                     + "|conect|lig[aou]|mud[ae]|alter|atualiz|troc|substitu|renome|mont[ae]|ger[ae]"
-                    + "|evolu|insir|bote|acrescent|refa[cç]|redesenh|ajust");
+                    + "|evolu|insir|bote|acrescent|refa[cç]|redesenh|ajust|melhor|otimiz|suger"
+                    + "|sugest|recomend|fortalec|resilien|seguran|observabil|escala|custo");
 
     private static final String NUDGE =
-            "Sua resposta anterior não trouxe o bloco ```archstudio. Responda AGORA apenas com o "
+            "Sua resposta anterior não trouxe o bloco ```archstudio. Como Ari, responda AGORA apenas com o "
                     + "bloco ```archstudio contendo a spec JSON completa e atualizada do diagrama — "
                     + "nenhum texto fora do bloco, e feche o bloco com ```.";
 

@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowUp, PenTool, X } from 'lucide-react';
+import { Activity, ArrowUp, PenTool, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/client';
 import type { ChatMsg } from '@/lib/types';
 import { Mark } from '@/components/Brand';
@@ -9,6 +9,45 @@ import { Markdown } from '@/components/Markdown';
 
 type SpecState = 'pending' | 'applied' | 'dismissed';
 type UiMsg = ChatMsg & { spec?: any; specState?: SpecState };
+
+const AI_NAME = 'Ari';
+
+const QUICK_ACTIONS = [
+  {
+    label: 'Melhorar desenho',
+    prompt: 'Analise o desenho atual e melhore a arquitetura mantendo a intenção original. Adicione só o que trouxer valor real.',
+    icon: Sparkles,
+  },
+  {
+    label: 'Segurança',
+    prompt: 'Fortaleça a segurança desta arquitetura com autenticação, autorização, segredos e fronteiras de rede onde fizer sentido.',
+    icon: ShieldCheck,
+  },
+  {
+    label: 'Observabilidade',
+    prompt: 'Adicione observabilidade ao desenho atual: logs, métricas, traces, alertas e componentes necessários para operar em produção.',
+    icon: Activity,
+  },
+  {
+    label: 'IA/RAG',
+    prompt: 'Evolua esta arquitetura com uma camada de IA/RAG bem desenhada, incluindo ingestão, embeddings, vector DB, retriever, LLM e guardrails.',
+    icon: PenTool,
+  },
+];
+
+function AriAvatar({ small = false }: { small?: boolean }) {
+  return (
+    <span
+      className={`relative flex shrink-0 items-center justify-center rounded-xl border border-accent/35 bg-gradient-to-br from-accent/20 via-panel to-pulse/15 shadow-[0_8px_26px_-18px_rgb(var(--c-accent)/0.8)] ${
+        small ? 'h-7 w-7' : 'h-9 w-9'
+      }`}
+      aria-hidden
+    >
+      <Mark size={small ? 14 : 18} />
+      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-panel bg-sless" />
+    </span>
+  );
+}
 
 /** Quantos componentes do spec já existem no desenho atual (mesma heurística do canvas). */
 function countMatches(spec: any, diagram: any): { total: number; matches: number } {
@@ -57,13 +96,14 @@ export function ChatPanel({
     {
       role: 'assistant',
       content:
-        'Oi! Descreva a arquitetura que você quer e eu desenho. Ex.: “API de pedidos com fila, worker de pagamento e Postgres na AWS”. Também posso ajustar o desenho atual.',
+        'Oi, eu sou a Ari. Me diga o objetivo do sistema, a nuvem preferida ou o problema que quer resolver. Eu posso propor a arquitetura, desenhar no canvas e evoluir o que já existe.',
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [needKey, setNeedKey] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   function scrollDown() {
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
@@ -76,6 +116,11 @@ export function ChatPanel({
   function applySpecAt(idx: number, spec: any) {
     onApplySpec(spec);
     setSpecState(idx, 'applied');
+  }
+
+  function useSuggestion(prompt: string) {
+    setInput(prompt);
+    setTimeout(() => inputRef.current?.focus(), 20);
   }
 
   async function send() {
@@ -127,20 +172,19 @@ export function ChatPanel({
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent/40 bg-accent/10">
-          <Mark size={15} />
-        </span>
+        <AriAvatar />
         <div>
-          <div className="text-sm font-semibold leading-tight">Assistente de arquitetura</div>
-          <div className="font-mono text-[10px] text-dim">desenha enquanto responde</div>
+          <div className="text-sm font-semibold leading-tight">{AI_NAME}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">arquiteta IA do ArchStudio</div>
         </div>
       </div>
 
       <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto p-3">
         {messages.map((m, i) => (
-          <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+          <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start gap-2'}>
+            {m.role === 'assistant' && <AriAvatar small />}
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+              className={`${m.role === 'user' ? 'max-w-[85%]' : 'max-w-[78%]'} rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
                 m.role === 'user'
                   ? 'whitespace-pre-wrap rounded-br-md bg-gradient-to-b from-accent to-[#8b5cf6] text-white'
                   : 'rounded-bl-md border border-border bg-panel2 text-ink'
@@ -189,10 +233,11 @@ export function ChatPanel({
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex justify-start gap-2">
+            <AriAvatar small />
             <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border bg-panel2 px-3.5 py-2 text-sm text-dim">
               <span className="h-1.5 w-1.5 animate-caret rounded-full bg-pulse" />
-              desenhando…
+              Ari pensando no desenho…
             </div>
           </div>
         )}
@@ -207,8 +252,22 @@ export function ChatPanel({
       </div>
 
       <div className="border-t border-border p-3">
+        <div className="mb-2 grid grid-cols-2 gap-1.5">
+          {QUICK_ACTIONS.map(({ label, prompt, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => useSuggestion(prompt)}
+              className="btn-focus inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-panel2/70 px-2.5 py-1.5 text-left text-[11.5px] font-medium text-dim transition hover:border-accent/50 hover:text-ink"
+            >
+              <Icon size={13} className="shrink-0 text-accent" />
+              <span className="truncate">{label}</span>
+            </button>
+          ))}
+        </div>
         <div className="flex items-end gap-2">
           <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -218,7 +277,7 @@ export function ChatPanel({
               }
             }}
             rows={2}
-            placeholder="Descreva ou peça uma alteração…"
+            placeholder="Peça para a Ari desenhar, revisar ou evoluir…"
             aria-label="Mensagem para o assistente"
             className="btn-focus w-full resize-none rounded-xl border border-border bg-void/60 px-3.5 py-2.5 text-sm text-ink placeholder:text-dim/70 transition focus:border-accent/70 focus:outline-none"
           />
