@@ -18,7 +18,7 @@ export function ParallaxField({
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const root = ref.current!;
-    const els = Array.from(root.querySelectorAll<HTMLElement>('[data-depth], [data-mouse]'));
+    const els = Array.from(root.querySelectorAll<HTMLElement>('[data-depth], [data-mouse], [data-tilt]'));
     els.forEach((el) => el.classList.add('plx'));
     let raf = 0;
     let mx = 0;
@@ -33,6 +33,13 @@ export function ParallaxField({
       mx += (tmx - mx) * 0.08;
       my += (tmy - my) * 0.08;
       for (const el of els) {
+        const tilt = parseFloat(el.dataset.tilt || '0');
+        if (tilt) {
+          // inclinação 3D seguindo o ponteiro
+          el.style.transform =
+            `perspective(1200px) rotateY(${(mx * tilt).toFixed(2)}deg) rotateX(${(-my * tilt).toFixed(2)}deg)`;
+          continue;
+        }
         const d = parseFloat(el.dataset.depth || '0');
         const m = parseFloat(el.dataset.mouse || '0');
         el.style.transform = `translate3d(${(mx * 28 * m).toFixed(1)}px, ${(sy * d + my * 20 * m).toFixed(1)}px, 0)`;

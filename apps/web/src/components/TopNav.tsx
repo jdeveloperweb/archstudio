@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { Logo } from './Brand';
+import { ThemeToggle } from './ThemeToggle';
 import { api } from '@/lib/client';
 
 export function TopNav({ userName, avatar }: { userName?: string; avatar?: string | null }) {
@@ -39,6 +40,8 @@ export function TopNav({ userName, avatar }: { userName?: string; avatar?: strin
         {link('/app', 'Projetos')}
         {link('/app/settings', 'Configurações')}
         <div className="flex-1" />
+        <ThemeToggle />
+        <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
         {userName && (
           <Link
             href="/app/settings"

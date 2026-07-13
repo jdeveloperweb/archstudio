@@ -291,9 +291,11 @@ function emptyState(){ return {seq:0,nodes:[],edges:[],boxes:[],arrows:[],texts:
 /* ---- Modo embutido (plataforma ArchStudio): a página-mãe controla o carregar/salvar ---- */
 const EMBED = new URLSearchParams(location.search).get('embed')==='1';
 let suppressEmit=false;
+let embedTheme=null;   /* tema imposto pela plataforma (vence o tema salvo no doc) */
 function postToParent(msg){ try{ if(parent && parent!==window) parent.postMessage(msg, location.origin); }catch(e){} }
 function emitChange(){ if(suppressEmit) return; postToParent({type:'archstudio:change', doc:currentDoc()}); }
-function applyEmbedDoc(doc){ cancelEmbedAnim(); suppressEmit=true; try{ applyDoc(doc); }finally{ suppressEmit=false; } }
+function applyEmbedTheme(t){ if(t!=='dark'&&t!=='light') return; embedTheme=t; suppressEmit=true; try{ setTheme(t); renderAll(); }finally{ suppressEmit=false; } }
+function applyEmbedDoc(doc){ cancelEmbedAnim(); suppressEmit=true; try{ applyDoc(doc); if(embedTheme) setTheme(embedTheme); renderAll(); }finally{ suppressEmit=false; } }
 /* A IA desenha como uma pessoa: caixas → componentes na ordem do fluxo → conexões → notas */
 let embedAnim=null;
 function cancelEmbedAnim(){
@@ -493,9 +495,12 @@ function onParentMessage(ev){
   if(m.type==='archstudio:load' && m.doc) applyEmbedDoc(m.doc);
   else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:embedDoc()});
   else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec);
+  else if(m.type==='archstudio:theme' && m.theme) applyEmbedTheme(m.theme);
 }
 function initEmbed(){
   document.body.classList.add('embed');
+  const tp=new URLSearchParams(location.search).get('theme');   /* a plataforma escolhe claro/escuro */
+  if(tp==='light'||tp==='dark'){ embedTheme=tp; setTheme(tp); }
   state=emptyState(); sel=null; connSrc=null; renderAll();
   window.addEventListener('message', onParentMessage);
   postToParent({type:'archstudio:ready'});
@@ -707,14 +712,15 @@ function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify(sta
 function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify(state)); state=JSON.parse(redoStack.pop()); sel=null; persist(); renderAll(); }
 
 /* ============ TEMA / ZOOM ============ */
-function toggleTheme(){
-  const t = theme()==='dark'?'light':'dark';
+function setTheme(t){
+  if(t!=='dark'&&t!=='light') return;
   document.body.dataset.theme=t;
-  document.getElementById('themeBtn').innerHTML = t==='dark'
+  const btn=document.getElementById('themeBtn');
+  if(btn) btn.innerHTML = t==='dark'
     ? '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>'
     : '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
-  persist();
 }
+function toggleTheme(){ setTheme(theme()==='dark'?'light':'dark'); persist(); }
 function closeMenu(){ document.getElementById('moreMenu').classList.remove('open'); }
 document.addEventListener('pointerdown', ev=>{
   const m=document.getElementById('moreMenu');

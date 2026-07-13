@@ -2,8 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ---- Tokens: estúdio escuro por padrão; .light = entrada clara e colorida ---- */
-:root {
+/* =========================================================================
+   Temas. CLARO é o padrão do sistema (:root). Escuro e Meia-noite entram por
+   [data-theme] no <html>. O escopo .light força claro em subtrees públicas
+   (landing/auth) mesmo quando o usuário escolheu um tema escuro no app.
+   Cores em canais "R G B" para permitir alpha via rgb(var(--x) / a).
+   ========================================================================= */
+:root,
+.light {
+  color-scheme: light;
+  --c-void: 248 247 255;   /* fundo de campos/inputs */
+  --c-bg: 249 249 254;     /* fundo da página */
+  --c-panel: 255 255 255;  /* cartões */
+  --c-panel2: 244 243 255; /* superfícies secundárias/hover */
+  --c-border: 226 224 245;
+  --c-ink: 27 24 42;
+  --c-dim: 99 97 130;
+  --c-accent: 124 58 237;
+  --c-pulse: 8 145 178;
+  --c-aws: 217 119 6;
+  --c-sless: 22 163 74;
+  --c-red: 220 38 38;
+  --c-grid: 124 58 237;
+  --shadow-strength: 0.14;
+}
+
+:root[data-theme='dark'] {
   color-scheme: dark;
   --c-void: 6 7 13;
   --c-bg: 11 14 26;
@@ -17,45 +41,48 @@
   --c-aws: 255 180 84;
   --c-sless: 74 222 128;
   --c-red: 248 113 113;
+  --c-grid: 166 121 255;
+  --shadow-strength: 0.55;
 }
-.light {
-  color-scheme: light;
-  --c-void: 255 255 255;
-  --c-bg: 250 250 255;
-  --c-panel: 255 255 255;
-  --c-panel2: 244 243 255;
-  --c-border: 226 224 245;
-  --c-ink: 30 27 46;
-  --c-dim: 100 98 130;
-  --c-accent: 124 58 237;
-  --c-pulse: 8 145 178;
-  --c-aws: 217 119 6;
-  --c-sless: 22 163 74;
-  --c-red: 220 38 38;
+
+/* Meia-noite: índigo profundo, mais azul e "premium" que o escuro neutro */
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+  --c-void: 8 10 27;
+  --c-bg: 13 16 38;
+  --c-panel: 22 26 56;
+  --c-panel2: 30 36 74;
+  --c-border: 48 55 104;
+  --c-ink: 232 234 252;
+  --c-dim: 150 156 200;
+  --c-accent: 129 140 248;
+  --c-pulse: 56 189 248;
+  --c-aws: 251 191 36;
+  --c-sless: 52 211 153;
+  --c-red: 251 113 133;
+  --c-grid: 129 140 248;
+  --shadow-strength: 0.5;
 }
 
 html, body { height: 100%; }
 body {
-  background:
-    radial-gradient(1100px 520px at 12% -8%, rgba(166, 121, 255, 0.09), transparent 60%),
-    radial-gradient(900px 480px at 95% 8%, rgba(94, 231, 255, 0.05), transparent 55%),
-    #0b0e1a;
+  background-color: rgb(var(--c-bg));
+  background-image:
+    radial-gradient(1100px 560px at 12% -10%, rgb(var(--c-accent) / 0.10), transparent 60%),
+    radial-gradient(900px 480px at 96% 4%, rgb(var(--c-pulse) / 0.06), transparent 55%);
+  background-attachment: fixed;
+  transition: background-color 0.4s ease;
 }
 
-/* Grade de prancheta — o chão de todo desenho no ArchStudio */
+/* Grade de prancheta — segue o token do tema */
 .grid-bg {
   background-image:
-    linear-gradient(rgba(166, 121, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(166, 121, 255, 0.05) 1px, transparent 1px);
+    linear-gradient(rgb(var(--c-grid) / 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-grid) / 0.07) 1px, transparent 1px);
   background-size: 28px 28px;
 }
-.light .grid-bg {
-  background-image:
-    linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
-}
 
-/* Piso 3D em perspectiva (CSS puro) */
+/* Piso 3D em perspectiva (CSS puro) — segue os tokens do tema */
 .floor-3d {
   position: absolute;
   inset: auto 0 0 0;
@@ -63,17 +90,12 @@ body {
   transform-origin: 50% 100%;
   transform: perspective(700px) rotateX(62deg) scale(1.6);
   background-image:
-    linear-gradient(rgba(94, 231, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(166, 121, 255, 0.09) 1px, transparent 1px);
+    linear-gradient(rgb(var(--c-pulse) / 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-accent) / 0.12) 1px, transparent 1px);
   background-size: 56px 56px;
   -webkit-mask-image: linear-gradient(to top, black 30%, transparent 92%);
   mask-image: linear-gradient(to top, black 30%, transparent 92%);
   pointer-events: none;
-}
-.light .floor-3d {
-  background-image:
-    linear-gradient(rgba(8, 145, 178, 0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.12) 1px, transparent 1px);
 }
 
 @layer utilities {
@@ -83,6 +105,13 @@ body {
   .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.22em] text-dim; }
 
   .glass { @apply border border-border/80 bg-panel/70 backdrop-blur-md; }
+
+  /* Cartão elegante do app: brilho superior + sombra suave dirigida por token */
+  .surface {
+    @apply relative rounded-2xl border border-border bg-panel;
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 0.04) inset,
+      0 20px 46px -28px rgb(var(--c-accent) / calc(var(--shadow-strength) * 0.9));
+  }
 }
 
 /* Revelação ao rolar (ativada por .is-in via IntersectionObserver) */
@@ -100,11 +129,27 @@ body {
 
 /* Cartões com leve inclinação 3D no hover */
 .tilt { transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), border-color 0.35s, box-shadow 0.35s; transform-style: preserve-3d; }
-.tilt:hover { transform: perspective(900px) rotateX(2.5deg) rotateY(-2deg) translateY(-4px); box-shadow: 0 18px 44px -18px rgba(6, 7, 13, 0.9); }
-.light .tilt:hover { box-shadow: 0 22px 48px -20px rgba(124, 58, 237, 0.35); }
+.tilt:hover { transform: perspective(900px) rotateX(2.5deg) rotateY(-2deg) translateY(-4px); box-shadow: 0 22px 48px -20px rgb(var(--c-accent) / calc(var(--shadow-strength) * 0.7)); }
 
 /* Camadas de parallax (transform aplicado por JS via data-depth/data-mouse) */
 .plx { will-change: transform; }
+
+/* Borda com brilho de gradiente (conic) para o cartão-herói da landing */
+.gradient-ring {
+  position: relative;
+}
+.gradient-ring::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from 140deg, rgb(var(--c-accent) / 0.6), rgb(var(--c-pulse) / 0.5), rgb(var(--c-aws) / 0.45), rgb(var(--c-accent) / 0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
@@ -115,5 +160,4 @@ body {
 }
 
 * { -webkit-font-smoothing: antialiased; }
-::selection { background: rgba(166, 121, 255, 0.35); }
-.light ::selection { background: rgba(124, 58, 237, 0.22); }
+::selection { background: rgb(var(--c-accent) / 0.28); }

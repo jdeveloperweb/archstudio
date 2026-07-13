@@ -8,13 +8,20 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0b0e1a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f9f9fe' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b0e1a' },
+  ],
 };
+
+// Aplica o tema salvo antes da primeira pintura, evitando flash de tema errado.
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('as-theme')||'light';if(t==='system'){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'||t==='midnight'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

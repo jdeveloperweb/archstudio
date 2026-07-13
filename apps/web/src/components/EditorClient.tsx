@@ -21,12 +21,26 @@ export function EditorClient({ id }: { id: string }) {
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
+  // tema do app → canvas só entende claro/escuro (meia-noite conta como escuro)
+  const canvasTheme = () =>
+    typeof document !== 'undefined' && document.documentElement.dataset.theme ? 'dark' : 'light';
+  const [initialTheme] = useState(canvasTheme);
+
   const post = useCallback((msg: any) => {
     iframeRef.current?.contentWindow?.postMessage(msg, origin);
   }, [origin]);
 
   const sendLoad = useCallback(() => {
-    if (readyRef.current && docRef.current) post({ type: 'archstudio:load', doc: docRef.current });
+    if (!readyRef.current) return;
+    post({ type: 'archstudio:theme', theme: canvasTheme() });
+    if (docRef.current) post({ type: 'archstudio:load', doc: docRef.current });
+  }, [post]);
+
+  // repassa a troca de tema do app para o canvas embutido
+  useEffect(() => {
+    const obs = new MutationObserver(() => post({ type: 'archstudio:theme', theme: canvasTheme() }));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
   }, [post]);
 
   // load project
@@ -148,7 +162,7 @@ export function EditorClient({ id }: { id: string }) {
       <div className="flex min-h-0 flex-1">
         <iframe
           ref={iframeRef}
-          src="/canvas/index.html?embed=1"
+          src={`/canvas/index.html?embed=1&theme=${initialTheme}`}
           className="h-full min-w-0 flex-1 border-0 bg-bg"
           onLoad={() => sendLoad()}
           title="ArchStudio canvas"

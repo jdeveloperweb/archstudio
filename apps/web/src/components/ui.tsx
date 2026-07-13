@@ -65,7 +65,7 @@ export function Field({
 export function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
-      className={`relative rounded-2xl border border-border/90 bg-panel/80 shadow-[0_24px_60px_-30px_rgba(6,7,13,0.9)] backdrop-blur-md before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:rounded-t-2xl before:bg-gradient-to-r before:from-transparent before:via-accent/50 before:to-transparent ${className}`}
+      className={`surface before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:rounded-t-2xl before:bg-gradient-to-r before:from-transparent before:via-accent/50 before:to-transparent ${className}`}
     >
       {children}
     </div>

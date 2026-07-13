@@ -172,13 +172,19 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="relative" data-depth="-0.03">
-            <Hero3D light className="h-[420px] w-full sm:h-[500px] lg:h-[620px]" />
+          <div className="relative" style={{ perspective: '1400px' }}>
+            {/* painel de vidro em perspectiva que inclina com o ponteiro */}
+            <div
+              data-tilt="2.4"
+              className="gradient-ring relative rounded-3xl border border-border/70 bg-panel/40 p-2 shadow-[0_40px_90px_-40px_rgb(var(--c-accent)/0.5)] backdrop-blur-sm"
+            >
+              <Hero3D light className="h-[420px] w-full rounded-2xl sm:h-[500px] lg:h-[600px]" />
+            </div>
             {/* componentes pairando em profundidades diferentes */}
-            <FloatChip icon={Cloud} label="CloudFront" className="left-[4%] top-[10%] max-lg:hidden" mouse="0.9" />
-            <FloatChip icon={Database} label="Postgres" className="right-[2%] top-[28%] max-lg:hidden" mouse="1.4" delay="-2.4s" />
-            <FloatChip icon={Bot} label="Agente IA" className="left-[10%] bottom-[30%] max-lg:hidden" mouse="1.8" delay="-4.2s" />
-            <FloatChip icon={Boxes} label="Kubernetes" className="right-[14%] bottom-[12%] max-lg:hidden" mouse="0.7" delay="-5.6s" />
+            <FloatChip icon={Cloud} label="CloudFront" className="left-[-2%] top-[6%] max-lg:hidden" mouse="0.9" />
+            <FloatChip icon={Database} label="Postgres" className="right-[-3%] top-[26%] max-lg:hidden" mouse="1.5" delay="-2.4s" />
+            <FloatChip icon={Bot} label="Agente IA" className="left-[4%] bottom-[26%] max-lg:hidden" mouse="1.9" delay="-4.2s" />
+            <FloatChip icon={Boxes} label="Kubernetes" className="right-[8%] bottom-[6%] max-lg:hidden" mouse="0.7" delay="-5.6s" />
           </div>
         </section>
 

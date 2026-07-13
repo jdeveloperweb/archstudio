@@ -145,7 +145,7 @@ export function ProjectGrid({ initial }: { initial: ProjectMeta[] }) {
       {items.map((p) => (
         <div
           key={p.id}
-          className="tilt group relative overflow-hidden rounded-2xl border border-border bg-panel transition hover:border-accent/60"
+          className="surface tilt group relative overflow-hidden transition hover:border-accent/60"
         >
           <a href={'/app/editor/' + p.id} className="btn-focus block rounded-2xl">
             <div className="grid-bg h-24 border-b border-border/60 bg-void/40 p-2">
