@@ -43,7 +43,11 @@ public class SettingsService {
         String model = (req.model() == null || req.model().isBlank())
                 ? Providers.def(req.provider()).defaultModel() : req.model().trim();
         s.setModel(model);
-        s.setBaseUrl(req.baseUrl() == null ? null : req.baseUrl().trim());
+        String baseUrl = req.baseUrl() == null ? null : req.baseUrl().trim();
+        if ("custom".equals(req.provider()) && baseUrl != null && !baseUrl.isBlank()) {
+            com.mjolnix.archstudio.web.SsrfGuard.checkPublicHttpUrl(baseUrl);
+        }
+        s.setBaseUrl(baseUrl);
         if (req.apiKey() != null && !req.apiKey().isBlank()) {
             s.setApiKeyEnc(crypto.encrypt(req.apiKey().trim()));
         }

@@ -28,6 +28,8 @@ public class ProviderClient {
 
     public String complete(ResolvedProvider p, String system, List<Msg> messages) {
         try {
+            // Defense-in-depth: block internal/private endpoints right before the call.
+            com.mjolnix.archstudio.web.SsrfGuard.checkPublicHttpUrl(p.baseUrl());
             return switch (p.style()) {
                 case Providers.STYLE_ANTHROPIC -> anthropic(p, system, messages);
                 case Providers.STYLE_GOOGLE -> google(p, system, messages);
