@@ -57,6 +57,12 @@ O ArchStudio fecha esse buraco. É um canvas que **fala JSON**: você (ou seu ag
 
 O mesmo canvas, agora um produto completo: você entra, guarda seus diagramas na nuvem e projeta com a **Ari**, uma assistente de IA que desenha junto com você.
 
+<p align="center">
+  <img src="assets/platform-editor.png" alt="O editor do ArchStudio: uma arquitetura RAG na AWS no canvas ao lado da Ari, o painel da assistente de IA" width="100%">
+  <br>
+  <em>O editor: seu diagrama no canvas, a <strong>Ari</strong> (assistente de IA) à direita — descreva um sistema e ela desenha; depois vocês refinam juntos.</em>
+</p>
+
 - **Contas & privacidade** — cadastro com confirmação de e-mail, redefinição de senha e projetos privados por usuário. Senhas com BCrypt(12); a sessão vive num cookie httpOnly + SameSite.
 - **Ari, a assistente de IA** — um painel lateral no editor que discute trade-offs e **desenha no canvas**. Descreva um sistema (*"um checkout resiliente na AWS com fila e fallback de pagamento"*) e veja aparecer. A Ari edita de forma **incremental** — preserva o seu layout, muda só o que precisa e anima as partes novas (caixas → nós → setas).
 - **Sua própria chave** — escolha o provedor (OpenAI, Anthropic/Claude, Google/Gemini, Groq, Mistral, DeepSeek, OpenRouter, ou qualquer endpoint OpenAI-compatível como Ollama) e cole sua chave de API. Ela é guardada **cifrada (AES-256-GCM)** e usada só para chamar o modelo em seu nome.
@@ -67,7 +73,7 @@ O mesmo canvas, agora um produto completo: você entra, guarda seus diagramas na
 **Stack:** Next.js 14 · Spring Boot 3 / Java 17 · Postgres 16 · Docker Compose · nginx — código em [`apps/web/`](apps/web/), [`services/api/`](services/api/) e [`infra/`](infra/).
 **Hospede você mesmo:** `bash infra/deploy.sh` builda e sobe db + api + web. Veja [`platform/README.md`](platform/README.md) e o contrato completo de API/DB/auth em [`platform/CONTRACT.md`](platform/CONTRACT.md).
 
-> A plataforma vive na branch **`platform`** e é **aditiva**: o `index.html` na raiz continua um arquivo único, sem dependências.
+> A plataforma foi mesclada na `main` e é **aditiva**: o `index.html` na raiz continua um arquivo único, sem dependências, e funciona sozinho. Endurecimento de segurança já aplicado: isolamento por usuário, BCrypt, cookies httpOnly+Secure, chaves de provedor cifradas, rate limiting, proteção anti-SSRF no endpoint de IA custom e headers HSTS/CSP.
 
 ## Começando
 

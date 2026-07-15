@@ -57,6 +57,12 @@ ArchStudio closes that gap. It is a canvas that **speaks JSON**: you (or your AI
 
 The same canvas, now a full product: sign in, keep your diagrams in the cloud, and design with **Ari**, an AI assistant that draws alongside you.
 
+<p align="center">
+  <img src="assets/platform-editor.png" alt="The ArchStudio editor: an AWS RAG architecture on the canvas next to Ari, the AI assistant panel" width="100%">
+  <br>
+  <em>The editor: your diagram on the canvas, <strong>Ari</strong> (the AI assistant) on the right — describe a system and it draws it, then refine together.</em>
+</p>
+
 - **Accounts & privacy** — email-verified sign-up, password reset, and private projects per user. Passwords hashed with BCrypt(12); the session lives in an httpOnly, SameSite cookie.
 - **Ari, the AI assistant** — a side panel in the editor that discusses trade-offs and **draws into the canvas**. Describe a system (*"a resilient checkout on AWS with a queue and payment fallback"*) and watch it appear. Ari edits **incrementally** — it keeps your layout, updates only what changed, and animates the new parts (boxes → nodes → edges).
 - **Bring your own key** — choose a provider (OpenAI, Anthropic/Claude, Google/Gemini, Groq, Mistral, DeepSeek, OpenRouter, or any OpenAI-compatible endpoint like Ollama) and paste your API key. It is stored **encrypted at rest (AES-256-GCM)** and used only to call the model on your behalf.
@@ -67,7 +73,7 @@ The same canvas, now a full product: sign in, keep your diagrams in the cloud, a
 **Stack:** Next.js 14 · Spring Boot 3 / Java 17 · Postgres 16 · Docker Compose · nginx — code under [`apps/web/`](apps/web/), [`services/api/`](services/api/) and [`infra/`](infra/).
 **Self-host it:** `bash infra/deploy.sh` builds and starts db + api + web. See [`platform/README.md`](platform/README.md) and the full API/DB/auth contract in [`platform/CONTRACT.md`](platform/CONTRACT.md).
 
-> The platform lives on the **`platform`** branch and is **additive**: the root `index.html` canvas is still a single file with zero dependencies.
+> The platform is merged into `main` and is **additive**: the root `index.html` canvas is still a single file with zero dependencies and works on its own. Security hardening in place: per-user isolation, BCrypt, httpOnly+Secure cookies, encrypted provider keys, rate limiting, SSRF protection on the custom AI endpoint, and HSTS/CSP headers.
 
 ## Quick start
 
