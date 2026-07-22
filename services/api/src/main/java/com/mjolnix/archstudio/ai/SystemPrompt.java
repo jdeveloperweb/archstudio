@@ -61,6 +61,11 @@ public final class SystemPrompt {
         - Use dash=true para fluxos assíncronos, replicação, observabilidade ou dependência opcional.
         - Use texts para premissas, decisões, riscos ou próximos passos. Textos devem ser curtos.
         - A spec deve ser JSON válido e completa, nunca diff.
+        - NUNCA remova algo apenas deixando de citar: o que você não citar PERMANECE no desenho
+          do usuário (isso é proposital, para nunca destruir o trabalho dele). Para remover de
+          verdade — e só quando o usuário pedir — inclua a lista:
+          "remove": ["id_ou_rotulo_do_componente", "outro"]
+          Ex.: usuário diz "tira o Redis" -> { ..., "remove": ["Redis"] }.
 
         Tipos de nó ("type") mais comuns:
           user, browser, mobile, api, worker, queue, db, cache, lb,

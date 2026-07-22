@@ -332,10 +332,11 @@ function aidrawFlash(kind,item){
     if(el) el.classList.add('aidraw');
   }
 }
-/* Ajuste INCREMENTAL: casa o spec com o desenho atual (por id do agente, id do nó
-   ou rótulo). O que já existe fica onde o usuário deixou; rótulo/tipo/cor mudam no
-   lugar; só o que é novo é desenhado (animado); o que o spec não menciona sai.
-   Retorna null quando o spec não tem relação com o desenho atual (outro diagrama). */
+/* Ajuste INCREMENTAL e NÃO destrutivo: casa o spec com o desenho atual (por id do
+   agente, id do nó ou rótulo). O que já existe fica onde o usuário deixou; rótulo/
+   tipo/cor mudam no lugar; só o que é novo é desenhado (animado).
+   REGRA DE OURO: o que o spec NÃO menciona PERMANECE. A IA adiciona e ajusta, nunca
+   apaga o desenho por omissão — remover só acontece se o spec pedir em "remove". */
 function mergeEmbedSpec(spec){
   const sNodes=spec.nodes||[], sEdges=spec.edges||[], sBoxes=spec.boxes||[], sTexts=spec.texts||[];
   const used=new Set(), pairs=[];
@@ -349,7 +350,6 @@ function mergeEmbedSpec(spec){
     if(ex) used.add(ex.id);
     pairs.push({sn,ex,node:null});
   }
-  if(sNodes.length&&!pairs.some(p=>p.ex)) return null;
   pushUndo();                                  /* o ajuste da IA vira um passo de Ctrl+Z */
   const final={seq:state.seq,nodes:[],edges:[],boxes:[],arrows:[...state.arrows],texts:[]};
   const newNodes=[], changed=[];
@@ -371,6 +371,15 @@ function mergeEmbedSpec(spec){
     }
     final.nodes.push(p.node);
   }
+  /* SEGURANÇA: tudo que o usuário já tinha e o spec não citou continua no desenho.
+     Só sai o que o spec pedir explicitamente em "remove": ["id_ou_rotulo", ...]. */
+  const rmKeys=new Set((Array.isArray(spec.remove)?spec.remove:[])
+    .map(v=>String(v).trim().toLowerCase()).filter(Boolean));
+  const pediuRemover=n=>rmKeys.size>0 && (
+    rmKeys.has(String(n.aid||'').toLowerCase()) ||
+    rmKeys.has(String(n.id).toLowerCase()) ||
+    rmKeys.has((n.label||'').trim().toLowerCase()));
+  for(const n of state.nodes) if(!used.has(n.id) && !pediuRemover(n)) final.nodes.push(n);
   const nodeOf=sid=>{ const p=pairs.find(q=>String(q.sn.id??'')===String(sid)); return p&&p.node; };
   /* novos nós nascem perto do vizinho a que se conectam */
   for(const p of newNodes){
@@ -406,6 +415,12 @@ function mergeEmbedSpec(spec){
       if(se.color&&/^#[0-9a-fA-F]{6}$/.test(se.color)) ne.color=se.color;
       final.edges.push(ne); newEdges.push(ne);
     }
+  }
+  /* arestas que o spec não citou continuam, desde que as duas pontas ainda existam */
+  const idsVivos=new Set(final.nodes.map(n=>n.id));
+  for(const e of state.edges){
+    if(usedE.has(e.id) || final.edges.some(x=>x.id===e.id)) continue;
+    if(idsVivos.has(e.from) && idsVivos.has(e.to)) final.edges.push(e);
   }
   /* caixas: casa por id/rótulo e cresce para abraçar os novos membros */
   const usedB=new Set(), newBoxes=[];
@@ -447,6 +462,9 @@ function mergeEmbedSpec(spec){
       final.texts.push(t); newTexts.push(t);
     }
   }
+  /* caixas e anotações não citadas pelo spec também permanecem */
+  for(const b of state.boxes) if(!usedB.has(b.id) && !final.boxes.some(x=>x.id===b.id)) final.boxes.push(b);
+  for(const t of state.texts) if(!usedT.has(t.id) && !final.texts.some(x=>x.id===t.id)) final.texts.push(t);
   const nN=new Set(newNodes.map(p=>p.node.id)), nE=new Set(newEdges.map(e=>e.id)),
         nB=new Set(newBoxes.map(b=>b.id)), nT=new Set(newTexts.map(t=>t.id));
   const base={seq:final.seq,
@@ -460,13 +478,15 @@ function mergeEmbedSpec(spec){
   for(const t of final.texts) if(nT.has(t.id)) steps.push(['texts',t,300]);
   return {base,final,steps,changed};
 }
-function applyEmbedSpec(spec){
+function applyEmbedSpec(spec, replace){
   cancelEmbedAnim();
   if(spec&&spec.name) document.getElementById('diagTitle').value=spec.name;
   clearSelection(); connSrc=null;
   const empty=!state.nodes.length&&!state.boxes.length&&!state.texts.length;
-  let plan=empty?null:mergeEmbedSpec(spec);
-  if(!plan){                       /* canvas vazio ou diagrama sem relação: desenha do zero */
+  /* só substitui o desenho inteiro se o canvas estiver vazio ou se o usuário
+     tiver confirmado explicitamente (replace) — nunca por conta própria */
+  let plan=(empty||replace===true)?null:mergeEmbedSpec(spec);
+  if(!plan){
     if(!empty) pushUndo();
     const st=normalizeSpec(spec);
     const steps=[];
@@ -501,7 +521,7 @@ function onParentMessage(ev){
   const m=ev.data||{};
   if(m.type==='archstudio:load' && m.doc) applyEmbedDoc(m.doc);
   else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:embedDoc()});
-  else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec);
+  else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec, m.replace===true);
   else if(m.type==='archstudio:theme' && m.theme) applyEmbedTheme(m.theme);
 }
 function initEmbed(){
@@ -840,7 +860,8 @@ function trimLine(ca,cb,ta,tb){
 /* ============ RENDER ============ */
 function renderAll(){
   canvas.querySelectorAll('.node,.gbox,.ftext').forEach(el=>el.remove());
-  for(const b of state.boxes){
+  /* maiores primeiro: assim as caixas aninhadas ficam POR CIMA e dá para clicar nelas */
+  for(const b of [...state.boxes].sort((x,y)=>(y.w*y.h)-(x.w*x.h))){
     const el=document.createElement('div');
     el.className='gbox'+(isSelected('box',b.id)?' sel':'');
     el.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;border-color:${b.color};background:${b.color}0d`;
