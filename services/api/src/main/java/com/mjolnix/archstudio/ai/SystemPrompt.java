@@ -61,7 +61,10 @@ public final class SystemPrompt {
         - Use dash=true para fluxos assíncronos, replicação, observabilidade ou dependência opcional.
         - Pode haver MAIS DE UMA conexão entre os mesmos dois componentes (ex.: "HTTP" síncrono e
           "evento pedido_criado" assíncrono): basta repetir o par em edges com labels diferentes.
-          O canvas separa as linhas paralelas automaticamente.
+          O canvas separa as linhas paralelas automaticamente, lado a lado.
+        - Opcional: "route" na edge escolhe o traçado — "reta" (padrão), "curva" (arredondada)
+          ou "orto" (ângulos retos, bom para retorno/desvio). Não calcule pontos de controle:
+          o usuário curva a linha arrastando no canvas.
         - Use texts para premissas, decisões, riscos ou próximos passos. Textos devem ser curtos.
         - A spec deve ser JSON válido e completa, nunca diff.
         - NUNCA remova algo apenas deixando de citar: o que você não citar PERMANECE no desenho

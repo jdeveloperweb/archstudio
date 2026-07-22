@@ -57,7 +57,7 @@ Aumente `--window-size` para diagramas grandes. **Sempre leia o PNG gerado** ant
     { "id": "api1", "type": "api", "label": "API Pedidos", "box": "aws" }
   ],
   "edges": [
-    { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end" }
+    { "from": "api1", "to": "db1", "label": "SQL", "dash": false, "heads": "end", "route": "reta" }
   ],
   "texts": [ { "text": "Decisão arquitetural importante em uma frase.", "size": 14, "bold": false, "italic": false, "color": "#f87171", "align": "left" } ]
 }
@@ -69,6 +69,8 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 - **Omita `x`/`y`** — o auto-layout organiza o fluxo da esquerda para a direita seguindo as edges.
 - **`boxes`** para agrupar por ambiente/domínio (AWS, on-premise, "processamento assíncrono"...). Nós entram com `"box": "<id>"`.
 - **`dash: true`** para caminhos assíncronos, de fallback ou de observabilidade.
+- **Pode haver mais de uma edge entre o mesmo par** (ex.: `"HTTP"` síncrono e `"evento pedido_criado"` assíncrono): repita o par com labels diferentes — o canvas separa as linhas lado a lado sozinho.
+- **`route`** define o traçado: `"reta"` (padrão), `"curva"` (arredondada) ou `"orto"` (ângulos retos, bom para fluxos que voltam ou desviam). No editor dá para arrastar a linha e criar pontos de controle; isso vira o campo `pts`, que você não precisa calcular.
 - **Labels de edge curtos** — protocolo ou ação: `"SQL"`, `"publica"`, `"202 Accepted"`, `"fallback"`.
 - **`texts`** para as 1–3 decisões que justificam o desenho (idempotência, ordem por chave, TTL...). Cada texto aceita `bold`, `italic`, `color` (hex), `align` (left/center/right) — use para destacar a decisão crítica. Para um destaque em bloco, use `"frame": true` (vira uma caixa de texto com fundo/borda), com `w` (largura) e `bg` (cor de fundo, hex) opcionais.
 - Cores de box: AWS `#ff9900`, on-prem `#9aa3b5`, novo/nuvem `#4ade80`, crítico `#f87171`, padrão `#a679ff`.

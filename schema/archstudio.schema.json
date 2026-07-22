@@ -76,6 +76,8 @@
           "to": { "type": ["string", "number"] },
           "label": { "type": "string", "maxLength": 40, "description": "Protocol/action, e.g. 'SQL', 'publica', '202 Accepted'." },
           "dash": { "type": "boolean", "description": "Dashed line — conventionally async/background/fallback paths." },
+          "route": { "enum": ["reta", "curva", "orto"], "description": "Line routing: straight (default), rounded curve, or right angles. Optional." },
+          "pts": { "type": "array", "description": "Control points the user dragged on the canvas. Optional — leave it out and let the editor place the line.", "items": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": ["x", "y"] } },
           "heads": { "type": "string", "enum": ["end", "both", "none"], "default": "end" },
           "w": { "type": "number", "minimum": 1, "maximum": 6, "description": "Stroke width (default 2)." },
           "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional line/arrowhead color; defaults to the theme edge color." }
