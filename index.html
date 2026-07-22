@@ -258,7 +258,7 @@ body.clean .layout{height:100vh}
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"></div>
 <div style="display:none">
 </div>
-<div class="hintbar"><span class="hint">Arraste no vazio para selecionar vários · Shift+clique soma/tira da seleção · duplo-clique edita no lugar (Enter confirma, Shift+Enter quebra linha) · caixa leva só o que está inteiro dentro (Alt move a caixa sozinha) · Ctrl+C/Ctrl+V copia e cola · Ctrl+D duplica · Ctrl+A tudo · Delete apaga · Ctrl+Z desfaz · Ctrl+scroll = zoom</span></div>
+<div class="hintbar"><span class="hint">Arraste no vazio para selecionar vários · Shift+clique soma/tira da seleção · duplo-clique edita no lugar (Enter confirma, Shift+Enter quebra linha) · a caixa move sozinha (Alt leva junto o que está dentro) · Ctrl+C/Ctrl+V copia e cola · Ctrl+D duplica · Ctrl+A tudo · Delete apaga · Ctrl+Z desfaz · Ctrl+scroll = zoom</span></div>
 <div class="propsbar" id="propsBar"></div>
 <div class="layout">
   <div class="palette">
@@ -1301,7 +1301,7 @@ canvas.addEventListener('pointerdown', ev=>{
     });
     return;
   }
-  /* caixa: leva junto só o que está TOTALMENTE dentro dela (Alt move a caixa sozinha) */
+  /* caixa: move sozinha por padrão (Alt leva junto o que está inteiro dentro) */
   if(boxEl){
     ev.preventDefault();
     const b=state.boxes.find(x=>x.id===+boxEl.dataset.id);
@@ -1309,12 +1309,14 @@ canvas.addEventListener('pointerdown', ev=>{
     if(!isSelected('box',b.id)) setSel('box',b.id);
     paintSel();
     const grabbed = selMulti.length>1 ? grabSelection() : null;
-    const solo = ev.altKey || !!grabbed;
+    /* a caixa se move SOZINHA por padrão; segure Alt para levar junto o que está dentro
+       (ou selecione tudo com o laço e arraste, que move o grupo) */
+    const carry = ev.altKey && !grabbed;
     const br={x:b.x,y:b.y,w:b.w,h:b.h};
-    const inside = solo ? [] : state.nodes
+    const inside = !carry ? [] : state.nodes
       .filter(n=>rectInside({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)},br))
       .map(n=>({n,x0:n.x,y0:n.y}));
-    const insideTx = solo ? [] : state.texts
+    const insideTx = !carry ? [] : state.texts
       .filter(tx=>{ const d=domSize('.ftext',tx.id,160,24); return rectInside({x:tx.x,y:tx.y,w:d.w,h:d.h},br); })
       .map(tx=>({tx,x0:tx.x,y0:tx.y}));
     const sx=ev.clientX,sy=ev.clientY,bx0=b.x,by0=b.y;
