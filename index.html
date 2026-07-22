@@ -1050,8 +1050,9 @@ function edgeAnchor(n,t,trim,off,ox,oy){
   return {x:cx+ux*trim*sc-uy*off, y:cy+uy*trim*sc*0.7+ux*off};
 }
 /** Âncora no lado da caixa que "olha" para o alvo — o traçado ortogonal sai de frente. */
-function sideAnchor(n,t,off,ox,oy){
-  const c=centerOf(n), cx=c.x+ox, cy=c.y+oy, hw=nodeW(n)/2+3, hh=nodeH(n)/2+3;
+function sideAnchor(n,t,off,ox,oy,folga){
+  const c=centerOf(n), cx=c.x+ox, cy=c.y+oy;
+  const hw=nodeW(n)/2+3+(folga||0), hh=nodeH(n)/2+3+(folga||0);
   const dx=t.x-cx, dy=t.y-cy;
   if(Math.abs(dx)*hh >= Math.abs(dy)*hw) return {x:cx+(dx<0?-hw:hw), y:cy+off};
   return {x:cx+off, y:cy+(dy<0?-hh:hh)};
@@ -1160,8 +1161,12 @@ function edgeGeom(e,trimA,trimB,ox,oy){
   const off = wp.length ? 0 : (i-(n-1)/2)*edgeStep(n)*(e.from<=e.to?1:-1);
   const ca=centerOf(a), cb=centerOf(b);
   const alvoA=wp[0]||{x:cb.x+ox,y:cb.y+oy}, alvoB=wp[wp.length-1]||{x:ca.x+ox,y:ca.y+oy};
-  const A = mode==='orto' ? sideAnchor(a,alvoA,off,ox,oy) : edgeAnchor(a,alvoA,trimA||52,off,ox,oy);
-  const B = mode==='orto' ? sideAnchor(b,alvoB,off,ox,oy) : edgeAnchor(b,alvoB,trimB||68,-off,ox,oy);
+  /* com ponta no início (bidirecional), a linha precisa começar FORA do componente:
+     a cabeça da seta se desenha para trás do ponto e ficaria escondida atrás da caixa
+     e da bolinha de conexão — foi por isso que a ponta de volta não aparecia */
+  const recuo = (e.heads||'end')==='both' ? 24 : 0;
+  const A = mode==='orto' ? sideAnchor(a,alvoA,off,ox,oy,recuo) : edgeAnchor(a,alvoA,(trimA||52)+recuo,off,ox,oy);
+  const B = mode==='orto' ? sideAnchor(b,alvoB,off,ox,oy,0)     : edgeAnchor(b,alvoB,trimB||68,-off,ox,oy);
   const pts=[A,...wp,B];
   const rt=routeFor(mode,pts);
   /* paralelas também se escalonam ao longo da linha: rótulos nunca ficam um sobre o outro */
