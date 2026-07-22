@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowUp, PenTool, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Activity, ArrowUp, PenTool, Search, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { api, ApiError } from '@/lib/client';
 import type { ChatMsg } from '@/lib/types';
 import { Mark } from '@/components/Brand';
@@ -13,6 +13,12 @@ type UiMsg = ChatMsg & { spec?: any; specState?: SpecState };
 const AI_NAME = 'Ari';
 
 const QUICK_ACTIONS = [
+  {
+    label: 'Analisar meu desenho',
+    prompt:
+      'Analise o desenho que já está no canvas: o que está bom, qual o maior risco hoje e de 1 a 3 melhorias concretas citando os componentes pelo nome. Não redesenhe — só me diga sua leitura.',
+    icon: Search,
+  },
   {
     label: 'Melhorar desenho',
     prompt: 'Analise o desenho atual e melhore a arquitetura mantendo a intenção original. Adicione só o que trouxer valor real.',

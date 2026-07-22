@@ -59,14 +59,17 @@ public class AiService {
                         "Configure sua chave de API em Configurações para usar o assistente."));
 
         String diagramJson = req.diagram() == null || req.diagram().isNull() ? null : req.diagram().toString();
-        String system = SystemPrompt.build(diagramJson);
+        String outline = DiagramContext.describe(req.diagram());
+        String system = SystemPrompt.build(outline, diagramJson);
 
         String text = client.complete(p, system, req.messages());
         Extraction ex = extract(text);
 
         // O usuário pediu desenho e o modelo não mandou o bloco (ou veio truncado):
         // cobra o bloco uma vez antes de devolver só texto.
-        if (ex.spec() == null && wantsDrawing(req.messages())) {
+        // Se a Ari terminou perguntando (ex.: "ligo o Redis na API ou no Worker?"), respeite:
+        // ela está esclarecendo onde conectar antes de desenhar — não force o bloco.
+        if (ex.spec() == null && wantsDrawing(req.messages()) && !endsWithQuestion(ex.reply())) {
             log.info("ai.chat sem spec para pedido de desenho — solicitando o bloco novamente");
             List<Msg> retryMsgs = new ArrayList<>(req.messages());
             retryMsgs.add(new Msg("assistant", text));
@@ -86,6 +89,21 @@ public class AiService {
             reply = ex.spec() != null ? "Pronto — atualizei o desenho no canvas." : text.trim();
         }
         return new ChatResponse(reply, ex.spec());
+    }
+
+    /** A última linha não vazia termina com "?" — sinal de pergunta de esclarecimento deliberada. */
+    static boolean endsWithQuestion(String reply) {
+        if (reply == null || reply.isBlank()) {
+            return false;
+        }
+        String[] lines = reply.trim().split("\\R");
+        for (int i = lines.length - 1; i >= 0; i--) {
+            String l = lines[i].trim();
+            if (!l.isEmpty()) {
+                return l.endsWith("?");
+            }
+        }
+        return false;
     }
 
     private boolean wantsDrawing(List<Msg> messages) {
