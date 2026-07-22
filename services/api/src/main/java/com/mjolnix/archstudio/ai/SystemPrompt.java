@@ -59,6 +59,9 @@ public final class SystemPrompt {
         - Use labels de arestas para protocolos, eventos e intenção: HTTPS, JWT, evento pedido_criado,
           SQL, cache read-through, métrica/log, vetor semântico.
         - Use dash=true para fluxos assíncronos, replicação, observabilidade ou dependência opcional.
+        - Pode haver MAIS DE UMA conexão entre os mesmos dois componentes (ex.: "HTTP" síncrono e
+          "evento pedido_criado" assíncrono): basta repetir o par em edges com labels diferentes.
+          O canvas separa as linhas paralelas automaticamente.
         - Use texts para premissas, decisões, riscos ou próximos passos. Textos devem ser curtos.
         - A spec deve ser JSON válido e completa, nunca diff.
         - NUNCA remova algo apenas deixando de citar: o que você não citar PERMANECE no desenho

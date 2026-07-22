@@ -949,12 +949,10 @@ function renderEdges(){
     edgeLayer.appendChild(hit);
   };
   for(const e of state.edges){
-    const a=state.nodes.find(n=>n.id===e.from), b=state.nodes.find(n=>n.id===e.to);
-    if(!a||!b) continue;
-    const isSel=isSelected('edge',e.id);
-    const L=trimLine(centerOf(a),centerOf(b),52*(a.s||1),68*(b.s||1));
-    wire('edge',e,`M ${L.x1} ${L.y1} L ${L.x2} ${L.y2}`,isSel,e.heads??'end');
-    if(e.label) edgeLayer.appendChild(edgeLabelEl((L.x1+L.x2)/2,(L.y1+L.y2)/2,e.label,
+    const g=edgeGeom(e);
+    if(!g) continue;
+    wire('edge',e,g.d,isSelected('edge',e.id),e.heads??'end');
+    if(e.label) edgeLayer.appendChild(edgeLabelEl(g.lx,g.ly,e.label,
       ev=>pickEdge('edge',e.id,ev), ()=>editEdgeLabel('edge',e.id)));
   }
   for(const a of state.arrows){
@@ -973,13 +971,37 @@ function renderEdges(){
     }
   }
 }
-/** ponto médio da linha, onde o rótulo mora */
+/** Quantas conexões existem entre o mesmo par e qual é a posição desta na fila. */
+function edgeGroupIndex(edges,e){
+  const key=x=>[x.from,x.to].slice().sort((a,b)=>a-b).join('~');
+  const k=key(e), same=edges.filter(x=>key(x)===k);
+  return {i:same.findIndex(x=>x.id===e.id), n:same.length};
+}
+/** Caminho e ponto do rótulo. Com mais de uma conexão no mesmo par, cada uma
+    ganha um desvio perpendicular e vira uma curva — assim não se sobrepõem. */
+function edgeGeom(e,trimA,trimB,ox,oy){
+  const a=state.nodes.find(n=>n.id===e.from), b=state.nodes.find(n=>n.id===e.to);
+  if(!a||!b) return null;
+  const ca=centerOf(a), cb=centerOf(b);
+  const L=trimLine({x:ca.x+(ox||0),y:ca.y+(oy||0)},{x:cb.x+(ox||0),y:cb.y+(oy||0)},
+                   (trimA||52)*(a.s||1),(trimB||68)*(b.s||1));
+  const {i,n}=edgeGroupIndex(state.edges,e);
+  const off = n>1 ? (i-(n-1)/2)*26 : 0;
+  /* perpendicular canônica (sempre do menor id para o maior): sem isso, uma conexão
+     no sentido inverso cairia do mesmo lado da outra e os rótulos se sobreporiam */
+  const canon = e.from<=e.to ? 1 : -1;
+  const dx=L.x2-L.x1, dy=L.y2-L.y1, len=Math.hypot(dx,dy)||1;
+  const px=-dy/len*canon, py=dx/len*canon;
+  const mx=(L.x1+L.x2)/2, my=(L.y1+L.y2)/2;
+  const d = off===0
+    ? 'M '+L.x1+' '+L.y1+' L '+L.x2+' '+L.y2
+    : 'M '+L.x1+' '+L.y1+' Q '+(mx+px*off*2)+' '+(my+py*off*2)+' '+L.x2+' '+L.y2;
+  return {d, lx:mx+px*off, ly:my+py*off};
+}
+/** ponto médio (onde o rótulo mora) — respeita o desvio das conexões paralelas */
 function edgeMid(kind,o){
   if(kind==='arrow') return {x:(o.x1+o.x2)/2,y:(o.y1+o.y2)/2};
-  const a=state.nodes.find(n=>n.id===o.from), b=state.nodes.find(n=>n.id===o.to);
-  if(!a||!b) return null;
-  const L=trimLine(centerOf(a),centerOf(b),52*(a.s||1),68*(b.s||1));
-  return {x:(L.x1+L.x2)/2,y:(L.y1+L.y2)/2};
+  const g=edgeGeom(o); return g?{x:g.lx,y:g.ly}:null;
 }
 /** edita o rótulo da seta no próprio canvas (Enter confirma, Shift+Enter quebra linha) */
 function editEdgeLabel(kind,id){
@@ -1280,7 +1302,8 @@ canvas.addEventListener('pointerdown', ev=>{
       ev.preventDefault();
       if(connSrc===null) connSrc=n.id;
       else if(connSrc!==n.id){
-        if(!state.edges.some(e=>e.from===connSrc&&e.to===n.id)){ pushUndo(); state.edges.push({id:++state.seq,from:connSrc,to:n.id,dash:false,heads:'end',w:2,label:''}); }
+        pushUndo();                      /* várias conexões entre o mesmo par são permitidas */
+        state.edges.push({id:++state.seq,from:connSrc,to:n.id,dash:false,heads:'end',w:2,label:''});
         connSrc=null; persist();
       } else connSrc=null;
       renderAll(); return;
@@ -1407,7 +1430,7 @@ function startLink(fromId, ev){
     const targetEl=document.elementFromPoint(e2.clientX,e2.clientY)?.closest('.node');
     if(targetEl){
       const tid=+targetEl.dataset.id;
-      if(tid!==fromId && !state.edges.some(e=>e.from===fromId&&e.to===tid)){
+      if(tid!==fromId){                 /* pode haver várias conexões entre os mesmos componentes */
         pushUndo();
         state.edges.push({id:++state.seq,from:fromId,to:tid,dash:false,heads:'end',w:2,label:''});
         persist();
@@ -1749,28 +1772,26 @@ function buildSvg(fontCss){
     s+=`<text x="${b.x+ox+21}" y="${b.y+oy+3.5}" font-size="11.5" font-weight="700" fill="${b.color}" font-family="Consolas, monospace">${svgEscape(b.label)}</text>`;
   }
   /* conexões + setas livres */
-  const lineSvg=(x1,y1,x2,y2,o)=>{
+  const lineSvg=(o,d,lx,ly)=>{
     const dash=o.dash?` stroke-dasharray="8 6"`:'';
     const mk=o.color?'url(#arC)':'url(#ar)';
     const me=(o.heads==='end'||o.heads==='both')?` marker-end="${mk}"`:'';
     const ms=o.heads==='both'?` marker-start="${mk}"`:'';
-    let out=`<path d="M ${x1} ${y1} L ${x2} ${y2}" stroke="${o.color||P.edge}" stroke-width="${o.w||2}" fill="none"${dash}${me}${ms}/>`;
+    let out=`<path d="${d}" stroke="${o.color||P.edge}" stroke-width="${o.w||2}" fill="none"${dash}${me}${ms}/>`;
     if(o.label){
       const ls=String(o.label).split('\n');
-      const lx=(x1+x2)/2, ly=(y1+y2)/2-8-(ls.length-1)*6;
+      const ay=ly-8-(ls.length-1)*6;
       const spans=ls.map((ln,i)=>`<tspan x="${lx}"${i?' dy="1.15em"':''}>${svgEscape(ln)}</tspan>`).join('');
-      out+=`<text x="${lx}" y="${ly}" font-size="11" fill="${P.ink}" text-anchor="middle" paint-order="stroke" stroke="${P.bg}" stroke-width="4">${spans}</text>`;
+      out+=`<text x="${lx}" y="${ay}" font-size="11" fill="${P.ink}" text-anchor="middle" paint-order="stroke" stroke="${P.bg}" stroke-width="4">${spans}</text>`;
     }
     return out;
   };
   for(const e of state.edges){
-    const a=state.nodes.find(n=>n.id===e.from), b=state.nodes.find(n=>n.id===e.to);
-    if(!a||!b) continue;
-    const ca=centerOf(a), cb=centerOf(b);
-    const L=trimLine({x:ca.x+ox,y:ca.y+oy},{x:cb.x+ox,y:cb.y+oy},56*(a.s||1),70*(b.s||1));
-    s+=lineSvg(L.x1,L.y1,L.x2,L.y2,e);
+    const g=edgeGeom(e,56,70,ox,oy);
+    if(!g) continue;
+    s+=lineSvg(e,g.d,g.lx,g.ly);
   }
-  for(const a of state.arrows) s+=lineSvg(a.x1+ox,a.y1+oy,a.x2+ox,a.y2+oy,a);
+  for(const a of state.arrows) s+=lineSvg(a,`M ${a.x1+ox} ${a.y1+oy} L ${a.x2+ox} ${a.y2+oy}`,(a.x1+a.x2)/2+ox,(a.y1+a.y2)/2+oy);
   /* nós */
   for(const n of state.nodes){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
