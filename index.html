@@ -1671,12 +1671,21 @@ function grabSelection(){
     if(kind==='arrow') items.push({kind,obj,x1:obj.x1,y1:obj.y1,x2:obj.x2,y2:obj.y2,pts:(obj.pts||[]).map(p=>({...p}))});
     else if(kind!=='edge') items.push({kind,obj,x0:obj.x,y0:obj.y});
   }
+  /* Os pontos de dobra da aresta são coordenadas ABSOLUTAS; sem levá-los junto,
+     ao mover o grupo as pontas acompanham os nós mas a curva fica presa no lugar
+     antigo. A aresta não entra na seleção, então a pegamos aqui quando as DUAS
+     pontas estão no grupo que está se movendo. */
+  const movendo=new Set(items.filter(it=>it.kind==='node').map(it=>it.obj.id));
+  for(const e of state.edges)
+    if(!e.lock && (e.pts&&e.pts.length) && movendo.has(e.from) && movendo.has(e.to))
+      items.push({kind:'edge',obj:e,pts:e.pts.map(p=>({...p}))});
   return items;
 }
 function moveGrabbed(items,dx,dy){
   for(const it of items){
     if(it.kind==='arrow'){ it.obj.x1=gsnap(it.x1+dx); it.obj.y1=gsnap(it.y1+dy); it.obj.x2=gsnap(it.x2+dx); it.obj.y2=gsnap(it.y2+dy);
       if(it.pts.length) it.obj.pts=it.pts.map(p=>({x:gsnap(p.x+dx),y:gsnap(p.y+dy)})); }
+    else if(it.kind==='edge'){ it.obj.pts=it.pts.map(p=>({x:gsnap(p.x+dx),y:gsnap(p.y+dy)})); }
     else { it.obj.x=gsnap(it.x0+dx); it.obj.y=gsnap(it.y0+dy); }
   }
   renderAllLight();
