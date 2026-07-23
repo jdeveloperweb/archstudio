@@ -2,7 +2,7 @@
 """Trava: nada de emoji na interface — os ícones do sistema são SVG."""
 import io, os, re, collections, sys
 
-RAIZ = r'c:\Users\Jaime.Vicente\Projetos\archstudio'
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EMOJI = re.compile(u'[\U0001F000-\U0001FAFF☀-➿️]')
 TOLERADOS = {0x2715, 0x2713}   # X e check: glifos de texto, monocromáticos
 
