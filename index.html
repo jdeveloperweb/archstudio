@@ -1033,6 +1033,19 @@ function mkPath(cls,d,dash,w,heads,isSel,color){
   if(heads==='both') p.setAttribute('marker-start',m);
   return p;
 }
+/* Duplo-clique numa conexao: o SVG inteiro e recriado quando a selecao muda,
+   entao os dois cliques caem em ELEMENTOS DIFERENTES e o dblclick nativo se
+   perde. Guardamos o ultimo clique por id da conexao — isso sobrevive ao render. */
+let ultimoCliqueEdge={chave:'',quando:0};
+function duploNaConexao(kind,id){
+  const chave=kind+':'+id, agora=Date.now();
+  if(ultimoCliqueEdge.chave===chave && agora-ultimoCliqueEdge.quando<420){
+    ultimoCliqueEdge={chave:'',quando:0};
+    return true;
+  }
+  ultimoCliqueEdge={chave,quando:agora};
+  return false;
+}
 function edgeLabelEl(x,y,txt,onPick,onEdit){
   const lines=String(txt).split('\n');
   const t=document.createElementNS(SVGNS,'text');
@@ -1046,15 +1059,19 @@ function edgeLabelEl(x,y,txt,onPick,onEdit){
     ts.textContent=ln;
     t.appendChild(ts);
   });
-  t.addEventListener('pointerdown',ev=>{ev.stopPropagation();onPick(ev);});
+  t.addEventListener('pointerdown',ev=>{
+    ev.stopPropagation();
+    if(!ev.shiftKey && duploNaConexao(t.dataset.kind,t.dataset.eid)){ ev.preventDefault(); onEdit(); return; }
+    onPick(ev);
+  });
   t.addEventListener('dblclick',ev=>{ev.stopPropagation();onEdit();});
   return t;
 }
 /** Arrasta a linha para curvá-la: cria (ou move) um ponto de controle no trecho
     mais próximo do clique. Como o ponto só nasce quando o mouse anda de fato,
     um clique simples continua sendo só um clique — e o duplo-clique ainda edita o rótulo. */
-function dragBend(kind,o,ev){
-  if(o.lock) return;
+function dragBend(kind,o,ev,aoClicarSemArrastar){
+  if(o.lock){ if(aoClicarSemArrastar) aoClicarSemArrastar(); return; }
   const g=anyGeom(kind,o); if(!g) return;
   const p0=canvasPoint(ev), base=(o.pts||[]).length;
   /* em qual trecho o usuário pegou a linha? */
@@ -1064,13 +1081,14 @@ function dragBend(kind,o,ev){
     if(d<best){ best=d; k=i; }
   }
   k=Math.min(k,base);
-  let idx=-1;
+  let idx=-1, mexeu=false;
   dragSession(e2=>{
+    mexeu=true;
     const q=canvasPoint(e2);
     if(idx<0){ o.pts=o.pts||[]; o.pts.splice(k,0,{x:0,y:0}); idx=k; }
     o.pts[idx]={x:gsnap(q.x),y:gsnap(q.y)};
     renderEdges();
-  });
+  }, ()=>{ if(!mexeu && aoClicarSemArrastar) aoClicarSemArrastar(); });
 }
 /** clique numa seta/conexão: Shift alterna na seleção, clique simples seleciona só ela */
 function pickEdge(kind,id,ev){
@@ -1088,9 +1106,17 @@ function renderEdges(){
     hit.setAttribute('d',d);
     hit.addEventListener('pointerdown',ev=>{
       ev.stopPropagation();
-      /* já selecionada: arrastar a linha cria um ponto de controle e curva a seta */
-      if(isSelected(kind,o.id)&&!ev.shiftKey){ ev.preventDefault(); dragBend(kind,o,ev); }
-      else pickEdge(kind,o.id,ev);
+      const duplo = !ev.shiftKey && duploNaConexao(kind,o.id);
+      /* já selecionada: arrastar a linha cria um ponto de controle e curva a seta.
+         Só vira "editar rótulo" se o mouse NÃO andou — senão um arrasto rápido logo
+         depois de selecionar abriria o editor em vez de curvar. */
+      if(isSelected(kind,o.id)&&!ev.shiftKey){
+        ev.preventDefault();
+        dragBend(kind,o,ev, ()=>{ if(duplo) editEdgeLabel(kind,o.id); });
+        return;
+      }
+      if(duplo){ ev.preventDefault(); editEdgeLabel(kind,o.id); return; }
+      pickEdge(kind,o.id,ev);
     });
     hit.addEventListener('dblclick',ev=>{ev.stopPropagation();editEdgeLabel(kind,o.id);});
     hit.addEventListener('mouseenter',()=>p.classList.add('hover'));
@@ -1120,16 +1146,18 @@ function renderEdges(){
     const g=edgeGeom(e);
     if(!g) continue;
     wire('edge',e,g.d,isSelected('edge',e.id),e.heads??'end');
-    if(e.label) edgeLayer.appendChild(edgeLabelEl(g.lx,g.ly,e.label,
-      ev=>pickEdge('edge',e.id,ev), ()=>editEdgeLabel('edge',e.id)));
+    if(e.label){ const lb=edgeLabelEl(g.lx,g.ly,e.label,
+      ev=>pickEdge('edge',e.id,ev), ()=>editEdgeLabel('edge',e.id));
+      lb.dataset.kind='edge'; lb.dataset.eid=e.id; edgeLayer.appendChild(lb); }
     bends('edge',e);
   }
   for(const a of state.arrows){
     const isSel=isSelected('arrow',a.id);
     const g=arrowGeom(a);
     wire('arrow',a,g.d,isSel,a.heads);
-    if(a.label) edgeLayer.appendChild(edgeLabelEl(g.lx,g.ly,a.label,
-      ev=>pickEdge('arrow',a.id,ev), ()=>editEdgeLabel('arrow',a.id)));
+    if(a.label){ const lb=edgeLabelEl(g.lx,g.ly,a.label,
+      ev=>pickEdge('arrow',a.id,ev), ()=>editEdgeLabel('arrow',a.id));
+      lb.dataset.kind='arrow'; lb.dataset.eid=a.id; edgeLayer.appendChild(lb); }
     bends('arrow',a);
     if(isSel&&!a.lock){
       for(const end of [1,2]){
