@@ -14,7 +14,13 @@ public final class ProjectDtos {
         }
     }
 
-    public record ProjectFull(String id, String name, JsonNode doc, Instant updatedAt) {}
+    public record ProjectFull(String id, String name, JsonNode doc, Instant updatedAt, String shareToken) {}
 
     public record SaveProjectRequest(String name, JsonNode doc) {}
+
+    /** Returned to the owner when the invite link is created/queried. */
+    public record ShareInfo(String token) {}
+
+    /** Public bootstrap for anyone opening an invite link (no auth). */
+    public record CollabDoc(String projectId, String name, JsonNode doc) {}
 }

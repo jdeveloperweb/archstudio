@@ -121,6 +121,11 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .marquee{position:absolute;z-index:30;border:1.5px dashed var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:4px;pointer-events:none}
 .temp-edge{stroke:var(--accent)!important;stroke-dasharray:6 4;pointer-events:none!important}
 .ah{fill:var(--accent);stroke:var(--bg);stroke-width:2;cursor:grab;pointer-events:all}
+/* cursores dos colaboradores (colab em tempo real) */
+.peer-layer{position:absolute;inset:0;z-index:9;pointer-events:none}
+.peer-cur{position:absolute;pointer-events:none;font-family:var(--sans)}
+.peer-cur svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))}
+.peer-tag{position:absolute;left:13px;top:9px;white-space:nowrap;color:#fff;font-size:11px;font-weight:600;line-height:1;padding:2px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.35)}
 /* ponto de controle: arraste para curvar a conexão, duplo-clique para remover */
 .eh{fill:var(--bg);stroke:var(--accent);stroke-width:2.5;cursor:grab;pointer-events:all}
 .eh:hover{fill:var(--accent)}
@@ -312,6 +317,7 @@ body.clean .layout{height:100vh}
   <div class="center">
     <div class="canvas-outer" id="canvasOuter">
       <div class="canvas" id="canvas">
+        <div class="peer-layer" id="peerLayer"></div>
         <svg class="edges" id="edgeLayer">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge)"/></marker>
@@ -574,6 +580,41 @@ function onParentMessage(ev){
   else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:embedDoc()});
   else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec, m.replace===true);
   else if(m.type==='archstudio:theme' && m.theme) applyEmbedTheme(m.theme);
+  else if(m.type==='archstudio:apply-remote' && m.doc) applyRemoteDoc(m.doc);   /* edição de outro colaborador */
+  else if(m.type==='archstudio:cursors') renderPeers(m.cursors||[]);
+}
+/* ============ COLABORAÇÃO (o pai faz o WebSocket; aqui só aplicamos/mostramos) ============ */
+let dragActive=false, remotePending=null;
+const interacting=()=>editingNow||dragActive;
+/* Aplica o desenho de outro colaborador. Enquanto o usuário local arrasta ou
+   edita, a atualização remota espera (senão o desenho "pula" na mão dele). */
+function applyRemoteDoc(doc){
+  if(interacting()){ remotePending=doc; return; }
+  const selAntes=selMulti.slice();
+  suppressEmit=true;
+  try{ applyDoc(doc); if(embedTheme) setTheme(embedTheme);
+    /* preserva a seleção local por id, quando os itens ainda existem */
+    selMulti=selAntes.filter(s=>{ const c=SEL_COLL[s.kind]; return c&&state[c]&&state[c].some(o=>o.id===s.id); });
+    syncSel(); renderAll();
+  }finally{ suppressEmit=false; }
+}
+function flushRemote(){ if(remotePending && !interacting()){ const d=remotePending; remotePending=null; applyRemoteDoc(d); } }
+/* Cursores dos colegas: bolinha + etiqueta com o nome, em coordenadas do canvas. */
+function renderPeers(cursors){
+  const layer=document.getElementById('peerLayer'); if(!layer) return;
+  layer.innerHTML=cursors.map(c=>{
+    const x=Math.round(c.x), y=Math.round(c.y), nm=escapeHtml(String(c.name||'').slice(0,40)), col=c.color||'#a679ff';
+    return `<div class="peer-cur" style="left:${x}px;top:${y}px;color:${col}">`
+      +`<svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 2 L2 13 L5.5 9.5 L8 14.5 L10 13.5 L7.5 8.5 L12 8.5 Z" fill="${col}" stroke="#fff" stroke-width="1"/></svg>`
+      +`<span class="peer-tag" style="background:${col}">${nm}</span></div>`;
+  }).join('');
+}
+let lastCursorSent=0;
+function maybeSendCursor(ev){
+  if(!EMBED) return;
+  const now=performance.now(); if(now-lastCursorSent<55) return; lastCursorSent=now;
+  const p=canvasPoint(ev);
+  postToParent({type:'archstudio:cursor', x:p.x, y:p.y});
 }
 function initEmbed(){
   document.body.classList.add('embed');
@@ -581,6 +622,7 @@ function initEmbed(){
   if(tp==='light'||tp==='dark'){ embedTheme=tp; setTheme(tp); }
   state=emptyState(); clearSelection(); connSrc=null; renderAll();
   window.addEventListener('message', onParentMessage);
+  canvas.addEventListener('pointermove', maybeSendCursor);   /* transmite meu cursor aos colegas */
   postToParent({type:'archstudio:ready'});
 }
 
@@ -1585,6 +1627,7 @@ function beginInline(el, text, opts, onCommit){
     el.removeAttribute('contenteditable'); el.classList.remove('editing');
     el.removeEventListener('blur',onBlur); el.removeEventListener('keydown',onKey);
     onCommit(commit?val:null);
+    flushRemote();   /* saiu da edi\u00e7\u00e3o: aplica qualquer atualiza\u00e7\u00e3o remota que estava esperando */
   };
   const onBlur=()=>finish(true);
   const onKey=ev=>{
@@ -1649,8 +1692,9 @@ function dragSession(onMove,onUp){
   /* só empurra undo e re-renderiza se houve movimento de fato — clique sem
      arrasto preserva o elemento no DOM (senão o duplo-clique nunca dispara) */
   let moved=false;
+  dragActive=true;
   const move=e2=>{ if(!moved){ moved=true; pushUndo(); } onMove(e2); };
-  const up=e2=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); onUp&&onUp(e2); if(moved){ persist(); renderAll(); } };
+  const up=e2=>{ document.removeEventListener('pointermove',move); document.removeEventListener('pointerup',up); dragActive=false; onUp&&onUp(e2); if(moved){ persist(); renderAll(); } flushRemote(); };
   document.addEventListener('pointermove',move);
   document.addEventListener('pointerup',up);
 }

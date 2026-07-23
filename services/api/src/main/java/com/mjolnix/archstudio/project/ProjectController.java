@@ -40,7 +40,20 @@ public class ProjectController {
     @GetMapping("/{id}")
     public ProjectFull get(@PathVariable UUID id) {
         Project p = service.get(uid(), id);
-        return new ProjectFull(p.getId().toString(), p.getName(), service.parseDoc(p), p.getUpdatedAt());
+        return new ProjectFull(p.getId().toString(), p.getName(), service.parseDoc(p), p.getUpdatedAt(), p.getShareToken());
+    }
+
+    /** Owner turns the invite link on (idempotent) and gets the token back. */
+    @PostMapping("/{id}/share")
+    public ShareInfo share(@PathVariable UUID id) {
+        return new ShareInfo(service.enableShare(uid(), id));
+    }
+
+    /** Owner revokes the invite link. */
+    @DeleteMapping("/{id}/share")
+    public ResponseEntity<Void> unshare(@PathVariable UUID id) {
+        service.disableShare(uid(), id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")

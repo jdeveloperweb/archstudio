@@ -46,6 +46,7 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(reg -> reg
                 .requestMatchers("/api/v1/auth/**", "/actuator/health").permitAll()
+                .requestMatchers("/api/v1/collab/**").permitAll()   // invite-link bootstrap: token is the authz
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll())
             .exceptionHandling(ex -> ex

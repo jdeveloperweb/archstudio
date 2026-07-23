@@ -38,6 +38,10 @@ public class Project {
     @Column(name = "doc", nullable = false, columnDefinition = "jsonb")
     private String doc = "{}";
 
+    // Opaque token for the invite link; null = not shared. The token itself is the authorization.
+    @Column(name = "share_token", length = 64)
+    private String shareToken;
+
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "timestamptz")
     private Instant createdAt;
 
@@ -99,6 +103,14 @@ public class Project {
 
     public void setDoc(String doc) {
         this.doc = doc;
+    }
+
+    public String getShareToken() {
+        return shareToken;
+    }
+
+    public void setShareToken(String shareToken) {
+        this.shareToken = shareToken;
     }
 
     public Instant getCreatedAt() {

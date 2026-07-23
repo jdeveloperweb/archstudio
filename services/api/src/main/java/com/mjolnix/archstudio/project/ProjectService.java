@@ -9,11 +9,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class ProjectService {
+
+    private static final SecureRandom RNG = new SecureRandom();
 
     private final ProjectRepository repo;
     private final ObjectMapper mapper;
@@ -55,6 +60,46 @@ public class ProjectService {
     public void delete(UUID userId, UUID id) {
         Project p = get(userId, id);
         repo.delete(p);
+    }
+
+    /** Owner enables the invite link, creating a token once (idempotent). */
+    @Transactional
+    public String enableShare(UUID userId, UUID id) {
+        Project p = get(userId, id);
+        if (p.getShareToken() == null || p.getShareToken().isBlank()) {
+            p.setShareToken(newToken());
+            repo.save(p);
+        }
+        return p.getShareToken();
+    }
+
+    /** Owner revokes the invite link; existing collaborators lose access. */
+    @Transactional
+    public void disableShare(UUID userId, UUID id) {
+        Project p = get(userId, id);
+        p.setShareToken(null);
+        repo.save(p);
+    }
+
+    /** Resolve a project from an invite token — the token IS the authorization. */
+    public Optional<Project> byShareToken(String token) {
+        if (token == null || token.isBlank()) return Optional.empty();
+        return repo.findByShareToken(token.trim());
+    }
+
+    /** Persist the live doc for a shared project, keyed by its token (no user needed). */
+    @Transactional
+    public void saveDocByToken(String token, String docJson) {
+        repo.findByShareToken(token).ifPresent(p -> {
+            p.setDoc(docJson == null || docJson.isBlank() ? "{}" : docJson);
+            repo.save(p);
+        });
+    }
+
+    private String newToken() {
+        byte[] b = new byte[18];
+        RNG.nextBytes(b);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(b);
     }
 
     public JsonNode parseDoc(Project p) {
