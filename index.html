@@ -132,7 +132,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
   box-shadow:0 2px 10px var(--shadow);transition:background .12s,color .12s,transform .12s}
 .rot::before{content:'';position:absolute;top:100%;left:50%;width:1.5px;height:10px;
   background:var(--accent);opacity:.5;transform:translateX(-50%)}
-.rot svg{width:13px;height:13px;display:block}
+.rot svg{width:13px;height:13px;display:block;pointer-events:none}
 .rot:hover{background:var(--accent);color:var(--bg)}
 .rot:active{cursor:grabbing}
 .rotico{display:inline-flex}
@@ -272,6 +272,11 @@ body.clean .layout{height:100vh}
       <div class="menu-label">Preferências</div>
       <div class="menu-row"><span>Fonte do diagrama</span><select id="fontSel" onchange="setFont(this.value)"></select></div>
       <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="snapChk" checked> Grade magnética (imã)</label>
+      <div class="menu-sep"></div>
+      <div class="menu-label">Imagem exportada (PNG e SVG)</div>
+      <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="expGrid" onchange="saveExpPrefs()"> Grade quadriculada</label>
+      <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="expTitle" checked onchange="saveExpPrefs()"> Título e data</label>
+      <label class="menu-item" style="cursor:pointer" title="desmarque para PNG/SVG com fundo transparente"><input type="checkbox" id="expBg" checked onchange="saveExpPrefs()"> Fundo</label>
       <div class="menu-sep"></div>
       <button class="menu-item danger" onclick="if(confirm('Limpar todo o diagrama?')){pushUndo();clearCanvas();closeMenu()}"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Limpar canvas</button>
       <a class="menu-item" href="https://github.com/jdeveloperweb/archstudio" target="_blank" rel="noopener"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> GitHub — código aberto</a>
@@ -764,6 +769,17 @@ const FONTS=[
  {id:'mono',   n:'JetBrains Mono',  css:"'JetBrains Mono',monospace",  g:'JetBrains+Mono:wght@400;700'}];
 const fontCache={};
 function curFont(){ return FONTS.find(f=>f.id===fontId)||FONTS[0]; }
+/* ---- o que entra na imagem exportada (fica salvo no navegador) ---- */
+const EXPK='as_export_prefs';
+const expPref=(id,padrao)=>{ const e=document.getElementById(id); return e?e.checked:padrao; };
+function saveExpPrefs(){
+  store.set(EXPK, JSON.stringify({grade:expPref('expGrid',false),titulo:expPref('expTitle',true),fundo:expPref('expBg',true)}));
+}
+function loadExpPrefs(){
+  let o={}; try{ o=JSON.parse(store.get(EXPK)||'{}'); }catch{}
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e&&v!==undefined) e.checked=!!v; };
+  set('expGrid',o.grade); set('expTitle',o.titulo); set('expBg',o.fundo);
+}
 function setFont(id){ fontId=id; canvas.style.setProperty('--dfont', curFont().css); document.getElementById('fontSel').value=id; persist(); }
 let state = { seq:0, nodes:[], edges:[], boxes:[], arrows:[], texts:[] };
 let undoStack=[], redoStack=[];
@@ -1574,8 +1590,8 @@ canvas.addEventListener('pointerdown', ev=>{
   const boxEl=t.closest&&t.closest('.gbox');
   const nodeEl=t.closest&&t.closest('.node');
   const textEl=t.closest&&t.closest('.ftext');
-  /* alça de girar */
-  if(t.classList&&t.classList.contains('rot')){
+  /* alça de girar (o clique pode cair no ícone SVG de dentro dela) */
+  if(t.closest&&t.closest('.rot')){
     ev.preventDefault();
     const host=nodeEl||textEl||boxEl;
     const kind=nodeEl?'node':textEl?'text':'box';
@@ -1863,6 +1879,7 @@ function applyDoc(doc){
   if(doc&&doc.theme&&doc.theme!==theme()) toggleTheme();
   fontId=(doc&&doc.font&&FONTS.some(f=>f.id===doc.font))?doc.font:fontId;
   setFont(fontId);
+  loadExpPrefs();
   undoStack.length=0; redoStack.length=0; clearSelection(); connSrc=null;
   renderAll();
 }
@@ -2083,7 +2100,12 @@ function wrapTextLines(text,boxW,size){
   return out;
 }
 function buildSvg(fontCss){
-  const all=[...state.nodes.map(n=>({x:n.x,y:n.y,x2:n.x+nodeW(n),y2:n.y+nodeH(n)})),
+  /* o cartão na tela é maior que nodeW/nodeH (borda + padding + rótulo de várias
+     linhas). Medir o elemento de verdade é o que faz a imagem sair igual ao canvas. */
+  const elNode=id=>canvas.querySelector(`.node[data-id="${id}"]`);
+  const caixaNo=n=>{ const el=elNode(n.id);
+    return {w: el?el.offsetWidth:nodeW(n)+14, h: el?el.offsetHeight:nodeH(n)}; };
+  const all=[...state.nodes.map(n=>{ const c=caixaNo(n); return {x:n.x,y:n.y,x2:n.x+c.w,y2:n.y+c.h}; }),
              ...state.boxes.map(b=>({x:b.x,y:b.y,x2:b.x+b.w,y2:b.y+b.h})),
              ...state.arrows.map(a=>({x:Math.min(a.x1,a.x2),y:Math.min(a.y1,a.y2),x2:Math.max(a.x1,a.x2),y2:Math.max(a.y1,a.y2)})),
              ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+(t.frame?(t.w||200):220),y2:t.y+(t.frame?(9*2+wrapTextLines(t.text,t.w||200,t.size).length*t.size*1.42):30)}))];
@@ -2092,8 +2114,9 @@ function buildSvg(fontCss){
   const P=dark
     ? {bg:'#0e1017',node:'#1a1d2e',border:'#2a2f47',ink:'#e6e8f2',dim:'#8f94ad',grid:'rgba(166,121,255,0.055)',edge:'#6b72a3',accent:'#a679ff'}
     : {bg:'#f7f8fc',node:'#ffffff',border:'#d5d9ea',ink:'#1d2030',dim:'#6a7089',grid:'rgba(90,70,180,0.09)',edge:'#8a90b8',accent:'#7c4dff'};
+  const opGrade=expPref('expGrid',false), opTitulo=expPref('expTitle',true), opFundo=expPref('expBg',true);
   const PAD=90;
-  const minX=Math.min(...all.map(o=>o.x))-PAD, minY=Math.min(...all.map(o=>o.y))-PAD-40;
+  const minX=Math.min(...all.map(o=>o.x))-PAD, minY=Math.min(...all.map(o=>o.y))-PAD-(opTitulo?40:0);
   const maxX=Math.max(...all.map(o=>o.x2))+PAD, maxY=Math.max(...all.map(o=>o.y2))+PAD;
   const W=Math.max(900,maxX-minX), H=Math.max(560,maxY-minY);
   const ox=-minX, oy=-minY;
@@ -2102,9 +2125,12 @@ function buildSvg(fontCss){
   s+=`<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${P.edge}"/></marker>
   <marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker>
   <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M 28 0 L 0 0 0 28" fill="none" stroke="${P.grid}" stroke-width="1"/></pattern>${fontCss||''}</defs>`;
-  s+=`<rect width="${W}" height="${H}" fill="${P.bg}"/><rect width="${W}" height="${H}" fill="url(#grid)"/>`;
-  s+=`<text x="28" y="42" font-size="24" font-weight="700" fill="${P.ink}">${title}</text>`;
-  s+=`<text x="28" y="64" font-size="12" fill="${P.dim}">${new Date().toLocaleDateString('pt-BR')} · ArchStudio</text>`;
+  if(opFundo) s+=`<rect width="${W}" height="${H}" fill="${P.bg}"/>`;
+  if(opGrade) s+=`<rect width="${W}" height="${H}" fill="url(#grid)"/>`;
+  if(opTitulo){
+    s+=`<text x="28" y="42" font-size="24" font-weight="700" fill="${P.ink}">${title}</text>`;
+    s+=`<text x="28" y="64" font-size="12" fill="${P.dim}">${new Date().toLocaleDateString('pt-BR')} · ArchStudio</text>`;
+  }
   /* itens girados saem girados também na imagem */
   const rotWrap=(deg,cx,cy,inner)=>deg?`<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`:inner;
   /* caixas */
@@ -2135,24 +2161,50 @@ function buildSvg(fontCss){
     s+=lineSvg(e,g.d,g.lx,g.ly);
   }
   for(const a of state.arrows){ const g=arrowGeom(a,ox,oy); s+=lineSvg(a,g.d,g.lx,g.ly); }
-  /* nós */
+  /* nós — geometria tirada do próprio cartão na tela, para a imagem sair idêntica */
+  const medCtx=document.createElement('canvas').getContext('2d');
+  /* quebra de linha medida com a fonte de verdade (o navegador quebra por largura,
+     não por contagem de caracteres — era daí que vinha o rótulo estourando o cartão) */
+  const quebraPx=(txt,maxW,px)=>{
+    medCtx.font=`${px}px ${curFont().css}`;
+    const out=[];
+    for(const para of String(txt||'').split('\n')){
+      let cur='';
+      for(const palavra of para.split(' ')){
+        const tent=cur?cur+' '+palavra:palavra;
+        if(cur && medCtx.measureText(tent).width>maxW){ out.push(cur); cur=palavra; }
+        else cur=tent;
+      }
+      out.push(cur);
+    }
+    return out;
+  };
   for(const n of state.nodes){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
     const col=n.color||catColor(def.color), sc=n.s||1, ic=n.st==='icon';
-    const x=n.x+ox, y=n.y+oy, w=nodeW(n), h=nodeH(n), cx=x+w/2;
+    const el=elNode(n.id), ico=el&&el.querySelector('.nicon'), nm=el&&el.querySelector('.nname');
+    const cx0=caixaNo(n), w=cx0.w, h=cx0.h;
+    const x=n.x+ox, y=n.y+oy, cx=x+w/2;
+    const cs=el?getComputedStyle(el):null;
+    const bl=cs?(parseFloat(cs.borderLeftWidth)||0):0, bt=cs?(parseFloat(cs.borderTopWidth)||0):0;
     const s0=s.length;
-    if(ic){
-      /* modo só ícone: sem cartão — ícone grande + nome, fiel ao canvas */
-      s+=`<g transform="translate(${cx-21*sc},${y+4*sc}) scale(${1.75*sc})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
-      const lines=labelLines(n.label, 16);
-      lines.forEach((ln,i)=>{ s+=`<text x="${cx}" y="${y+(58+i*14)*sc}" font-size="${12*sc}" font-weight="500" fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`; });
-    } else {
-      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${11*sc}" fill="${P.node}" stroke="${P.border}" stroke-width="1"/>`;
-      s+=`<rect x="${x}" y="${y}" width="${w}" height="3.5" rx="1.75" fill="${col}"/>`;
-      s+=`<g transform="translate(${cx-15*sc},${y+8*sc}) scale(${1.25*sc})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
-      const lines=labelLines(n.label, 19);
-      lines.forEach((ln,i)=>{ s+=`<text x="${cx}" y="${y+(50+i*12)*sc}" font-size="${10.5*sc}" fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`; });
+    if(!ic){
+      const rx=11*sc, faixa=Math.max(2,bt||3);
+      s+=`<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${P.node}" stroke="${P.border}" stroke-width="1"/>`;
+      /* a faixa da cor acompanha o canto arredondado (no canvas ela é o border-top,
+         então não pode sair como um retângulo reto por cima do cartão) */
+      const dx=rx-Math.sqrt(Math.max(0,rx*rx-(rx-faixa)*(rx-faixa)));
+      s+=`<path d="M ${r1(x+dx)} ${r1(y+faixa)} A ${r1(rx)} ${r1(rx)} 0 0 1 ${r1(x+rx)} ${r1(y)}`
+        +` L ${r1(x+w-rx)} ${r1(y)} A ${r1(rx)} ${r1(rx)} 0 0 1 ${r1(x+w-dx)} ${r1(y+faixa)} Z" fill="${col}"/>`;
     }
+    const iw=ico?ico.offsetWidth:(ic?42:30)*sc;
+    const ix=ico?x+bl+ico.offsetLeft:cx-iw/2, iy=ico?y+bt+ico.offsetTop:y+(ic?4:8)*sc;
+    s+=`<g transform="translate(${r1(ix)},${r1(iy)}) scale(${r1(iw/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
+    const fs=nm?parseFloat(getComputedStyle(nm).fontSize):Math.max(9,(ic?12:11)*sc);
+    const lw=nm?nm.offsetWidth:w-14, lt=nm?y+bt+nm.offsetTop:y+(ic?48:43)*sc, lh=fs*1.3;
+    quebraPx(n.label,lw,fs).forEach((ln,i)=>{
+      s+=`<text x="${r1(cx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}"${ic?' font-weight="500"':''} fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`;
+    });
     if(n.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(n.rot,cx,y+h/2,corpo); }
   }
   /* textos livres e caixas de texto */
