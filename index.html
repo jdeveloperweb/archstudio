@@ -395,7 +395,7 @@ function mergeEmbedSpec(spec){
     pairs.push({sn,ex,node:null});
   }
   pushUndo();                                  /* o ajuste da IA vira um passo de Ctrl+Z */
-  const final={seq:state.seq,nodes:[],edges:[],boxes:[],arrows:[...state.arrows],texts:[]};
+  const final={seq:maiorId(state),nodes:[],edges:[],boxes:[],arrows:[...state.arrows],texts:[]};
   const newNodes=[], changed=[];
   for(const p of pairs){
     const {sn,ex}=p;
@@ -823,6 +823,32 @@ const catColor = c => (theme()==='light'?CAT_COLORS_L:CAT_COLORS_D)[c]||'#a679ff
 function curDocJson(){ return JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state}); }
 function persist(){ if(EMBED){ emitChange(); return; } if(!curProj) return; const name=document.getElementById('diagTitle').value; store.set(PPFX+curProj, curDocJson()); touchProject(curProj,name); store.set(CKEY,curProj); }
 document.getElementById('diagTitle').addEventListener('input', persist);
+/* ---- IDs ------------------------------------------------------------------
+   `seq` é só um contador; se um desenho salvo (ou vindo da IA) tiver seq MENOR
+   que o maior id em uso, `++seq` devolve um id que já existe. Aí dois elementos
+   passam a ter o mesmo id: as arestas da cópia apontam para o original, arrastar
+   um move o outro, e o desenho vira um nó. Por isso todo id novo nasce daqui. */
+function maiorId(st){
+  let m = st.seq || 0;
+  for(const k of ['nodes','edges','boxes','arrows','texts'])
+    for(const o of st[k] || []) if(typeof o.id === 'number' && o.id > m) m = o.id;
+  return m;
+}
+function novoId(){ state.seq = maiorId(state) + 1; return state.seq; }
+/** Conserta um desenho que já ficou com ids repetidos (não perde nada: renomeia). */
+function repararIds(st){
+  let trocados = 0, prox = maiorId(st) + 1;
+  /* unicidade GLOBAL, com os nós primeiro: só id de nó é referenciado (edges
+     from/to), então quem perde o id para um nó é sempre alguém sem referência. */
+  const vistos = new Set();
+  for(const k of ['nodes','edges','boxes','arrows','texts'])
+    for(const o of st[k] || []){
+      if(o.id == null || vistos.has(o.id)){ o.id = prox++; trocados++; }
+      vistos.add(o.id);
+    }
+  st.seq = Math.max(st.seq || 0, prox - 1);
+  return trocados;
+}
 function pushUndo(){ undoStack.push(JSON.stringify(state)); if(undoStack.length>60) undoStack.shift(); redoStack.length=0; }
 function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify(state)); state=JSON.parse(undoStack.pop()); clearSelection(); connSrc=null; persist(); renderAll(); }
 function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify(state)); state=JSON.parse(redoStack.pop()); clearSelection(); persist(); renderAll(); }
@@ -875,14 +901,14 @@ function viewCenter(){ return { x:(canvasOuter.scrollLeft+canvasOuter.clientWidt
 function addNode(type){
   pushUndo();
   const def=TYPE_INDEX[type], c=viewCenter();
-  state.nodes.push({ id:++state.seq, type, label:def.n, s:1,
+  state.nodes.push({ id:novoId(), type, label:def.n, s:1,
     x:gsnap(c.x-59+((state.seq*37)%160)-80), y:gsnap(c.y-33+((state.seq*53)%120)-60) });
   persist(); renderAll();
 }
 function addBox(){
   pushUndo();
   const c=viewCenter();
-  state.boxes.push({ id:++state.seq, x:gsnap(c.x-180), y:gsnap(c.y-120), w:360, h:240,
+  state.boxes.push({ id:novoId(), x:gsnap(c.x-180), y:gsnap(c.y-120), w:360, h:240,
     label:'Nova seção', color:BOX_COLORS[state.boxes.length%BOX_COLORS.length] });
   setSel('box',state.seq);
   persist(); renderAll();
@@ -890,7 +916,7 @@ function addBox(){
 function addArrow(){
   pushUndo();
   const c=viewCenter();
-  state.arrows.push({ id:++state.seq, x1:gsnap(c.x-90), y1:gsnap(c.y), x2:gsnap(c.x+90), y2:gsnap(c.y),
+  state.arrows.push({ id:novoId(), x1:gsnap(c.x-90), y1:gsnap(c.y), x2:gsnap(c.x+90), y2:gsnap(c.y),
     dash:false, heads:'end', w:2, label:'' });
   setSel('arrow',state.seq);
   persist(); renderAll();
@@ -898,7 +924,7 @@ function addArrow(){
 function addText(){
   pushUndo();
   const c=viewCenter();
-  state.texts.push({ id:++state.seq, x:gsnap(c.x-60), y:gsnap(c.y-10), text:'Texto', size:14 });
+  state.texts.push({ id:novoId(), x:gsnap(c.x-60), y:gsnap(c.y-10), text:'Texto', size:14 });
   setSel('text',state.seq);
   persist(); renderAll();
   editText(state.seq, true);
@@ -906,7 +932,7 @@ function addText(){
 function addTextBox(){
   pushUndo();
   const c=viewCenter();
-  state.texts.push({ id:++state.seq, x:gsnap(c.x-100), y:gsnap(c.y-26), text:'Caixa de texto', size:14, frame:true, w:200 });
+  state.texts.push({ id:novoId(), x:gsnap(c.x-100), y:gsnap(c.y-26), text:'Caixa de texto', size:14, frame:true, w:200 });
   setSel('text',state.seq);
   persist(); renderAll();
   editText(state.seq, true);
@@ -974,8 +1000,18 @@ function trimLine(ca,cb,ta,tb){
 }
 
 /* ============ RENDER ============ */
+/* Remover um elemento que está em edição dispara o blur DURANTE a remoção, e o
+   blur re-renderiza: um renderAll começava dentro do outro e o DOM estourava.
+   A chamada aninhada é ignorada — o render que já está em curso lê o estado
+   depois de limpar a tela, então ele sai correto de qualquer jeito. */
+let emRender=false;
 function renderAll(){
-  canvas.querySelectorAll('.node,.gbox,.ftext').forEach(el=>el.remove());
+  if(emRender) return;
+  emRender=true;
+  try{ desenharTudo(); } finally{ emRender=false; }
+}
+function desenharTudo(){
+  for(const el of [...canvas.querySelectorAll('.node,.gbox,.ftext')]) if(el.isConnected) el.remove();
   /* maiores primeiro: assim as caixas aninhadas ficam POR CIMA e dá para clicar nelas */
   for(const b of [...state.boxes].sort((x,y)=>(y.w*y.h)-(x.w*x.h))){
     const el=document.createElement('div');
@@ -1521,12 +1557,12 @@ function pasteClip(dx,dy){
   if(clipEmpty(clipboard)) return;
   pushUndo();
   const map={}, ns=[], cl=o=>JSON.parse(JSON.stringify(o));
-  for(const n of clipboard.nodes){ const c={...n,id:++state.seq,x:n.x+dx,y:n.y+dy}; delete c.aid; delete c.lock; map[n.id]=c.id; state.nodes.push(c); ns.push({kind:'node',id:c.id}); }
-  for(const e of clipboard.edges){ const f=map[e.from], t=map[e.to]; if(f&&t){ const c=cl(e); c.id=++state.seq; c.from=f; c.to=t;
+  for(const n of clipboard.nodes){ const c={...n,id:novoId(),x:n.x+dx,y:n.y+dy}; delete c.aid; delete c.lock; map[n.id]=c.id; state.nodes.push(c); ns.push({kind:'node',id:c.id}); }
+  for(const e of clipboard.edges){ const f=map[e.from], t=map[e.to]; if(f&&t){ const c=cl(e); c.id=novoId(); c.from=f; c.to=t;
     delete c.lock; if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.edges.push(c); } }
-  for(const b of clipboard.boxes){ const c={...b,id:++state.seq,x:b.x+dx,y:b.y+dy}; delete c.lock; state.boxes.push(c); ns.push({kind:'box',id:c.id}); }
-  for(const t of clipboard.texts){ const c={...t,id:++state.seq,x:t.x+dx,y:t.y+dy}; delete c.lock; state.texts.push(c); ns.push({kind:'text',id:c.id}); }
-  for(const a of clipboard.arrows){ const c=cl(a); c.id=++state.seq; c.x1=a.x1+dx; c.y1=a.y1+dy; c.x2=a.x2+dx; c.y2=a.y2+dy;
+  for(const b of clipboard.boxes){ const c={...b,id:novoId(),x:b.x+dx,y:b.y+dy}; delete c.lock; state.boxes.push(c); ns.push({kind:'box',id:c.id}); }
+  for(const t of clipboard.texts){ const c={...t,id:novoId(),x:t.x+dx,y:t.y+dy}; delete c.lock; state.texts.push(c); ns.push({kind:'text',id:c.id}); }
+  for(const a of clipboard.arrows){ const c=cl(a); c.id=novoId(); c.x1=a.x1+dx; c.y1=a.y1+dy; c.x2=a.x2+dx; c.y2=a.y2+dy;
     delete c.lock; if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.arrows.push(c); ns.push({kind:'arrow',id:c.id}); }
   selMulti=ns; syncSel(); persist(); renderAll();
 }
@@ -1747,7 +1783,7 @@ canvas.addEventListener('pointerdown', ev=>{
       if(connSrc===null) connSrc=n.id;
       else if(connSrc!==n.id){
         pushUndo();                      /* várias conexões entre o mesmo par são permitidas */
-        state.edges.push({id:++state.seq,from:connSrc,to:n.id,dash:false,heads:'end',w:2,label:''});
+        state.edges.push({id:novoId(),from:connSrc,to:n.id,dash:false,heads:'end',w:2,label:''});
         connSrc=null; persist();
       } else connSrc=null;
       renderAll(); return;
@@ -1879,7 +1915,7 @@ function startLink(fromId, ev){
       const tid=+targetEl.dataset.id;
       if(tid!==fromId){                 /* pode haver várias conexões entre os mesmos componentes */
         pushUndo();
-        state.edges.push({id:++state.seq,from:fromId,to:tid,dash:false,heads:'end',w:2,label:''});
+        state.edges.push({id:novoId(),from:fromId,to:tid,dash:false,heads:'end',w:2,label:''});
         persist();
       }
     }
@@ -1992,7 +2028,10 @@ function applyDoc(doc){
   state=(doc && doc.version>=3 && doc.state)?doc.state:emptyState();
   state.boxes=state.boxes||[]; state.arrows=state.arrows||[]; state.texts=state.texts||[];
   for(const n of state.nodes){ if(!n.label) n.label=(TYPE_INDEX[n.type]||{n:n.type}).n; if(!n.s) n.s=1; }
-  for(const e of state.edges){ if(!e.id) e.id=++state.seq; }
+  for(const e of state.edges){ if(!e.id) e.id=novoId(); }
+  /* desenho salvo antes da correção pode ter ids repetidos: conserta ao abrir */
+  const repar=repararIds(state);
+  if(repar) console.warn('ArchStudio: '+repar+' id(s) repetido(s) corrigidos ao abrir o diagrama.');
   document.getElementById('diagTitle').value=(doc&&doc.name)||'Diagrama';
   if(doc&&doc.theme&&doc.theme!==theme()) toggleTheme();
   fontId=(doc&&doc.font&&FONTS.some(f=>f.id===doc.font))?doc.font:fontId;
