@@ -125,18 +125,27 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .eh{fill:var(--bg);stroke:var(--accent);stroke-width:2.5;cursor:grab;pointer-events:all}
 .eh:hover{fill:var(--accent)}
 
-/* alça de girar: aparece no item selecionado, logo acima dele */
-.rot{position:absolute;top:-27px;left:50%;transform:translateX(-50%);width:21px;height:21px;border-radius:50%;
-  background:var(--panel2);border:1.5px solid var(--accent);color:var(--accent);font-size:12px;line-height:18px;
-  text-align:center;cursor:grab;display:none;z-index:7;user-select:none}
+/* alça de girar: bolinha acima do item, ligada a ele por uma hastezinha */
+.rot{position:absolute;top:-31px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;
+  background:var(--panel);border:1.5px solid var(--accent);color:var(--accent);
+  display:none;align-items:center;justify-content:center;cursor:grab;z-index:7;user-select:none;
+  box-shadow:0 2px 10px var(--shadow);transition:background .12s,color .12s,transform .12s}
+.rot::before{content:'';position:absolute;top:100%;left:50%;width:1.5px;height:10px;
+  background:var(--accent);opacity:.5;transform:translateX(-50%)}
+.rot svg{width:13px;height:13px;display:block}
+.rot:hover{background:var(--accent);color:var(--bg)}
 .rot:active{cursor:grabbing}
-.node.sel>.rot,.gbox.sel>.rot,.ftext.sel>.rot{display:block}
+.rotico{display:inline-flex}
+.rotico svg{width:14px;height:14px;display:block}
+.node.sel>.rot,.gbox.sel>.rot,.ftext.sel>.rot{display:flex}
 .node.locked>.rot,.gbox.locked>.rot,.ftext.locked>.rot{display:none!important}
 /* item fixado: não move, não copia, não apaga — o laço de seleção também passa batido */
 .locked{cursor:default!important}
 .node.locked .nx,.node.locked .nres,.gbox.locked .nx,.gbox.locked .bres,.ftext.locked .tres{display:none!important}
-.lk{position:absolute;top:-9px;left:-9px;width:19px;height:19px;border-radius:50%;background:var(--panel2);
-  border:1px solid var(--border);font-size:9px;line-height:17px;text-align:center;z-index:6;cursor:default;user-select:none}
+.lk{position:absolute;top:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:var(--panel2);
+  border:1px solid var(--border);color:var(--dim);z-index:6;cursor:default;user-select:none;
+  display:flex;align-items:center;justify-content:center}
+.lk .ti{width:11px;height:11px;vertical-align:0}
 .gbox{position:absolute;border:2px dashed;border-radius:14px;z-index:1;cursor:grab;touch-action:none}
 .gbox .gtitle{position:absolute;top:-11px;left:14px;font-family:var(--mono);font-size:11.5px;font-weight:700;background:var(--bg);padding:1px 9px;border-radius:5px;white-space:pre-wrap;max-width:280px}
 .gbox .bres{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:4px;cursor:nwse-resize;border:2px solid var(--bg)}
@@ -229,7 +238,7 @@ body.clean .layout{height:100vh}
   <button class="tool-btn" id="btnProjects" onclick="openProjectsModal()" title="seus diagramas (cada um é um espaço separado neste navegador)"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg> Projetos</button>
   <input class="title-input" id="diagTitle" placeholder="Nome do diagrama..." value="Minha Arquitetura">
   <div class="seg">
-    <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar">✥ Mover</button>
+    <button class="mode-btn active" id="modeMove" onclick="setMode('move')" title="mover e selecionar"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/><path d="m15 5-3-3-3 3M15 19l-3 3-3-3M5 9l-3 3 3 3M19 9l3 3-3 3"/></svg> Mover</button>
     <button class="mode-btn" id="modeConn" onclick="setMode('connect')" title="clique em dois componentes para conectar">→ Conectar</button>
   </div>
   <span class="tb-sep"></span>
@@ -750,8 +759,8 @@ const FONTS=[
  {id:'inter',  n:'Inter',           css:"'Inter',sans-serif",          g:'Inter:wght@400;600;700'},
  {id:'space',  n:'Space Grotesk',   css:"'Space Grotesk',sans-serif",  g:'Space+Grotesk:wght@400;600;700'},
  {id:'plex',   n:'IBM Plex Sans',   css:"'IBM Plex Sans',sans-serif",  g:'IBM+Plex+Sans:wght@400;600;700'},
- {id:'caveat', n:'Caveat ✍ rascunho',css:"'Caveat',cursive",           g:'Caveat:wght@500;700'},
- {id:'patrick',n:'Patrick Hand ✍',  css:"'Patrick Hand',cursive",      g:'Patrick+Hand'},
+ {id:'caveat', n:'Caveat (rascunho)',  css:"'Caveat',cursive",           g:'Caveat:wght@500;700'},
+ {id:'patrick',n:'Patrick Hand',       css:"'Patrick Hand',cursive",      g:'Patrick+Hand'},
  {id:'mono',   n:'JetBrains Mono',  css:"'JetBrains Mono',monospace",  g:'JetBrains+Mono:wght@400;700'}];
 const fontCache={};
 function curFont(){ return FONTS.find(f=>f.id===fontId)||FONTS[0]; }
@@ -870,6 +879,11 @@ function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 /* rot = graus. O ímã da grade também vale para o giro: com o ímã ligado o item
    trava de 15 em 15 graus; segure Shift para inverter (livre <-> travado). */
 const ROT_PASSO=15;
+const svgRot=(anti)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">`
+  + (anti ? `<path d="M3 12a9 9 0 1 0 9-9c-2.52 0-4.93 1-6.74 2.74L3 8"/><path d="M3 3v5h5"/>`
+          : `<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>`)
+  + `</svg>`;
+const ROT_HANDLE=`<span class="rot" title="arraste para girar (o ímã da grade trava de ${ROT_PASSO} em ${ROT_PASSO}°; Shift inverte)">${svgRot(false)}</span>`;
 function rsnap(deg, inverte){
   let d=((deg%360)+360)%360;
   const ima = snapOn() !== !!inverte;
@@ -923,7 +937,7 @@ function renderAll(){
     el.className='gbox'+(isSelected('box',b.id)?' sel':'')+(b.lock?' locked':'');
     el.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;border-color:${b.color};background:${b.color}0d`+rotCss(b);
     el.dataset.id=b.id;
-    el.innerHTML=`<span class="gtitle" style="color:${b.color}">${escapeHtml(b.label)}</span><span class="bres" style="background:${b.color}"></span><span class="nx" title="remover caixa (mantém o conteúdo)">✕</span><span class="rot" title="arraste para girar">⟲</span>${b.lock?'<span class="lk" title="fixado">🔒</span>':''}`;
+    el.innerHTML=`<span class="gtitle" style="color:${b.color}">${escapeHtml(b.label)}</span><span class="bres" style="background:${b.color}"></span><span class="nx" title="remover caixa (mantém o conteúdo)">✕</span>${ROT_HANDLE}${b.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
     el.addEventListener('dblclick',()=>renameBox(b.id));
     canvas.appendChild(el);
   }
@@ -936,9 +950,9 @@ function renderAll(){
     el.style.cssText=css+rotCss(t);
     el.dataset.id=t.id;
     el.textContent=t.text;
-    { const rh=document.createElement('span'); rh.className='rot'; rh.title='arraste para girar'; rh.textContent='⟲'; el.appendChild(rh); }
+    el.insertAdjacentHTML('beforeend', ROT_HANDLE);
     if(fr){ const h=document.createElement('span'); h.className='tres'; h.title='arraste para redimensionar a largura'; el.appendChild(h); }
-    if(t.lock){ const lk=document.createElement('span'); lk.className='lk'; lk.title='fixado'; lk.textContent='🔒'; el.appendChild(lk); }
+    if(t.lock) el.insertAdjacentHTML('beforeend', '<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>');
     el.addEventListener('dblclick',()=>editText(t.id));
     canvas.appendChild(el);
   }
@@ -951,7 +965,7 @@ function renderAll(){
     if(n.color&&!ic) el.style.borderTopColor=n.color;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
-    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span><span class="rot" title="arraste para girar">⟲</span>${n.lock?'<span class="lk" title="fixado">🔒</span>':''}`;
+    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
     el.addEventListener('dblclick',()=>renameNode(n.id));
     canvas.appendChild(el);
   }
@@ -1275,11 +1289,11 @@ function renderProps(){
     bar.className='propsbar show';
     const nLock=selObjects().filter(x=>x.obj.lock).length;
     bar.innerHTML=`<span class="props-label">▣ ${selMulti.length} selecionados${nLock?` <span style="color:var(--dim)">(${nLock} fixado${nLock>1?'s':''})</span>`:''}</span>
-      <button class="pbtn" onclick="lockSel(true)" title="fixar: não move, não copia e não apaga">🔒 fixar</button>
-      ${nLock?'<button class="pbtn on" onclick="lockSel(false)">🔓 soltar</button>':''}
+      <button class="pbtn" onclick="lockSel(true)" title="fixar: não move, não copia e não apaga"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> fixar</button>
+      ${nLock?'<button class="pbtn on" onclick="lockSel(false)"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> soltar</button>':''}
       <button class="pbtn" onclick="duplicateSelection()">⧉ duplicar</button>
       <button class="pbtn" onclick="copySel()">⧉ copiar</button>
-      <button class="pbtn danger" onclick="delSel()">🗑 excluir</button>
+      <button class="pbtn danger" onclick="delSel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> excluir</button>
       <button class="pbtn" onclick="clearSelection();renderAll()">fechar</button>
       <span class="props-label" style="color:var(--dim)">arraste para mover o grupo · Ctrl+C copia · Ctrl+V cola · Ctrl+D duplica</span>`;
     return;
@@ -1290,9 +1304,9 @@ function renderProps(){
   /* fixado: nada de editar sem soltar antes — o painel some para não iludir */
   if(o.lock){
     const nome={node:'◈ componente',box:'▭ caixa',arrow:'↗ seta livre',edge:'→ conexão',text:'T texto'}[sel.kind];
-    bar.innerHTML=`<span class="props-label">🔒 ${nome} fixado</span>
+    bar.innerHTML=`<span class="props-label"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> ${nome} fixado</span>
       <span class="props-label" style="color:var(--dim)">não move, não copia, não apaga e o laço não pega</span>
-      <button class="pbtn on" onclick="toggleLock()">🔓 soltar</button>
+      <button class="pbtn on" onclick="toggleLock()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> soltar</button>
       <button class="pbtn" onclick="clearSelection();renderAll()">fechar</button>`;
     return;
   }
@@ -1305,10 +1319,10 @@ function renderProps(){
       <button class="pbtn ${o.st==='icon'?'on':''}" onclick="propStyle()">${o.st==='icon'?'◻ só ícone':'▣ cartão'}</button>
       ${colorField('cor', o.color||catColor(def.color), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
       <button class="pbtn" onclick="propDup()">⧉ duplicar</button>
-      <button class="pbtn" onclick="renameNode(${o.id})">✎ renomear</button>`;
+      <button class="pbtn" onclick="renameNode(${o.id})"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> renomear</button>`;
   } else if(sel.kind==='box'){
     html=`<span class="props-label">▭ ${escapeHtml(o.label)}</span>
-      <button class="pbtn" onclick="renameBox(${o.id})">✎ nome</button>
+      <button class="pbtn" onclick="renameBox(${o.id})"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> nome</button>
       ${colorField('cor', o.color, 'setSelColor(this.value)', '')}
       <span class="props-label" style="color:var(--dim)">arraste o canto p/ redimensionar</span>`;
   } else if(sel.kind==='arrow'||sel.kind==='edge'){
@@ -1321,7 +1335,7 @@ function renderProps(){
       <button class="pbtn" onclick="propWidth(-0.5)">− fina</button>
       <button class="pbtn" onclick="propWidth(0.5)">+ grossa</button>
       ${colorField('cor', o.color||cssVar('--edge'), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
-      <button class="pbtn ${o.label?'on':''}" onclick="propEdgeLabel()">✎ rótulo</button>
+      <button class="pbtn ${o.label?'on':''}" onclick="propEdgeLabel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> rótulo</button>
       <span class="props-label" style="color:var(--dim)">arraste a linha para curvar${sel.kind==='arrow'?' · bolinhas das pontas movem a seta':''}</span>`;
   } else if(sel.kind==='text'){
     html=`<span class="props-label">${o.frame?'▭ caixa de texto':'T texto'}</span>
@@ -1333,19 +1347,19 @@ function renderProps(){
       <button class="pbtn" onclick="propTextAlign()">${({left:'⯇ esquerda',center:'↔ centro',right:'⯈ direita'})[o.align||'left']}</button>
       <button class="pbtn ${o.frame?'on':''}" onclick="propTextFrame()" title="fundo e borda">▭ moldura</button>
       ${o.frame?colorField('fundo', o.bg||cssVar('--nodebg'), 'setTextBg(this.value)', o.bg?'clearTextBg()':''):''}
-      <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
+      <button class="pbtn" onclick="editText(${o.id})"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> editar</button>
       <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
   }
   if(sel.kind!=='edge'){
     const ang=o.rot||0;
     html+=`<span class="cfield" title="girar (o ímã da grade trava de ${ROT_PASSO} em ${ROT_PASSO}°)">girar
-        <button class="pbtn" onclick="propRot(-${ROT_PASSO})">⟲</button>
-        <span style="min-width:34px;text-align:center;font-family:var(--mono)">${ang}°</span>
-        <button class="pbtn" onclick="propRot(${ROT_PASSO})">⟳</button>
+        <button class="pbtn" onclick="propRot(-${ROT_PASSO})" title="girar ${ROT_PASSO}° para a esquerda"><span class="rotico">${svgRot(true)}</span></button>
+        <span style="min-width:36px;text-align:center;font-family:var(--mono)">${ang}°</span>
+        <button class="pbtn" onclick="propRot(${ROT_PASSO})" title="girar ${ROT_PASSO}° para a direita"><span class="rotico">${svgRot(false)}</span></button>
         ${ang?'<span onclick="propRot0()" title="voltar a 0°" style="cursor:pointer;color:var(--dim);padding:0 1px">✕</span>':''}
       </span>`;
   }
-  html+=`<button class="pbtn" onclick="toggleLock()" title="fixar: não move, não copia e não apaga (Ctrl+L)">🔒 fixar</button>
+  html+=`<button class="pbtn" onclick="toggleLock()" title="fixar: não move, não copia e não apaga (Ctrl+L)"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> fixar</button>
     <button class="pbtn danger" onclick="delSel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> excluir</button>
     <button class="pbtn" onclick="clearSelection();renderAll()">fechar</button>`;
   bar.innerHTML=html;
@@ -1918,7 +1932,7 @@ function openProjectsModal(){
         <div class="proj-date">editado ${fmtDate(p.savedAt)}</div>
       </div>
       <div class="proj-actions">
-        <button class="pbtn" onclick="renameProject('${p.id}')" title="renomear">✎</button>
+        <button class="pbtn" onclick="renameProject('${p.id}')" title="renomear"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg></button>
         <button class="pbtn" onclick="duplicateProject('${p.id}')" title="duplicar">⧉</button>
         <button class="pbtn danger" onclick="deleteProject('${p.id}')" title="excluir"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div></div>`;
