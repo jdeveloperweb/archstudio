@@ -157,6 +157,8 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .ftext.sel{outline:1.5px dashed var(--accent);outline-offset:4px}
 .editing{outline:1.5px solid var(--accent)!important;outline-offset:3px;border-radius:4px;cursor:text!important;user-select:text!important;-webkit-user-select:text!important;white-space:pre-wrap;min-width:24px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .editing:focus{outline:1.5px solid var(--accent)}
+/* o editor de rótulo já tem a própria borda: o contorno do .editing viraria moldura dupla */
+.label-edit.editing{outline:none!important;background:var(--panel)}
 .ftext.frame{border:1px solid var(--border);border-radius:10px;padding:9px 13px;box-shadow:0 2px 12px var(--shadow);overflow-wrap:break-word;max-width:none}
 .ftext.frame.editing{background:var(--nodebg)!important}
 .ftext .tres{position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;border-radius:4px;background:var(--accent);border:2px solid var(--bg);cursor:nwse-resize;display:none;z-index:6}
@@ -1037,6 +1039,10 @@ function mkPath(cls,d,dash,w,heads,isSel,color){
    entao os dois cliques caem em ELEMENTOS DIFERENTES e o dblclick nativo se
    perde. Guardamos o ultimo clique por id da conexao — isso sobrevive ao render. */
 let ultimoCliqueEdge={chave:'',quando:0};
+/* Enquanto o editor flutuante está aberto, o rótulo NÃO é desenhado no SVG — senão
+   o texto antigo aparece por baixo do editor e os dois ficam embolados na tela. */
+let editandoRotulo=null;
+const rotuloEmEdicao=(kind,id)=>!!editandoRotulo&&editandoRotulo.kind===kind&&editandoRotulo.id===id;
 function duploNaConexao(kind,id){
   const chave=kind+':'+id, agora=Date.now();
   if(ultimoCliqueEdge.chave===chave && agora-ultimoCliqueEdge.quando<420){
@@ -1146,7 +1152,7 @@ function renderEdges(){
     const g=edgeGeom(e);
     if(!g) continue;
     wire('edge',e,g.d,isSelected('edge',e.id),e.heads??'end');
-    if(e.label){ const lb=edgeLabelEl(g.lx,g.ly,e.label,
+    if(e.label && !rotuloEmEdicao('edge',e.id)){ const lb=edgeLabelEl(g.lx,g.ly,e.label,
       ev=>pickEdge('edge',e.id,ev), ()=>editEdgeLabel('edge',e.id));
       lb.dataset.kind='edge'; lb.dataset.eid=e.id; edgeLayer.appendChild(lb); }
     bends('edge',e);
@@ -1155,7 +1161,7 @@ function renderEdges(){
     const isSel=isSelected('arrow',a.id);
     const g=arrowGeom(a);
     wire('arrow',a,g.d,isSel,a.heads);
-    if(a.label){ const lb=edgeLabelEl(g.lx,g.ly,a.label,
+    if(a.label && !rotuloEmEdicao('arrow',a.id)){ const lb=edgeLabelEl(g.lx,g.ly,a.label,
       ev=>pickEdge('arrow',a.id,ev), ()=>editEdgeLabel('arrow',a.id));
       lb.dataset.kind='arrow'; lb.dataset.eid=a.id; edgeLayer.appendChild(lb); }
     bends('arrow',a);
@@ -1338,14 +1344,17 @@ function edgeMid(kind,o){ const g=anyGeom(kind,o); return g?{x:g.lx,y:g.ly}:null
 function editEdgeLabel(kind,id){
   if(editingNow) return;
   const o=(kind==='arrow'?state.arrows:state.edges).find(x=>x.id===id); if(!o||o.lock) return;
+  editandoRotulo={kind,id};        /* tira o rótulo do SVG enquanto o editor está aberto */
   setSel(kind,id); renderAll();
-  const m=edgeMid(kind,o); if(!m) return;
+  const m=edgeMid(kind,o);
+  if(!m){ editandoRotulo=null; renderAll(); return; }
   const box=document.createElement('div');
   box.className='label-edit';
   box.style.left=m.x+'px'; box.style.top=(m.y-12)+'px';
   canvas.appendChild(box);
   beginInline(box, o.label||'', {}, v=>{
     box.remove();
+    editandoRotulo=null;
     if(v!==null){
       const nv=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60);
       if(nv!==(o.label||'')){ pushUndo(); o.label=nv; persist(); }
