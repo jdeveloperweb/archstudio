@@ -21,6 +21,8 @@
         "properties": {
           "id": { "type": ["string", "number"], "description": "Key referenced by nodes' 'box' property." },
           "label": { "type": "string", "maxLength": 40 },
+          "lock": { "type": "boolean", "description": "Pin the item: it is not moved, copied, deleted or picked by the lasso — and the AI will not remove it." },
+          "rot": { "type": "number", "description": "Rotation in degrees. The editor snaps to 15° steps while the grid magnet is on." },
           "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional hex color; a palette color is picked when omitted." }
         }
       }
@@ -59,6 +61,8 @@
           "s": { "type": "number", "minimum": 0.6, "maximum": 2.2, "description": "Scale factor (default 1)." },
           "style": { "type": "string", "enum": ["card", "icon"], "description": "'card' = full card (default); 'icon' = borderless large icon." },
           "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional accent color override (border/icon); defaults to the category color." },
+          "lock": { "type": "boolean", "description": "Pin the item: it is not moved, copied, deleted or picked by the lasso — and the AI will not remove it." },
+          "rot": { "type": "number", "description": "Rotation in degrees. The editor snaps to 15° steps while the grid magnet is on." },
           "x": { "type": "number", "description": "Optional; omit to use auto-layout." },
           "y": { "type": "number", "description": "Optional; omit to use auto-layout." }
         }
@@ -78,6 +82,7 @@
           "dash": { "type": "boolean", "description": "Dashed line — conventionally async/background/fallback paths." },
           "route": { "enum": ["reta", "curva", "orto"], "description": "Line routing: straight (default), rounded curve, or right angles. Optional." },
           "pts": { "type": "array", "description": "Control points the user dragged on the canvas. Optional — leave it out and let the editor place the line.", "items": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": ["x", "y"] } },
+          "lock": { "type": "boolean", "description": "Pin the item: it is not moved, copied, deleted or picked by the lasso — and the AI will not remove it." },
           "heads": { "type": "string", "enum": ["end", "both", "none"], "default": "end" },
           "w": { "type": "number", "minimum": 1, "maximum": 6, "description": "Stroke width (default 2)." },
           "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional line/arrowhead color; defaults to the theme edge color." }
@@ -101,6 +106,8 @@
           "frame": { "type": "boolean", "default": false, "description": "Render as a text box: a rounded rectangle with background and border that wraps text to 'w'." },
           "w": { "type": "number", "minimum": 90, "maximum": 600, "description": "Text box width in px (only when frame is true). Text wraps to this width." },
           "bg": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Text box background/border tint (only when frame is true); defaults to the theme card color." },
+          "lock": { "type": "boolean", "description": "Pin the item: it is not moved, copied, deleted or picked by the lasso — and the AI will not remove it." },
+          "rot": { "type": "number", "description": "Rotation in degrees. The editor snaps to 15° steps while the grid magnet is on." },
           "x": { "type": "number" },
           "y": { "type": "number" }
         }

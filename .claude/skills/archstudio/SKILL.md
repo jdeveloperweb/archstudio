@@ -73,6 +73,8 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 - **`route`** define o traçado: `"reta"` (padrão), `"curva"` (arredondada) ou `"orto"` (ângulos retos, bom para fluxos que voltam ou desviam). No editor dá para arrastar a linha e criar pontos de controle; isso vira o campo `pts`, que você não precisa calcular.
 - **Labels de edge curtos** — protocolo ou ação: `"SQL"`, `"publica"`, `"202 Accepted"`, `"fallback"`.
 - **`texts`** para as 1–3 decisões que justificam o desenho (idempotência, ordem por chave, TTL...). Cada texto aceita `bold`, `italic`, `color` (hex), `align` (left/center/right) — use para destacar a decisão crítica. Para um destaque em bloco, use `"frame": true` (vira uma caixa de texto com fundo/borda), com `w` (largura) e `bg` (cor de fundo, hex) opcionais.
+- **`lock: true`** fixa o item: ele não é movido, copiado, apagado nem pego pelo laço — e a IA também não o remove. Use para molduras e legendas que devem ficar paradas.
+- **`rot`** (graus) gira qualquer item. No editor, a alça ⟲ gira arrastando; com o ímã da grade ligado ele trava de 15 em 15° (Shift inverte).
 - Cores de box: AWS `#ff9900`, on-prem `#9aa3b5`, novo/nuvem `#4ade80`, crítico `#f87171`, padrão `#a679ff`.
 
 ### Tipos de componente (campo `type`)

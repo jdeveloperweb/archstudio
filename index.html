@@ -125,6 +125,18 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .eh{fill:var(--bg);stroke:var(--accent);stroke-width:2.5;cursor:grab;pointer-events:all}
 .eh:hover{fill:var(--accent)}
 
+/* alça de girar: aparece no item selecionado, logo acima dele */
+.rot{position:absolute;top:-27px;left:50%;transform:translateX(-50%);width:21px;height:21px;border-radius:50%;
+  background:var(--panel2);border:1.5px solid var(--accent);color:var(--accent);font-size:12px;line-height:18px;
+  text-align:center;cursor:grab;display:none;z-index:7;user-select:none}
+.rot:active{cursor:grabbing}
+.node.sel>.rot,.gbox.sel>.rot,.ftext.sel>.rot{display:block}
+.node.locked>.rot,.gbox.locked>.rot,.ftext.locked>.rot{display:none!important}
+/* item fixado: não move, não copia, não apaga — o laço de seleção também passa batido */
+.locked{cursor:default!important}
+.node.locked .nx,.node.locked .nres,.gbox.locked .nx,.gbox.locked .bres,.ftext.locked .tres{display:none!important}
+.lk{position:absolute;top:-9px;left:-9px;width:19px;height:19px;border-radius:50%;background:var(--panel2);
+  border:1px solid var(--border);font-size:9px;line-height:17px;text-align:center;z-index:6;cursor:default;user-select:none}
 .gbox{position:absolute;border:2px dashed;border-radius:14px;z-index:1;cursor:grab;touch-action:none}
 .gbox .gtitle{position:absolute;top:-11px;left:14px;font-family:var(--mono);font-size:11.5px;font-weight:700;background:var(--bg);padding:1px 9px;border-radius:5px;white-space:pre-wrap;max-width:280px}
 .gbox .bres{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:4px;cursor:nwse-resize;border:2px solid var(--bg)}
@@ -378,7 +390,7 @@ function mergeEmbedSpec(spec){
      Só sai o que o spec pedir explicitamente em "remove": ["id_ou_rotulo", ...]. */
   const rmKeys=new Set((Array.isArray(spec.remove)?spec.remove:[])
     .map(v=>String(v).trim().toLowerCase()).filter(Boolean));
-  const pediuRemover=n=>rmKeys.size>0 && (
+  const pediuRemover=n=>rmKeys.size>0 && !n.lock && (   /* o que o usuário fixou a IA não tira */
     rmKeys.has(String(n.aid||'').toLowerCase()) ||
     rmKeys.has(String(n.id).toLowerCase()) ||
     rmKeys.has((n.label||'').trim().toLowerCase()));
@@ -723,8 +735,9 @@ function addSel(kind,id){ if(!isSelected(kind,id)) selMulti.push({kind,id}); syn
 function toggleSel(kind,id){ const i=selMulti.findIndex(s=>s.kind===kind&&s.id===id); if(i>=0) selMulti.splice(i,1); else selMulti.push({kind,id}); syncSel(); }
 function clearSelection(){ selMulti=[]; sel=null; }
 function selectAll(){
-  selMulti=[...state.nodes.map(n=>({kind:'node',id:n.id})),...state.boxes.map(b=>({kind:'box',id:b.id})),
-            ...state.texts.map(t=>({kind:'text',id:t.id})),...state.arrows.map(a=>({kind:'arrow',id:a.id}))];
+  const livre=o=>!o.lock;                       /* Ctrl+A ignora o que está fixado */
+  selMulti=[...state.nodes.filter(livre).map(n=>({kind:'node',id:n.id})),...state.boxes.filter(livre).map(b=>({kind:'box',id:b.id})),
+            ...state.texts.filter(livre).map(t=>({kind:'text',id:t.id})),...state.arrows.filter(livre).map(a=>({kind:'arrow',id:a.id}))];
   syncSel(); renderAll();
 }
 const SEL_COLL={node:'nodes',box:'boxes',arrow:'arrows',edge:'edges',text:'texts'};
@@ -853,6 +866,46 @@ function setMode(m){
 }
 function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+/* ============ GIRAR ============ */
+/* rot = graus. O ímã da grade também vale para o giro: com o ímã ligado o item
+   trava de 15 em 15 graus; segure Shift para inverter (livre <-> travado). */
+const ROT_PASSO=15;
+function rsnap(deg, inverte){
+  let d=((deg%360)+360)%360;
+  const ima = snapOn() !== !!inverte;
+  if(ima) d=Math.round(d/ROT_PASSO)*ROT_PASSO;
+  else d=Math.round(d);
+  return d%360;
+}
+/** centro do item, em coordenadas do canvas — é em torno dele que tudo gira */
+function itemCenter(kind,o){
+  if(kind==='node') return {x:o.x+nodeW(o)/2, y:o.y+nodeH(o)/2};
+  if(kind==='box')  return {x:o.x+o.w/2, y:o.y+o.h/2};
+  if(kind==='text'){ const d=domSize('.ftext',o.id,160,24); return {x:o.x+d.w/2, y:o.y+d.h/2}; }
+  if(kind==='arrow') return {x:(o.x1+o.x2)/2, y:(o.y1+o.y2)/2};
+  return null;
+}
+/** gira um ponto em torno de um centro */
+function rotPoint(px,py,cx,cy,deg){
+  const r=deg*Math.PI/180, cos=Math.cos(r), sin=Math.sin(r), dx=px-cx, dy=py-cy;
+  return {x:cx+dx*cos-dy*sin, y:cy+dx*sin+dy*cos};
+}
+/** define o giro do item. A seta livre não tem "rot": ela gira de verdade,
+    movendo as pontas (e os pontos de controle) em torno do próprio meio. */
+function setRot(kind,o,deg){
+  if(kind==='arrow'){
+    const d=deg-(o.rot||0); if(!d) return;
+    const c=itemCenter('arrow',o);
+    const a=rotPoint(o.x1,o.y1,c.x,c.y,d), b=rotPoint(o.x2,o.y2,c.x,c.y,d);
+    o.x1=Math.round(a.x); o.y1=Math.round(a.y); o.x2=Math.round(b.x); o.y2=Math.round(b.y);
+    if(o.pts) o.pts=o.pts.map(q=>{ const r=rotPoint(q.x,q.y,c.x,c.y,d); return {x:Math.round(r.x),y:Math.round(r.y)}; });
+    o.rot=deg||0; if(!o.rot) delete o.rot;
+    return;
+  }
+  if(deg) o.rot=deg; else delete o.rot;
+}
+const rotCss=o=>o.rot?`;transform:rotate(${o.rot}deg)`:'';
+
 /* ============ GEOMETRIA ============ */
 const nodeW = n => 118*(n.s||1), nodeH = n => 66*(n.s||1);
 const centerOf = n => ({ x:n.x+nodeW(n)/2, y:n.y+nodeH(n)/2 });
@@ -867,23 +920,25 @@ function renderAll(){
   /* maiores primeiro: assim as caixas aninhadas ficam POR CIMA e dá para clicar nelas */
   for(const b of [...state.boxes].sort((x,y)=>(y.w*y.h)-(x.w*x.h))){
     const el=document.createElement('div');
-    el.className='gbox'+(isSelected('box',b.id)?' sel':'');
-    el.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;border-color:${b.color};background:${b.color}0d`;
+    el.className='gbox'+(isSelected('box',b.id)?' sel':'')+(b.lock?' locked':'');
+    el.style.cssText=`left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;border-color:${b.color};background:${b.color}0d`+rotCss(b);
     el.dataset.id=b.id;
-    el.innerHTML=`<span class="gtitle" style="color:${b.color}">${escapeHtml(b.label)}</span><span class="bres" style="background:${b.color}"></span><span class="nx" title="remover caixa (mantém o conteúdo)">✕</span>`;
+    el.innerHTML=`<span class="gtitle" style="color:${b.color}">${escapeHtml(b.label)}</span><span class="bres" style="background:${b.color}"></span><span class="nx" title="remover caixa (mantém o conteúdo)">✕</span><span class="rot" title="arraste para girar">⟲</span>${b.lock?'<span class="lk" title="fixado">🔒</span>':''}`;
     el.addEventListener('dblclick',()=>renameBox(b.id));
     canvas.appendChild(el);
   }
   for(const t of state.texts){
     const el=document.createElement('div');
     const fr=!!t.frame;
-    el.className='ftext'+(fr?' frame':'')+(isSelected('text',t.id)?' sel':'');
+    el.className='ftext'+(fr?' frame':'')+(isSelected('text',t.id)?' sel':'')+(t.lock?' locked':'');
     let css=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}`;
     if(fr) css+=`;width:${t.w||200}px;background:${t.bg?t.bg+'22':'var(--nodebg)'};border-color:${t.bg||'var(--border)'}`;
-    el.style.cssText=css;
+    el.style.cssText=css+rotCss(t);
     el.dataset.id=t.id;
     el.textContent=t.text;
+    { const rh=document.createElement('span'); rh.className='rot'; rh.title='arraste para girar'; rh.textContent='⟲'; el.appendChild(rh); }
     if(fr){ const h=document.createElement('span'); h.className='tres'; h.title='arraste para redimensionar a largura'; el.appendChild(h); }
+    if(t.lock){ const lk=document.createElement('span'); lk.className='lk'; lk.title='fixado'; lk.textContent='🔒'; el.appendChild(lk); }
     el.addEventListener('dblclick',()=>editText(t.id));
     canvas.appendChild(el);
   }
@@ -891,12 +946,12 @@ function renderAll(){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
     const s=n.s||1, ic = n.st==='icon';
     const el=document.createElement('div');
-    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'');
-    el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`;
+    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
+    el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`+rotCss(n);
     if(n.color&&!ic) el.style.borderTopColor=n.color;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
-    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>`;
+    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span><span class="rot" title="arraste para girar">⟲</span>${n.lock?'<span class="lk" title="fixado">🔒</span>':''}`;
     el.addEventListener('dblclick',()=>renameNode(n.id));
     canvas.appendChild(el);
   }
@@ -936,6 +991,7 @@ function edgeLabelEl(x,y,txt,onPick,onEdit){
     mais próximo do clique. Como o ponto só nasce quando o mouse anda de fato,
     um clique simples continua sendo só um clique — e o duplo-clique ainda edita o rótulo. */
 function dragBend(kind,o,ev){
+  if(o.lock) return;
   const g=anyGeom(kind,o); if(!g) return;
   const p0=canvasPoint(ev), base=(o.pts||[]).length;
   /* em qual trecho o usuário pegou a linha? */
@@ -980,7 +1036,7 @@ function renderEdges(){
   };
   /* bolinhas dos pontos de controle (só na conexão selecionada) */
   const bends=(kind,o)=>{
-    if(!isSelected(kind,o.id)) return;
+    if(!isSelected(kind,o.id)||o.lock) return;
     (o.pts||[]).forEach((q,i)=>{
       const h=document.createElementNS(SVGNS,'circle');
       h.setAttribute('class','eh'); h.setAttribute('r',6);
@@ -1012,7 +1068,7 @@ function renderEdges(){
     if(a.label) edgeLayer.appendChild(edgeLabelEl(g.lx,g.ly,a.label,
       ev=>pickEdge('arrow',a.id,ev), ()=>editEdgeLabel('arrow',a.id)));
     bends('arrow',a);
-    if(isSel){
+    if(isSel&&!a.lock){
       for(const end of [1,2]){
         const h=document.createElementNS(SVGNS,'circle');
         h.setAttribute('class','ah'); h.setAttribute('r',7);
@@ -1190,7 +1246,7 @@ function edgeMid(kind,o){ const g=anyGeom(kind,o); return g?{x:g.lx,y:g.ly}:null
 /** edita o rótulo da seta no próprio canvas (Enter confirma, Shift+Enter quebra linha) */
 function editEdgeLabel(kind,id){
   if(editingNow) return;
-  const o=(kind==='arrow'?state.arrows:state.edges).find(x=>x.id===id); if(!o) return;
+  const o=(kind==='arrow'?state.arrows:state.edges).find(x=>x.id===id); if(!o||o.lock) return;
   setSel(kind,id); renderAll();
   const m=edgeMid(kind,o); if(!m) return;
   const box=document.createElement('div');
@@ -1217,7 +1273,10 @@ function renderProps(){
   const bar=document.getElementById('propsBar');
   if(selMulti.length>1){
     bar.className='propsbar show';
-    bar.innerHTML=`<span class="props-label">▣ ${selMulti.length} selecionados</span>
+    const nLock=selObjects().filter(x=>x.obj.lock).length;
+    bar.innerHTML=`<span class="props-label">▣ ${selMulti.length} selecionados${nLock?` <span style="color:var(--dim)">(${nLock} fixado${nLock>1?'s':''})</span>`:''}</span>
+      <button class="pbtn" onclick="lockSel(true)" title="fixar: não move, não copia e não apaga">🔒 fixar</button>
+      ${nLock?'<button class="pbtn on" onclick="lockSel(false)">🔓 soltar</button>':''}
       <button class="pbtn" onclick="duplicateSelection()">⧉ duplicar</button>
       <button class="pbtn" onclick="copySel()">⧉ copiar</button>
       <button class="pbtn danger" onclick="delSel()">🗑 excluir</button>
@@ -1228,6 +1287,15 @@ function renderProps(){
   const o=selRef();
   if(!o){ bar.className='propsbar'; bar.innerHTML=''; return; }
   bar.className='propsbar show';
+  /* fixado: nada de editar sem soltar antes — o painel some para não iludir */
+  if(o.lock){
+    const nome={node:'◈ componente',box:'▭ caixa',arrow:'↗ seta livre',edge:'→ conexão',text:'T texto'}[sel.kind];
+    bar.innerHTML=`<span class="props-label">🔒 ${nome} fixado</span>
+      <span class="props-label" style="color:var(--dim)">não move, não copia, não apaga e o laço não pega</span>
+      <button class="pbtn on" onclick="toggleLock()">🔓 soltar</button>
+      <button class="pbtn" onclick="clearSelection();renderAll()">fechar</button>`;
+    return;
+  }
   let html='';
   if(sel.kind==='node'){
     const def=TYPE_INDEX[o.type]||{color:'gen'};
@@ -1268,13 +1336,34 @@ function renderProps(){
       <button class="pbtn" onclick="editText(${o.id})">✎ editar</button>
       <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
   }
-  html+=`<button class="pbtn danger" onclick="delSel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> excluir</button>
+  if(sel.kind!=='edge'){
+    const ang=o.rot||0;
+    html+=`<span class="cfield" title="girar (o ímã da grade trava de ${ROT_PASSO} em ${ROT_PASSO}°)">girar
+        <button class="pbtn" onclick="propRot(-${ROT_PASSO})">⟲</button>
+        <span style="min-width:34px;text-align:center;font-family:var(--mono)">${ang}°</span>
+        <button class="pbtn" onclick="propRot(${ROT_PASSO})">⟳</button>
+        ${ang?'<span onclick="propRot0()" title="voltar a 0°" style="cursor:pointer;color:var(--dim);padding:0 1px">✕</span>':''}
+      </span>`;
+  }
+  html+=`<button class="pbtn" onclick="toggleLock()" title="fixar: não move, não copia e não apaga (Ctrl+L)">🔒 fixar</button>
+    <button class="pbtn danger" onclick="delSel()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> excluir</button>
     <button class="pbtn" onclick="clearSelection();renderAll()">fechar</button>`;
   bar.innerHTML=html;
 }
 function cssVar(n){ return (getComputedStyle(document.body).getPropertyValue(n)||'').trim()||'#888888'; }
 function colorField(label,cur,onchange,onclear){
   return `<span class="cfield">${label}<input type="color" class="cswatch" value="${cur}" onchange="${onchange}">${onclear?`<span onclick="${onclear}" title="voltar à cor padrão" style="cursor:pointer;color:var(--dim);padding:0 1px">✕</span>`:''}</span>`;
+}
+function propRot(d){ const o=selRef(); if(!o||o.lock)return; pushUndo(); setRot(sel.kind,o,rsnap((o.rot||0)+d,false)); persist(); renderAll(); }
+function propRot0(){ const o=selRef(); if(!o||o.lock)return; pushUndo(); setRot(sel.kind,o,0); persist(); renderAll(); }
+/** fixa/solta o item selecionado */
+function toggleLock(){ const o=selRef(); if(!o)return; pushUndo(); if(o.lock) delete o.lock; else o.lock=true; persist(); renderAll(); }
+/** fixa/solta tudo que está selecionado */
+function lockSel(v){
+  if(!selMulti.length) return;
+  pushUndo();
+  for(const {obj} of selObjects()){ if(v) obj.lock=true; else delete obj.lock; }
+  persist(); renderAll();
 }
 function setSelColor(v){ const o=selRef(); if(!o)return; pushUndo(); o.color=v; persist(); renderAll(); }
 function clearSelColor(){ const o=selRef(); if(!o)return; pushUndo(); delete o.color; persist(); renderAll(); }
@@ -1301,8 +1390,10 @@ const TEXTBOX_BG=[null,'#a679ff','#ff9900','#7c9eff','#22d3ee','#4ade80','#f472b
 function propTextBg(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXTBOX_BG[(TEXTBOX_BG.indexOf(o.bg||null)+1)%TEXTBOX_BG.length]; if(nx) o.bg=nx; else delete o.bg; persist(); renderAll(); }
 function delSel(){
   if(!selMulti.length) return;
+  const alvos=selObjects().filter(x=>!x.obj.lock);   /* o que está fixado não é apagado */
+  if(!alvos.length) return;
   pushUndo();
-  const ids=k=>new Set(selMulti.filter(x=>x.kind===k).map(x=>x.id));
+  const ids=k=>new Set(alvos.filter(x=>x.kind===k).map(x=>x.obj.id));
   const nIds=ids('node'), bIds=ids('box'), aIds=ids('arrow'), eIds=ids('edge'), tIds=ids('text');
   if(nIds.size) state.nodes=state.nodes.filter(n=>!nIds.has(n.id));
   state.edges=state.edges.filter(e=>!eIds.has(e.id)&&!nIds.has(e.from)&&!nIds.has(e.to));
@@ -1314,7 +1405,7 @@ function delSel(){
 /* ---- copiar / colar / duplicar mantendo o layout relativo ---- */
 function selectionPayload(){
   const objs=selObjects(), clone=o=>JSON.parse(JSON.stringify(o));
-  const pick=k=>objs.filter(o=>o.kind===k).map(o=>clone(o.obj));
+  const pick=k=>objs.filter(o=>o.kind===k&&!o.obj.lock).map(o=>clone(o.obj));   /* fixado não é copiado */
   const nodes=pick('node'), ids=new Set(nodes.map(n=>n.id));
   return {nodes, boxes:pick('box'), texts:pick('text'), arrows:pick('arrow'),
           edges:state.edges.filter(e=>ids.has(e.from)&&ids.has(e.to)).map(clone)};
@@ -1325,13 +1416,13 @@ function pasteClip(dx,dy){
   if(clipEmpty(clipboard)) return;
   pushUndo();
   const map={}, ns=[], cl=o=>JSON.parse(JSON.stringify(o));
-  for(const n of clipboard.nodes){ const c={...n,id:++state.seq,x:n.x+dx,y:n.y+dy}; delete c.aid; map[n.id]=c.id; state.nodes.push(c); ns.push({kind:'node',id:c.id}); }
+  for(const n of clipboard.nodes){ const c={...n,id:++state.seq,x:n.x+dx,y:n.y+dy}; delete c.aid; delete c.lock; map[n.id]=c.id; state.nodes.push(c); ns.push({kind:'node',id:c.id}); }
   for(const e of clipboard.edges){ const f=map[e.from], t=map[e.to]; if(f&&t){ const c=cl(e); c.id=++state.seq; c.from=f; c.to=t;
-    if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.edges.push(c); } }
-  for(const b of clipboard.boxes){ const c={...b,id:++state.seq,x:b.x+dx,y:b.y+dy}; state.boxes.push(c); ns.push({kind:'box',id:c.id}); }
-  for(const t of clipboard.texts){ const c={...t,id:++state.seq,x:t.x+dx,y:t.y+dy}; state.texts.push(c); ns.push({kind:'text',id:c.id}); }
+    delete c.lock; if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.edges.push(c); } }
+  for(const b of clipboard.boxes){ const c={...b,id:++state.seq,x:b.x+dx,y:b.y+dy}; delete c.lock; state.boxes.push(c); ns.push({kind:'box',id:c.id}); }
+  for(const t of clipboard.texts){ const c={...t,id:++state.seq,x:t.x+dx,y:t.y+dy}; delete c.lock; state.texts.push(c); ns.push({kind:'text',id:c.id}); }
   for(const a of clipboard.arrows){ const c=cl(a); c.id=++state.seq; c.x1=a.x1+dx; c.y1=a.y1+dy; c.x2=a.x2+dx; c.y2=a.y2+dy;
-    if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.arrows.push(c); ns.push({kind:'arrow',id:c.id}); }
+    delete c.lock; if(c.pts) c.pts=c.pts.map(p=>({x:p.x+dx,y:p.y+dy})); state.arrows.push(c); ns.push({kind:'arrow',id:c.id}); }
   selMulti=ns; syncSel(); persist(); renderAll();
 }
 function duplicateSelection(){ if(copySel()) pasteClip(28,28); }
@@ -1368,21 +1459,21 @@ function beginInline(el, text, opts, onCommit){
   el.addEventListener('keydown',onKey);
 }
 function renameNode(id){
-  const n=state.nodes.find(x=>x.id===id); if(!n) return;
+  const n=state.nodes.find(x=>x.id===id); if(!n||n.lock) return;
   beginInline(canvas.querySelector(`.node[data-id="${id}"] .nname`), n.label, {}, v=>{
     if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
     renderAll();
   });
 }
 function renameBox(id){
-  const b=state.boxes.find(x=>x.id===id); if(!b) return;
+  const b=state.boxes.find(x=>x.id===id); if(!b||b.lock) return;
   beginInline(canvas.querySelector(`.gbox[data-id="${id}"] .gtitle`), b.label, {}, v=>{
     if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60); if(v&&v!==b.label){ pushUndo(); b.label=v; persist(); } }
     renderAll();
   });
 }
 function editText(id, isNew){
-  const t=state.texts.find(x=>x.id===id); if(!t) return;
+  const t=state.texts.find(x=>x.id===id); if(!t||t.lock) return;
   sel={kind:'text',id}; renderProps();
   beginInline(canvas.querySelector(`.ftext[data-id="${id}"]`), t.text, {multiline:true}, v=>{
     if(v!==null){
@@ -1418,6 +1509,7 @@ function paintSel(){
 function grabSelection(){
   const items=[];
   for(const {kind,obj} of selObjects()){
+    if(obj.lock) continue;                       /* fixado fica onde está, mesmo no grupo */
     if(kind==='arrow') items.push({kind,obj,x1:obj.x1,y1:obj.y1,x2:obj.x2,y2:obj.y2,pts:(obj.pts||[]).map(p=>({...p}))});
     else if(kind!=='edge') items.push({kind,obj,x0:obj.x,y0:obj.y});
   }
@@ -1437,12 +1529,13 @@ function rectsOverlap(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && 
 function rectInside(inner,outer){ return inner.x>=outer.x && inner.y>=outer.y && inner.x+inner.w<=outer.x+outer.w && inner.y+inner.h<=outer.y+outer.h; }
 function selectInRect(r,add){
   if(!add) selMulti=[];
-  for(const n of state.nodes) if(rectsOverlap(r,{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)})) addSel('node',n.id);
-  for(const t of state.texts){ const d=domSize('.ftext',t.id,160,24); if(rectsOverlap(r,{x:t.x,y:t.y,w:d.w,h:d.h})) addSel('text',t.id); }
-  for(const a of state.arrows){ const x=Math.min(a.x1,a.x2), y=Math.min(a.y1,a.y2);
+  /* o que está fixado não entra no laço: é justamente para poder passar por cima dele */
+  for(const n of state.nodes) if(!n.lock && rectsOverlap(r,{x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)})) addSel('node',n.id);
+  for(const t of state.texts){ if(t.lock) continue; const d=domSize('.ftext',t.id,160,24); if(rectsOverlap(r,{x:t.x,y:t.y,w:d.w,h:d.h})) addSel('text',t.id); }
+  for(const a of state.arrows){ if(a.lock) continue; const x=Math.min(a.x1,a.x2), y=Math.min(a.y1,a.y2);
     if(rectsOverlap(r,{x,y,w:Math.abs(a.x2-a.x1)||1,h:Math.abs(a.y2-a.y1)||1})) addSel('arrow',a.id); }
   /* caixas só entram se couberem inteiras no laço (evita pegar a caixa sem querer) */
-  for(const b of state.boxes) if(rectInside({x:b.x,y:b.y,w:b.w,h:b.h},r)) addSel('box',b.id);
+  for(const b of state.boxes) if(!b.lock && rectInside({x:b.x,y:b.y,w:b.w,h:b.h},r)) addSel('box',b.id);
   syncSel();
 }
 
@@ -1467,9 +1560,32 @@ canvas.addEventListener('pointerdown', ev=>{
   const boxEl=t.closest&&t.closest('.gbox');
   const nodeEl=t.closest&&t.closest('.node');
   const textEl=t.closest&&t.closest('.ftext');
+  /* alça de girar */
+  if(t.classList&&t.classList.contains('rot')){
+    ev.preventDefault();
+    const host=nodeEl||textEl||boxEl;
+    const kind=nodeEl?'node':textEl?'text':'box';
+    const o=state[SEL_COLL[kind]].find(x=>x.id===+host.dataset.id);
+    if(!o||o.lock) return;
+    const c=itemCenter(kind,o), p0=canvasPoint(ev);
+    const a0=Math.atan2(p0.y-c.y,p0.x-c.x)*180/Math.PI, r0=o.rot||0;
+    setSel(kind,o.id); paintSel();
+    dragSession(e2=>{
+      const q=canvasPoint(e2);
+      const a=Math.atan2(q.y-c.y,q.x-c.x)*180/Math.PI;
+      setRot(kind,o,rsnap(r0+a-a0, e2.shiftKey));
+      host.style.transform=o.rot?`rotate(${o.rot}deg)`:'';
+      renderProps();
+    });
+    return;
+  }
   /* remover */
   if(t.closest&&t.closest('.nx')){
-    ev.preventDefault(); pushUndo();
+    ev.preventDefault();
+    const trav = nodeEl ? state.nodes.find(n=>n.id===+nodeEl.dataset.id)
+               : boxEl ? state.boxes.find(b=>b.id===+boxEl.dataset.id) : null;
+    if(trav&&trav.lock) return;                  /* fixado não some pelo ✕ */
+    pushUndo();
     if(nodeEl){ const id=+nodeEl.dataset.id; state.nodes=state.nodes.filter(n=>n.id!==id); state.edges=state.edges.filter(e=>e.from!==id&&e.to!==id); }
     else if(boxEl){ state.boxes=state.boxes.filter(b=>b.id!==+boxEl.dataset.id); }
     clearSelection(); persist(); renderAll(); return;
@@ -1480,6 +1596,7 @@ canvas.addEventListener('pointerdown', ev=>{
   if(t.classList&&t.classList.contains('bres') && boxEl){
     ev.preventDefault();
     const b=state.boxes.find(x=>x.id===+boxEl.dataset.id);
+    if(b.lock) return;
     setSel('box',b.id); paintSel();
     dragSession(e2=>{ const p=canvasPoint(e2); b.w=Math.max(140,gsnap(p.x-b.x)); b.h=Math.max(90,gsnap(p.y-b.y)); boxEl.style.width=b.w+'px'; boxEl.style.height=b.h+'px'; });
     return;
@@ -1487,6 +1604,12 @@ canvas.addEventListener('pointerdown', ev=>{
   /* nó */
   if(nodeEl){
     const n=state.nodes.find(x=>x.id===+nodeEl.dataset.id);
+    /* fixado: dá para selecionar (para soltar) e para conectar, mas não para mover/redimensionar */
+    if(n.lock && mode!=='connect'){
+      ev.preventDefault();
+      if(ev.shiftKey) toggleSel('node',n.id); else setSel('node',n.id);
+      paintSel(); return;
+    }
     if(t.classList&&t.classList.contains('nres')){
       ev.preventDefault();
       setSel('node',n.id); paintSel();
@@ -1526,6 +1649,7 @@ canvas.addEventListener('pointerdown', ev=>{
   if(textEl){
     ev.preventDefault();
     const tx=state.texts.find(x=>x.id===+textEl.dataset.id);
+    if(tx.lock){ if(ev.shiftKey) toggleSel('text',tx.id); else setSel('text',tx.id); paintSel(); return; }
     if(ev.shiftKey){ toggleSel('text',tx.id); paintSel(); return; }
     if(t.classList&&t.classList.contains('tres')){
       setSel('text',tx.id); paintSel();
@@ -1548,6 +1672,7 @@ canvas.addEventListener('pointerdown', ev=>{
   if(boxEl){
     ev.preventDefault();
     const b=state.boxes.find(x=>x.id===+boxEl.dataset.id);
+    if(b.lock){ if(ev.shiftKey) toggleSel('box',b.id); else setSel('box',b.id); paintSel(); return; }
     if(ev.shiftKey){ toggleSel('box',b.id); paintSel(); return; }
     if(!isSelected('box',b.id)) setSel('box',b.id);
     paintSel();
@@ -1557,10 +1682,10 @@ canvas.addEventListener('pointerdown', ev=>{
     const carry = ev.altKey && !grabbed;
     const br={x:b.x,y:b.y,w:b.w,h:b.h};
     const inside = !carry ? [] : state.nodes
-      .filter(n=>rectInside({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)},br))
+      .filter(n=>!n.lock && rectInside({x:n.x,y:n.y,w:nodeW(n),h:nodeH(n)},br))
       .map(n=>({n,x0:n.x,y0:n.y}));
     const insideTx = !carry ? [] : state.texts
-      .filter(tx=>{ const d=domSize('.ftext',tx.id,160,24); return rectInside({x:tx.x,y:tx.y,w:d.w,h:d.h},br); })
+      .filter(tx=>{ if(tx.lock) return false; const d=domSize('.ftext',tx.id,160,24); return rectInside({x:tx.x,y:tx.y,w:d.w,h:d.h},br); })
       .map(tx=>({tx,x0:tx.x,y0:tx.y}));
     const sx=ev.clientX,sy=ev.clientY,bx0=b.x,by0=b.y;
     dragSession(e2=>{
@@ -1653,6 +1778,7 @@ document.addEventListener('keydown', ev=>{
   else if(k==='c'){ if(selMulti.length){ ev.preventDefault(); copySel(); } }
   else if(k==='v'){ if(!clipEmpty(clipboard)){ ev.preventDefault(); pasteClip(28,28); } }
   else if(k==='d'){ ev.preventDefault(); duplicateSelection(); }
+  else if(k==='l'){ if(selMulti.length){ ev.preventDefault(); lockSel(selObjects().some(x=>!x.obj.lock)); } }
 });
 
 /* ============ SPEC DE AGENTE: normalização + auto-layout ============ */
@@ -1965,11 +2091,14 @@ function buildSvg(fontCss){
   s+=`<rect width="${W}" height="${H}" fill="${P.bg}"/><rect width="${W}" height="${H}" fill="url(#grid)"/>`;
   s+=`<text x="28" y="42" font-size="24" font-weight="700" fill="${P.ink}">${title}</text>`;
   s+=`<text x="28" y="64" font-size="12" fill="${P.dim}">${new Date().toLocaleDateString('pt-BR')} · ArchStudio</text>`;
+  /* itens girados saem girados também na imagem */
+  const rotWrap=(deg,cx,cy,inner)=>deg?`<g transform="rotate(${deg} ${cx} ${cy})">${inner}</g>`:inner;
   /* caixas */
   for(const b of state.boxes){
-    s+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="14" fill="${b.color}0d" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
-    s+=`<rect x="${b.x+ox+12}" y="${b.y+oy-11}" width="${b.label.length*7.2+18}" height="20" rx="5" fill="${P.bg}"/>`;
-    s+=`<text x="${b.x+ox+21}" y="${b.y+oy+3.5}" font-size="11.5" font-weight="700" fill="${b.color}" font-family="Consolas, monospace">${svgEscape(b.label)}</text>`;
+    let w=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="14" fill="${b.color}0d" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
+    w+=`<rect x="${b.x+ox+12}" y="${b.y+oy-11}" width="${b.label.length*7.2+18}" height="20" rx="5" fill="${P.bg}"/>`;
+    w+=`<text x="${b.x+ox+21}" y="${b.y+oy+3.5}" font-size="11.5" font-weight="700" fill="${b.color}" font-family="Consolas, monospace">${svgEscape(b.label)}</text>`;
+    s+=rotWrap(b.rot,b.x+ox+b.w/2,b.y+oy+b.h/2,w);
   }
   /* conexões + setas livres */
   const lineSvg=(o,d,lx,ly)=>{
@@ -1997,6 +2126,7 @@ function buildSvg(fontCss){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
     const col=n.color||catColor(def.color), sc=n.s||1, ic=n.st==='icon';
     const x=n.x+ox, y=n.y+oy, w=nodeW(n), h=nodeH(n), cx=x+w/2;
+    const s0=s.length;
     if(ic){
       /* modo só ícone: sem cartão — ícone grande + nome, fiel ao canvas */
       s+=`<g transform="translate(${cx-21*sc},${y+4*sc}) scale(${1.75*sc})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
@@ -2009,11 +2139,14 @@ function buildSvg(fontCss){
       const lines=labelLines(n.label, 19);
       lines.forEach((ln,i)=>{ s+=`<text x="${cx}" y="${y+(50+i*12)*sc}" font-size="${10.5*sc}" fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`; });
     }
+    if(n.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(n.rot,cx,y+h/2,corpo); }
   }
   /* textos livres e caixas de texto */
   for(const t of state.texts){
     const fill=t.color||P.ink;
     const extra=(t.b?' font-weight="700"':'')+(t.it?' font-style="italic"':'');
+    const s0=s.length;
+    const fecha=(cx,cy)=>{ if(t.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(t.rot,cx,cy,corpo); } };
     if(t.frame){
       const bw=t.w||200, padX=13, padY=9, lh=t.size*1.42;
       const lines=wrapTextLines(t.text, bw, t.size);
@@ -2023,6 +2156,7 @@ function buildSvg(fontCss){
       if(t.align==='center'){ ax=t.x+ox+bw/2; anchor=' text-anchor="middle"'; }
       else if(t.align==='right'){ ax=t.x+ox+bw-padX; anchor=' text-anchor="end"'; }
       lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+padY+lh*(i+0.72)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
+      fecha(t.x+ox+bw/2, t.y+oy+bh/2);
       continue;
     }
     const lines=t.text.split('\n');
@@ -2031,6 +2165,7 @@ function buildSvg(fontCss){
     if(t.align==='center'){ ax+=est/2; anchor=' text-anchor="middle"'; }
     else if(t.align==='right'){ ax+=est; anchor=' text-anchor="end"'; }
     lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+t.size*(i+0.9)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
+    fecha(t.x+ox+est/2, t.y+oy+t.size*lines.length/2);
   }
   s+='</svg>';
   return {svg:s,W,H};
