@@ -75,12 +75,35 @@ Schema completo em `schema/archstudio.schema.json`; exemplos em `examples/`.
 - **`texts`** para as 1–3 decisões que justificam o desenho (idempotência, ordem por chave, TTL...). Cada texto aceita `bold`, `italic`, `color` (hex), `align` (left/center/right) — use para destacar a decisão crítica. Para um destaque em bloco, use `"frame": true` (vira uma caixa de texto com fundo/borda), com `w` (largura) e `bg` (cor de fundo, hex) opcionais.
 - **`lock: true`** fixa o item: ele não é movido, copiado, apagado nem pego pelo laço — e a IA também não o remove. Use para molduras e legendas que devem ficar paradas.
 - **`rot`** (graus) gira qualquer item. No editor, a alça ⟲ gira arrastando; com o ímã da grade ligado ele trava de 15 em 15° (Shift inverte).
-- Cores de box: AWS `#ff9900`, on-prem `#9aa3b5`, novo/nuvem `#4ade80`, crítico `#f87171`, padrão `#a679ff`.
+- **`tech`** e **`desc`** valem para **qualquer** componente — não só os C4. `tech` sai como `[Spring Boot]` embaixo do nome; `desc` é uma linha curta de descrição. O cartão cresce sozinho.
+- **`multiple: true`** desenha o cartão empilhado, indicando várias instâncias (réplicas, pods, workers).
+- Cores de box: AWS `#ff9900`, on-prem `#9aa3b5`, novo/nuvem `#4ade80`, crítico `#f87171`, padrão `#a679ff`, C4 `#4d9de0`.
+
+### Modelo C4 (níveis)
+
+O C4 é **notação**, não um catálogo à parte: os tipos `c4*` existem para quando você quer a semântica pura, mas `tech`/`desc`/`multiple` funcionam igual num `lambda`, `rds` ou `cloudrun` — dá para desenhar C4 já mostrando a tecnologia real.
+
+| Elemento C4 | `type` | Observação |
+|---|---|---|
+| Pessoa / ator | `c4person` | `c4extperson` para quem está fora do escopo |
+| Sistema de software (o seu) | `c4system` | Nível 1 |
+| Sistema externo | `c4extsystem` | sai em cinza, convenção do C4 |
+| Contêiner (app, serviço, SPA) | `c4container` | Nível 2 — use `tech` |
+| Contêiner de dados / mensageria | `c4db` / `c4queue` | Nível 2 |
+| Componente | `c4component` | Nível 3 |
+
+**Um diagrama por nível.** Ponha os elementos do seu escopo numa `box` (a fronteira) e deixe pessoas e sistemas externos **fora dela** — o auto-layout dá uma faixa própria a cada fronteira, então quem não é membro nunca cai dentro. Os modelos prontos `c4_contexto`, `c4_conteineres` e `c4_componentes` no botão **Modelos** são o ponto de partida.
+
+- **Nível 1 (Contexto):** pessoas + seu sistema + sistemas externos. Sem tecnologia interna.
+- **Nível 2 (Contêineres):** o que sobe e cai sozinho, cada um com `tech`. Marque réplicas com `multiple`.
+- **Nível 3 (Componentes):** por dentro de **um** contêiner; o que é externo a ele aparece na borda.
+- **Nível 4 (Código):** normalmente não vale desenhar — gere a partir da IDE.
 
 ### Tipos de componente (campo `type`)
 
 | Categoria | Tipos |
 |---|---|
+| C4 (notação) | `c4person` `c4extperson` `c4system` `c4extsystem` `c4container` `c4component` `c4db` `c4queue` |
 | Clientes | `user` `browser` `mobile` `iot` `partner` |
 | AWS rede/entrada | `route53` `cloudfront` `waf` `apigw` `alb` `nlb` `vpc` |
 | AWS computação | `ec2` `ecs` `eks` `fargate` `lambda` `batch` |

@@ -40,6 +40,7 @@
             "type": "string",
             "description": "Component type. Unknown values fall back to 'api'.",
             "enum": [
+              "c4person", "c4extperson", "c4system", "c4extsystem", "c4container", "c4component", "c4db", "c4queue",
               "user", "browser", "mobile", "iot", "partner",
               "route53", "cloudfront", "waf", "apigw", "alb", "nlb", "vpc",
               "ec2", "ecs", "eks", "fargate", "lambda", "batch",
@@ -63,6 +64,9 @@
           "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Optional accent color override (border/icon); defaults to the category color." },
           "lock": { "type": "boolean", "description": "Pin the item: it is not moved, copied, deleted or picked by the lasso — and the AI will not remove it." },
           "rot": { "type": "number", "description": "Rotation in degrees. The editor snaps to 15° steps while the grid magnet is on." },
+          "tech": { "type": "string", "maxLength": 40, "description": "C4-style technology, rendered as [Spring Boot] under the name. Works on ANY type, not just c4* ones." },
+          "desc": { "type": "string", "maxLength": 140, "description": "C4-style one-line description under the name/technology. Works on ANY type." },
+          "multiple": { "type": "boolean", "description": "Draw the card as a stack, meaning several instances (replicas, pods, workers)." },
           "x": { "type": "number", "description": "Optional; omit to use auto-layout." },
           "y": { "type": "number", "description": "Optional; omit to use auto-layout." }
         }

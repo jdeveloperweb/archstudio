@@ -11,7 +11,8 @@ export function EditorClient({ id }: { id: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [name, setName] = useState('Diagrama');
   const [save, setSave] = useState<Save>('idle');
-  const [chatOpen, setChatOpen] = useState(true);
+  // a Ari comeca fechada — o canvas inteiro para desenhar; a escolha fica lembrada
+  const [chatOpen, setChatOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const docRef = useRef<any>(null); // last known doc
@@ -20,6 +21,21 @@ export function EditorClient({ id }: { id: string }) {
   const getResolvers = useRef<((doc: any) => void)[]>([]);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
+  const CHAT_KEY = 'as_chat_aberto';
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(CHAT_KEY) === '1') setChatOpen(true);
+    } catch {}
+  }, []);
+  const toggleChat = useCallback(() => {
+    setChatOpen((v) => {
+      try {
+        localStorage.setItem(CHAT_KEY, v ? '0' : '1');
+      } catch {}
+      return !v;
+    });
+  }, []);
 
   // tema do app → canvas só entende claro/escuro (meia-noite conta como escuro)
   const canvasTheme = () =>
@@ -147,7 +163,7 @@ export function EditorClient({ id }: { id: string }) {
         </span>
         <div className="flex-1" />
         <button
-          onClick={() => setChatOpen((v) => !v)}
+          onClick={toggleChat}
           className={`btn-focus flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm transition ${
             chatOpen
               ? 'border-accent/50 bg-accent/15 text-ink'

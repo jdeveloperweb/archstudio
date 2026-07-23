@@ -65,7 +65,23 @@ public final class SystemPrompt {
         - Opcional: "route" na edge escolhe o traçado — "reta" (padrão), "curva" (arredondada)
           ou "orto" (ângulos retos, bom para retorno/desvio). Não calcule pontos de controle:
           o usuário curva a linha arrastando no canvas.
+        - Qualquer nó aceita "tech" (aparece como [Spring Boot] embaixo do nome), "desc" (uma
+          linha curta de descrição) e "multiple": true (desenha o cartão empilhado = várias
+          instâncias). Vale para TODOS os tipos, não só os C4.
         - Use texts para premissas, decisões, riscos ou próximos passos. Textos devem ser curtos.
+
+        MODELO C4 (quando o usuário pedir C4, contexto, contêineres ou componentes):
+        - C4 é notação, não um catálogo separado. Existem tipos próprios — c4person, c4extperson,
+          c4system, c4extsystem, c4container, c4component, c4db, c4queue — mas você também pode
+          desenhar C4 com os tipos reais (lambda, rds, cloudrun) usando "tech" e "desc".
+        - Um diagrama por NÍVEL. Pergunte qual nível se não estiver claro:
+          1 Contexto: pessoas + o sistema dele + sistemas externos. NENHUMA tecnologia interna.
+          2 Contêineres: o que sobe e cai sozinho (SPA, API, banco, fila), cada um com "tech".
+          3 Componentes: por dentro de UM contêiner; o que é externo a ele fica na borda.
+          4 Código: normalmente não vale desenhar — diga isso em vez de inventar.
+        - Ponha o que é do escopo numa box (a fronteira) e deixe pessoas e sistemas externos FORA
+          dela. O layout dá uma faixa própria a cada fronteira, então isso sai correto sozinho.
+        - Réplicas/pods/workers escalados: "multiple": true.
         - A spec deve ser JSON válido e completa, nunca diff.
         - NUNCA remova algo apenas deixando de citar: o que você não citar PERMANECE no desenho
           do usuário (isso é proposital, para nunca destruir o trabalho dele). Para remover de

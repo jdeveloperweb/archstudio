@@ -19,7 +19,7 @@
   --bg:#0e1017;--panel:#151824;--panel2:#1c2032;--border:#2a2f47;
   --ink:#e6e8f2;--dim:#8f94ad;--accent:#a679ff;
   --aws:#ff9900;--client:#7c9eff;--gen:#a679ff;--onprem:#9aa3b5;--sless:#4ade80;--red:#f87171;
-  --gcp:#22d3ee;--azure:#3ea6ff;--ai:#f472b6;
+  --gcp:#22d3ee;--azure:#3ea6ff;--ai:#f472b6;--c4:#4d9de0;
   --nodebg:#1a1d2e;--gridline:rgba(166,121,255,.05);--shadow:rgba(0,0,0,.4);--edge:#6b72a3;
   --mono:'Cascadia Code','JetBrains Mono',Consolas,monospace;
   --sans:'Segoe UI',system-ui,sans-serif;
@@ -29,7 +29,7 @@ body[data-theme="light"]{
   --bg:#f2f3f9;--panel:#ffffff;--panel2:#eceef7;--border:#d5d9ea;
   --ink:#1d2030;--dim:#6a7089;--accent:#7c4dff;
   --aws:#e68a00;--client:#3b6fe0;--gen:#7c4dff;--onprem:#5c6478;--sless:#0f9d58;--red:#d9534f;
-  --gcp:#0891b2;--azure:#0067b8;--ai:#d6409f;
+  --gcp:#0891b2;--azure:#0067b8;--ai:#d6409f;--c4:#1168bd;
   --nodebg:#ffffff;--gridline:rgba(90,70,180,.08);--shadow:rgba(40,45,80,.14);--edge:#8a90b8;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -99,7 +99,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .pal-item:hover{border-color:var(--accent)}
 .pal-item .picon{width:20px;height:20px;flex-shrink:0}
 .picon svg,.nicon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.i-aws{color:var(--aws)} .i-client{color:var(--client)} .i-gen{color:var(--gen)} .i-onprem{color:var(--onprem)} .i-sless{color:var(--sless)} .i-gcp{color:var(--gcp)} .i-azure{color:var(--azure)} .i-ai{color:var(--ai)}
+.i-aws{color:var(--aws)} .i-client{color:var(--client)} .i-gen{color:var(--gen)} .i-onprem{color:var(--onprem)} .i-sless{color:var(--sless)} .i-gcp{color:var(--gcp)} .i-azure{color:var(--azure)} .i-ai{color:var(--ai)} .i-c4{color:var(--c4)}
 
 .center{flex:1;min-width:0}
 .canvas-outer{height:100%;overflow:auto;background:
@@ -164,8 +164,20 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 
 .node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:11px;text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
 .node:active{cursor:grabbing}
+/* "múltiplos": o cartão vira uma pilha (várias instâncias do mesmo componente).
+   Feito com sombras deslocadas — não precisa de elemento extra e não atrapalha o clique. */
+.node.multi{box-shadow:
+  5px 5px 0 -1px var(--nodebg), 5px 5px 0 0 var(--border),
+  10px 10px 0 -1px var(--nodebg), 10px 10px 0 0 var(--border),
+  0 3px 14px var(--shadow)}
+.node.multi.st-icon{box-shadow:none}
 .node .nicon{display:inline-block}
 .node .nname{line-height:1.3;display:block;color:var(--ink);word-wrap:break-word;white-space:pre-wrap}
+/* notação C4 opcional, válida para qualquer componente: [tecnologia] e descrição */
+.node .ntech{display:block;font-family:var(--mono);color:var(--dim);line-height:1.25;word-wrap:break-word;white-space:pre-wrap}
+.node .ndesc{display:block;color:var(--dim);line-height:1.3;word-wrap:break-word;white-space:pre-wrap}
+.node .ntech:empty,.node .ndesc:empty{display:none}
+.node .ntech.editando,.node .ndesc.editando{display:block;min-width:70px}
 .node .nx{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-size:10px;line-height:16px;cursor:pointer;display:none;text-align:center;z-index:5}
 .node:hover .nx{display:block}
 .node .nx:hover{color:var(--red);border-color:var(--red)}
@@ -179,6 +191,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--uifont);font-size:1
 .node.b-gcp{border-top:3px solid var(--gcp)}
 .node.b-azure{border-top:3px solid var(--azure)}
 .node.b-ai{border-top:3px solid var(--ai)}
+.node.b-c4{border-top:3px solid var(--c4)}
 .node.sel{outline:2px solid var(--accent);outline-offset:2px}
 
 .canvas{--dfont:'Segoe UI',system-ui,sans-serif}
@@ -386,16 +399,22 @@ function mergeEmbedSpec(spec){
     const {sn,ex}=p;
     if(ex){
       if(sn.id!=null) ex.aid=String(sn.id);
-      const nl=(sn.label||'').slice(0,42);
+      const nl=(sn.label||'').slice(0,60);
       if(nl&&nl!==ex.label){ ex.label=nl; changed.push(ex.id); }
       if(TYPE_INDEX[sn.type]&&sn.type!==ex.type){ ex.type=sn.type; changed.push(ex.id); }
       if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) ex.color=sn.color;
+      if(sn.multiple!==undefined){ if(sn.multiple) ex.multi=true; else delete ex.multi; }
+      if(sn.tech!==undefined){ const v=String(sn.tech||'').slice(0,40); if(v) ex.tech=v; else delete ex.tech; }
+      if(sn.desc!==undefined){ const v=String(sn.desc||'').slice(0,140); if(v) ex.desc=v; else delete ex.desc; }
       p.node=ex;
     } else {
       const t=TYPE_INDEX[sn.type]?sn.type:'api';
-      const nn={id:++final.seq,type:t,label:(sn.label||TYPE_INDEX[t].n).slice(0,42),s:Math.max(0.6,Math.min(2.2,sn.s||1)),st:sn.style==='icon'?'icon':'card',x:sn.x,y:sn.y};
+      const nn={id:++final.seq,type:t,label:(sn.label||TYPE_INDEX[t].n).slice(0,60),s:Math.max(0.6,Math.min(2.2,sn.s||1)),st:sn.style==='icon'?'icon':'card',x:sn.x,y:sn.y};
       if(sn.id!=null) nn.aid=String(sn.id);
       if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) nn.color=sn.color;
+      if(sn.multiple) nn.multi=true;
+      if(sn.tech) nn.tech=String(sn.tech).slice(0,40);
+      if(sn.desc) nn.desc=String(sn.desc).slice(0,140);
       p.node=nn; newNodes.push(p);
     }
     final.nodes.push(p.node);
@@ -651,9 +670,17 @@ const ICONS = {
 };
 
 /* ============ CATÁLOGO ============ */
-const CAT_COLORS_D = { aws:'#ff9900', client:'#7c9eff', gen:'#a679ff', onprem:'#9aa3b5', sless:'#4ade80', gcp:'#22d3ee', azure:'#3ea6ff', ai:'#f472b6' };
-const CAT_COLORS_L = { aws:'#e68a00', client:'#3b6fe0', gen:'#7c4dff', onprem:'#5c6478', sless:'#0f9d58', gcp:'#0891b2', azure:'#0067b8', ai:'#d6409f' };
+const CAT_COLORS_D = { aws:'#ff9900', client:'#7c9eff', gen:'#a679ff', onprem:'#9aa3b5', sless:'#4ade80', gcp:'#22d3ee', azure:'#3ea6ff', ai:'#f472b6', c4:'#4d9de0' };
+const CAT_COLORS_L = { aws:'#e68a00', client:'#3b6fe0', gen:'#7c4dff', onprem:'#5c6478', sless:'#0f9d58', gcp:'#0891b2', azure:'#0067b8', ai:'#d6409f', c4:'#1168bd' };
 const CATALOG = [
+ /* C4: notação de modelagem, não de tecnologia — convive com todo o resto do catálogo.
+    Qualquer componente (inclusive um Lambda ou um RDS) aceita [tecnologia] e descrição. */
+ {group:'C4', cat:'Dentro do escopo', color:'c4', items:[
+   {t:'c4person',n:'Pessoa (ator)',i:'user'},{t:'c4system',n:'Sistema de Software',i:'box'},
+   {t:'c4container',n:'Contêiner (app/serviço)',i:'rack'},{t:'c4component',n:'Componente',i:'layers'},
+   {t:'c4db',n:'Contêiner de Dados',i:'cylinder'},{t:'c4queue',n:'Contêiner de Mensageria',i:'queue'}]},
+ {group:'C4', cat:'Fora do escopo', color:'onprem', items:[
+   {t:'c4extsystem',n:'Sistema Externo',i:'building'},{t:'c4extperson',n:'Pessoa Externa',i:'user'}]},
  {cat:'Clientes & Origens', color:'client', items:[
    {t:'user',n:'Usuário',i:'user'},{t:'browser',n:'Navegador / SPA',i:'browser'},
    {t:'mobile',n:'App Mobile',i:'mobile'},{t:'iot',n:'Dispositivo IoT',i:'iot'},
@@ -976,13 +1003,19 @@ function renderAll(){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
     const s=n.s||1, ic = n.st==='icon';
     const el=document.createElement('div');
-    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
+    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(n.multi?' multi':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
     el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`+rotCss(n);
     if(n.color&&!ic) el.style.borderTopColor=n.color;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
-    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
-    el.addEventListener('dblclick',()=>renameNode(n.id));
+    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${(ic?42:30)*s}px;height:${(ic?42:30)*s}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="ntech" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${2*s}px">${escapeHtml(n.tech?'['+n.tech+']':'')}</span><span class="ndesc" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${3*s}px">${escapeHtml(n.desc||'')}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
+    /* duplo-clique edita o campo em que se clicou: nome, [tecnologia] ou descrição */
+    el.addEventListener('dblclick',ev=>{
+      const alvo=ev.target&&ev.target.closest?ev.target.closest('.ntech,.ndesc'):null;
+      if(alvo&&alvo.classList.contains('ntech')) editNodeField(n.id,'tech');
+      else if(alvo) editNodeField(n.id,'desc');
+      else renameNode(n.id);
+    });
     canvas.appendChild(el);
   }
   renderEdges();
@@ -1333,7 +1366,10 @@ function renderProps(){
       <button class="pbtn" onclick="propScale(-0.1)">− menor</button>
       <button class="pbtn" onclick="propScale(0.1)">+ maior</button>
       <button class="pbtn ${o.st==='icon'?'on':''}" onclick="propStyle()">${o.st==='icon'?'◻ só ícone':'▣ cartão'}</button>
+      <button class="pbtn ${o.multi?'on':''}" onclick="propMulti()" title="desenha como uma pilha: várias instâncias do mesmo componente">▤ múltiplos</button>
       ${colorField('cor', o.color||catColor(def.color), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
+      <button class="pbtn ${o.tech?'on':''}" onclick="editNodeField(${o.id},'tech')" title="notação C4: [tecnologia] embaixo do nome">[ ] tecnologia</button>
+      <button class="pbtn ${o.desc?'on':''}" onclick="editNodeField(${o.id},'desc')" title="notação C4: uma linha de descrição">≡ descrição</button>
       <button class="pbtn" onclick="propDup()">⧉ duplicar</button>
       <button class="pbtn" onclick="renameNode(${o.id})"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> renomear</button>`;
   } else if(sel.kind==='box'){
@@ -1399,6 +1435,8 @@ function setSelColor(v){ const o=selRef(); if(!o)return; pushUndo(); o.color=v; 
 function clearSelColor(){ const o=selRef(); if(!o)return; pushUndo(); delete o.color; persist(); renderAll(); }
 function setTextBg(v){ const o=selRef(); if(!o)return; pushUndo(); o.bg=v; persist(); renderAll(); }
 function clearTextBg(){ const o=selRef(); if(!o)return; pushUndo(); delete o.bg; persist(); renderAll(); }
+/** marca o componente como "múltiplos" — o cartão vira uma pilha (N instâncias) */
+function propMulti(){ const o=selRef(); if(!o||o.lock)return; pushUndo(); if(o.multi) delete o.multi; else o.multi=true; persist(); renderAll(); }
 function propStyle(){ const o=selRef(); if(!o)return; pushUndo(); o.st = o.st==='icon' ? 'card' : 'icon'; persist(); renderAll(); }
 function propScale(d){ const o=selRef(); if(!o)return; pushUndo(); o.s=Math.max(0.6,Math.min(1.8,Math.round(((o.s||1)+d)*10)/10)); persist(); renderAll(); }
 function propDup(){ duplicateSelection(); }
@@ -1491,7 +1529,24 @@ function beginInline(el, text, opts, onCommit){
 function renameNode(id){
   const n=state.nodes.find(x=>x.id===id); if(!n||n.lock) return;
   beginInline(canvas.querySelector(`.node[data-id="${id}"] .nname`), n.label, {}, v=>{
-    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
+    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,80); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
+    renderAll();
+  });
+}
+/** Edita [tecnologia] ou descrição no próprio cartão (notação C4, opcional). */
+function editNodeField(id,campo){
+  const n=state.nodes.find(x=>x.id===id); if(!n||n.lock) return;
+  const el=canvas.querySelector(`.node[data-id="${id}"] .${campo==='tech'?'ntech':'ndesc'}`);
+  if(!el) return;
+  setSel('node',id); paintSel();
+  el.classList.add('editando');            /* aparece mesmo estando vazio */
+  beginInline(el, n[campo]||'', {multiline:campo==='desc'}, v=>{
+    el.classList.remove('editando');
+    if(v!==null){
+      const nv=v.replace(/[ \t]+/g,' ').replace(/^\[|\]$/g,'').replace(/\n{2,}/g,'\n')
+               .trim().slice(0, campo==='tech'?40:140);
+      if(nv!==(n[campo]||'')){ pushUndo(); if(nv) n[campo]=nv; else delete n[campo]; persist(); }
+    }
     renderAll();
   });
 }
@@ -1760,6 +1815,7 @@ function renderAllLight2(n){
     el.style.width=nodeW(n)+'px'; el.style.padding=`${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`;
     const icel=el.querySelector('.nicon'); if(icel){ icel.style.width=((ic?42:30)*s)+'px'; icel.style.height=((ic?42:30)*s)+'px'; }
     const nm=el.querySelector('.nname'); if(nm){ nm.style.fontSize=Math.max(9,(ic?12:11)*s)+'px'; nm.style.marginTop=((ic?2:5)*s)+'px'; }
+    for(const q of ['.ntech','.ndesc']){ const e2=el.querySelector(q); if(e2){ e2.style.fontSize=Math.max(8,9.5*s)+'px'; e2.style.marginTop=((q==='.ntech'?2:3)*s)+'px'; } }
   }
   renderEdges();
 }
@@ -1821,10 +1877,32 @@ function autoLayout(st){
   }
   const cols={};
   st.nodes.forEach(n=>{ (cols[depth[n.id]] ||= []).push(n); });
+  /* Cada caixa ganha uma FAIXA horizontal só dela, e quem não é membro fica numa
+     faixa separada. Sem isso a caixa é desenhada abraçando seus membros e um item
+     de fora que caísse na mesma altura aparecia dentro da fronteira — o que, num
+     diagrama C4, diz exatamente o contrário do que se quer dizer. */
+  const faixas=[], ordem={};
+  for(const d of Object.keys(cols).map(Number).sort((a,b)=>a-b))
+    for(const n of cols[d]){ const k=n._box==null?'\u0000sem':String(n._box);
+      if(!(k in ordem)){ ordem[k]=faixas.length; faixas.push(k); } }
+  /* quem não tem caixa vai para o fim, para não partir a fronteira ao meio */
+  faixas.sort((a,b)=>(a==='\u0000sem'?1:0)-(b==='\u0000sem'?1:0)||ordem[a]-ordem[b]);
+  const alturaDaFaixa={};
+  for(const k of faixas)
+    alturaDaFaixa[k]=Math.max(1,...Object.values(cols).map(arr=>arr.filter(n=>(n._box==null?'\u0000sem':String(n._box))===k).length));
+  const topo={}; let acc=0;
+  for(const k of faixas){ topo[k]=acc; acc+=alturaDaFaixa[k]+(k==='\u0000sem'?0:0.42); }  /* respiro entre fronteiras */
   for(const d of Object.keys(cols).map(Number).sort((a,b)=>a-b)){
-    const arr=cols[d];
-    arr.sort((a,b)=>String(a._box||'~').localeCompare(String(b._box||'~')));
-    arr.forEach((n,i)=>{ n.x=130+d*235; n.y=150+i*145; });
+    const usados={};
+    for(const n of cols[d].slice().sort((a,b)=>{
+      const ka=a._box==null?'\u0000sem':String(a._box), kb=b._box==null?'\u0000sem':String(b._box);
+      return topo[ka]-topo[kb];
+    })){
+      const k=n._box==null?'\u0000sem':String(n._box);
+      usados[k]=(usados[k]||0);
+      n.x=130+d*235; n.y=150+(topo[k]+usados[k])*145;
+      usados[k]++;
+    }
   }
 }
 function normalizeSpec(spec){
@@ -1833,9 +1911,12 @@ function normalizeSpec(spec){
   for(const b of spec.boxes||[]) boxDefs.push({key:b.id??b.label, label:b.label||String(b.id), color:(b.color&&/^#/.test(b.color))?b.color:BOX_COLORS[boxDefs.length%BOX_COLORS.length]});
   for(const n of spec.nodes||[]){
     const t=TYPE_INDEX[n.type]?n.type:'api';
-    const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,42),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
+    const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,60),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
     if(n.id!=null) nn.aid=String(n.id);   /* id do agente: permite ajustes incrementais depois */
     if(n.color&&/^#[0-9a-fA-F]{6}$/.test(n.color)) nn.color=n.color;
+    if(n.multiple) nn.multi=true;
+    if(n.tech) nn.tech=String(n.tech).slice(0,40);
+    if(n.desc) nn.desc=String(n.desc).slice(0,140);
     idMap[String(n.id??st.seq)]=nn.id;
     st.nodes.push(nn);
   }
@@ -2103,9 +2184,9 @@ function buildSvg(fontCss){
   /* o cartão na tela é maior que nodeW/nodeH (borda + padding + rótulo de várias
      linhas). Medir o elemento de verdade é o que faz a imagem sair igual ao canvas. */
   const elNode=id=>canvas.querySelector(`.node[data-id="${id}"]`);
-  const caixaNo=n=>{ const el=elNode(n.id);
-    return {w: el?el.offsetWidth:nodeW(n)+14, h: el?el.offsetHeight:nodeH(n)}; };
-  const all=[...state.nodes.map(n=>{ const c=caixaNo(n); return {x:n.x,y:n.y,x2:n.x+c.w,y2:n.y+c.h}; }),
+  const caixaNo=n=>{ const el=elNode(n.id), extra=n.multi?10:0;
+    return {w: (el?el.offsetWidth:nodeW(n)+14), h: (el?el.offsetHeight:nodeH(n)), extra}; };
+  const all=[...state.nodes.map(n=>{ const c=caixaNo(n); return {x:n.x,y:n.y,x2:n.x+c.w+c.extra,y2:n.y+c.h+c.extra}; }),
              ...state.boxes.map(b=>({x:b.x,y:b.y,x2:b.x+b.w,y2:b.y+b.h})),
              ...state.arrows.map(a=>({x:Math.min(a.x1,a.x2),y:Math.min(a.y1,a.y2),x2:Math.max(a.x1,a.x2),y2:Math.max(a.y1,a.y2)})),
              ...state.texts.map(t=>({x:t.x,y:t.y,x2:t.x+(t.frame?(t.w||200):220),y2:t.y+(t.frame?(9*2+wrapTextLines(t.text,t.w||200,t.size).length*t.size*1.42):30)}))];
@@ -2165,8 +2246,8 @@ function buildSvg(fontCss){
   const medCtx=document.createElement('canvas').getContext('2d');
   /* quebra de linha medida com a fonte de verdade (o navegador quebra por largura,
      não por contagem de caracteres — era daí que vinha o rótulo estourando o cartão) */
-  const quebraPx=(txt,maxW,px)=>{
-    medCtx.font=`${px}px ${curFont().css}`;
+  const quebraPx=(txt,maxW,px,fam)=>{
+    medCtx.font=`${px}px ${fam||curFont().css}`;
     const out=[];
     for(const para of String(txt||'').split('\n')){
       let cur='';
@@ -2190,6 +2271,9 @@ function buildSvg(fontCss){
     const s0=s.length;
     if(!ic){
       const rx=11*sc, faixa=Math.max(2,bt||3);
+      /* "múltiplos": duas folhas atrás, iguais às sombras do canvas */
+      if(n.multi) for(const d of [10,5])
+        s+=`<rect x="${r1(x+d)}" y="${r1(y+d)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${P.node}" stroke="${P.border}" stroke-width="1"/>`;
       s+=`<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${P.node}" stroke="${P.border}" stroke-width="1"/>`;
       /* a faixa da cor acompanha o canto arredondado (no canvas ela é o border-top,
          então não pode sair como um retângulo reto por cima do cartão) */
@@ -2200,11 +2284,20 @@ function buildSvg(fontCss){
     const iw=ico?ico.offsetWidth:(ic?42:30)*sc;
     const ix=ico?x+bl+ico.offsetLeft:cx-iw/2, iy=ico?y+bt+ico.offsetTop:y+(ic?4:8)*sc;
     s+=`<g transform="translate(${r1(ix)},${r1(iy)}) scale(${r1(iw/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
-    const fs=nm?parseFloat(getComputedStyle(nm).fontSize):Math.max(9,(ic?12:11)*sc);
-    const lw=nm?nm.offsetWidth:w-14, lt=nm?y+bt+nm.offsetTop:y+(ic?48:43)*sc, lh=fs*1.3;
-    quebraPx(n.label,lw,fs).forEach((ln,i)=>{
-      s+=`<text x="${r1(cx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}"${ic?' font-weight="500"':''} fill="${P.ink}" text-anchor="middle">${svgEscape(ln)}</text>`;
-    });
+    /* nome + [tecnologia] + descrição: cada um com a fonte e a posição que tem na tela */
+    const textos = el ? [...el.querySelectorAll('.nname,.ntech,.ndesc')].filter(sp=>sp.textContent.trim())
+                      : [{textContent:n.label, _fb:true}];
+    for(const sp of textos){
+      const nome=sp._fb||sp.classList.contains('nname');
+      const cs2=sp._fb?null:getComputedStyle(sp);
+      const fs=cs2?parseFloat(cs2.fontSize):Math.max(9,(ic?12:11)*sc);
+      const fam=cs2?cs2.fontFamily:curFont().css;
+      const lw=sp._fb?w-14:sp.offsetWidth, lt=sp._fb?y+(ic?48:43)*sc:y+bt+sp.offsetTop;
+      const lh=fs*(nome?1.3:(sp.classList&&sp.classList.contains('ntech')?1.25:1.3));
+      quebraPx(sp.textContent,lw,fs,fam).forEach((ln,i)=>{
+        s+=`<text x="${r1(cx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}" font-family="${String(fam).replace(/"/g,'&quot;').replace(/\x27/g,'&#39;')}"${nome&&ic?' font-weight="500"':''} fill="${nome?P.ink:P.dim}" text-anchor="middle">${svgEscape(ln)}</text>`;
+      });
+    }
     if(n.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(n.rot,cx,y+h/2,corpo); }
   }
   /* textos livres e caixas de texto */
@@ -2279,6 +2372,64 @@ async function exportPng(){
 
 /* ============ MODELOS PRONTOS (padrões de solução) ============ */
 const TEMPLATES=[
+{id:'c4_contexto',tag:'C4 - NIVEL 1',title:'C4 Nivel 1 - Contexto do Sistema',
+ problem:'Explicar para quem nao e do time (negocio, seguranca, um novo dev) o que o sistema faz e com quem ele conversa, sem afogar em tecnologia.',
+ why:'O Nivel 1 responde uma pergunta so: quem usa e quais sistemas estao em volta. Nenhuma tecnologia interna aparece de proposito — e o unico diagrama que qualquer pessoa da empresa consegue ler. Os externos ficam FORA da fronteira; o que e seu, dentro.',
+ cases:['Abertura de documentacao de arquitetura','Onboarding de pessoa nova','Alinhamento com negocio e seguranca'],
+ spec:{boxes:[{id:'escopo',label:'Nosso escopo',color:'#4d9de0'}],
+  nodes:[{id:'cliente',type:'c4person',label:'Cliente',desc:'Compra e acompanha pedidos'},
+         {id:'atend',type:'c4person',label:'Atendente',desc:'Atende e estorna'},
+         {id:'sis',type:'c4system',label:'Portal de Pedidos',desc:'Permite comprar, pagar e acompanhar',box:'escopo',s:1.2},
+         {id:'pag',type:'c4extsystem',label:'Gateway de Pagamento',desc:'Autoriza e captura cobrancas'},
+         {id:'erp',type:'c4extsystem',label:'ERP Corporativo',desc:'Faturamento e estoque'},
+         {id:'mail',type:'c4extsystem',label:'Servico de E-mail',desc:'Envia notificacoes'}],
+  edges:[{from:'cliente',to:'sis',label:'faz pedidos [HTTPS]'},{from:'atend',to:'sis',label:'atende [HTTPS]'},
+         {from:'sis',to:'pag',label:'cobra [REST]'},{from:'sis',to:'erp',label:'envia faturamento',dash:true},
+         {from:'sis',to:'mail',label:'notifica',dash:true}],
+  texts:[{text:'NIVEL 1 - CONTEXTO: quem usa e com quem o sistema conversa. Sem tecnologia interna.',frame:true,w:400,bg:'#4d9de0',lock:true}]}},
+{id:'c4_conteineres',tag:'C4 - NIVEL 2',title:'C4 Nivel 2 - Conteineres',
+ problem:'Mostrar as pecas que sobem e caem sozinhas (apps, servicos, bancos, filas) e como elas se falam, sem descer para classes.',
+ why:'Conteiner no C4 nao e Docker: e qualquer unidade executavel ou deposito de dados — um SPA, uma API, um banco, uma fila. Este e o diagrama mais util no dia a dia: cabe deploy, tecnologia e protocolo. Use [tecnologia] em cada cartao e marque como multiplos o que roda replicado.',
+ cases:['Documentacao viva do sistema','Discussao de deploy e escala','Base para gerar o IaC'],
+ spec:{boxes:[{id:'sis',label:'Portal de Pedidos [Sistema]',color:'#4d9de0'}],
+  nodes:[{id:'cliente',type:'c4person',label:'Cliente'},
+         {id:'spa',type:'c4container',label:'Web SPA',tech:'React',desc:'Interface do cliente',box:'sis'},
+         {id:'app',type:'c4container',label:'App Mobile',tech:'Flutter',box:'sis'},
+         {id:'api',type:'c4container',label:'API de Pedidos',tech:'Java / Spring Boot',desc:'Regras de pedido e cobranca',box:'sis',multiple:true},
+         {id:'fila',type:'c4queue',label:'Fila de Faturamento',tech:'RabbitMQ',box:'sis'},
+         {id:'wk',type:'c4container',label:'Worker de Faturamento',tech:'Java',box:'sis',multiple:true},
+         {id:'db',type:'c4db',label:'Banco de Pedidos',tech:'PostgreSQL',box:'sis'},
+         {id:'cache',type:'c4db',label:'Cache de Catalogo',tech:'Redis',box:'sis'},
+         {id:'pag',type:'c4extsystem',label:'Gateway de Pagamento'},
+         {id:'erp',type:'c4extsystem',label:'ERP Corporativo'}],
+  edges:[{from:'cliente',to:'spa',label:'usa [HTTPS]'},{from:'cliente',to:'app',label:'usa [HTTPS]'},
+         {from:'spa',to:'api',label:'JSON/HTTPS'},{from:'app',to:'api',label:'JSON/HTTPS'},
+         {from:'api',to:'db',label:'le e grava [JDBC]'},{from:'api',to:'cache',label:'cache-aside'},
+         {from:'api',to:'pag',label:'autoriza [REST]'},{from:'api',to:'fila',label:'publica pedido_confirmado',dash:true},
+         {from:'fila',to:'wk',label:'consome',dash:true},{from:'wk',to:'erp',label:'envia NF',dash:true},
+         {from:'wk',to:'db',label:'marca faturado'}],
+  texts:[{text:'NIVEL 2 - CONTEINERES: o que sobe e cai sozinho, com a tecnologia de cada um.',frame:true,w:400,bg:'#4ade80',lock:true}]}},
+{id:'c4_componentes',tag:'C4 - NIVEL 3',title:'C4 Nivel 3 - Componentes de um conteiner',
+ problem:'Explicar por dentro UM conteiner especifico: quais blocos existem, quem chama quem e onde entra cada dependencia.',
+ why:'So vale desenhar o Nivel 3 dos conteineres que realmente precisam de explicacao — ele envelhece rapido. O que esta fora do conteiner (banco, fila, sistema externo) aparece na borda, para deixar claro o limite.',
+ cases:['Conteiner com regra de negocio complexa','Preparar refatoracao','Explicar um modulo critico para o time'],
+ spec:{boxes:[{id:'apic',label:'API de Pedidos [Conteiner: Spring Boot]',color:'#4d9de0'}],
+  nodes:[{id:'spa',type:'c4container',label:'Web SPA',tech:'React'},
+         {id:'autz',type:'c4component',label:'AutorizacaoFilter',tech:'Spring Security',desc:'Valida o JWT',box:'apic'},
+         {id:'ctrl',type:'c4component',label:'PedidoController',tech:'REST',box:'apic'},
+         {id:'srv',type:'c4component',label:'PedidoService',desc:'Regra de negocio do pedido',box:'apic'},
+         {id:'preco',type:'c4component',label:'CalculadoraDePreco',desc:'Descontos e impostos',box:'apic'},
+         {id:'repo',type:'c4component',label:'PedidoRepository',tech:'JPA + Outbox',box:'apic'},
+         {id:'cli',type:'c4component',label:'GatewayPagamentoClient',tech:'Feign',box:'apic'},
+         {id:'db',type:'c4db',label:'Banco de Pedidos',tech:'PostgreSQL'},
+         {id:'fila',type:'c4queue',label:'Fila de Faturamento',tech:'RabbitMQ'},
+         {id:'pag',type:'c4extsystem',label:'Gateway de Pagamento'}],
+  edges:[{from:'spa',to:'autz',label:'JSON/HTTPS'},{from:'autz',to:'ctrl',label:'valida token'},
+         {from:'ctrl',to:'srv',label:'chama'},{from:'srv',to:'preco',label:'calcula total'},
+         {from:'srv',to:'repo',label:'persiste'},{from:'srv',to:'cli',label:'autoriza cobranca'},
+         {from:'cli',to:'pag',label:'REST'},{from:'repo',to:'db',label:'JDBC'},
+         {from:'repo',to:'fila',label:'publica do outbox',dash:true}],
+  texts:[{text:'NIVEL 3 - COMPONENTES: por dentro de UM conteiner. So desenhe onde vale a pena.',frame:true,w:400,bg:'#4d9de0',lock:true}]}},
 {id:'cache_aside',tag:'PERFORMANCE',title:'Cache-Aside (leitura pesada)',
  problem:'Leituras 10-100x maiores que escritas sobrecarregando o banco; latência de consulta alta.',
  why:'A API consulta o cache primeiro; só no miss vai ao banco e popula o cache com TTL. 90%+ das leituras passam a responder em ~1ms sem tocar o banco — que fica dimensionado para escrita e misses. Degradação graciosa: cache caiu, o banco absorve (mais lento, mas de pé).',
