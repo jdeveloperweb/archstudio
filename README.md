@@ -123,6 +123,10 @@ Se for propor mudança no formato da spec, atualize o schema e a skill junto.
 
 Existe uma plataforma hospedada que embute esta mesma engine e acrescenta contas, projetos salvos, times com papéis, colaboração em tempo real e histórico de versões: <https://studio.mjolnix.com.br>. É um produto separado, com código fechado. Este repositório aqui é o editor, e ele continua sendo um arquivo só.
 
+## Autor
+
+Criado por **Jaime Vicente Jr** — <https://jaimevicentejr.mjolnix.com.br>
+
 ## Licença
 
 MIT. Veja [LICENSE](LICENSE).
