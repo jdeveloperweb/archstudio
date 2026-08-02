@@ -1,0 +1,39 @@
+{
+  "name": "Loja Online — Checkout resiliente (Outbox + Fila)",
+  "boxes": [
+    { "id": "edge", "label": "Borda", "color": "#7c9eff" },
+    { "id": "core", "label": "Núcleo do checkout", "color": "#a679ff" },
+    { "id": "async", "label": "Processamento assíncrono", "color": "#4ade80" }
+  ],
+  "nodes": [
+    { "id": "u", "type": "user", "label": "Cliente" },
+    { "id": "cdn", "type": "cdngen", "label": "CDN", "box": "edge" },
+    { "id": "gw", "type": "gateway", "label": "Gateway (auth + rate limit)", "box": "edge" },
+    { "id": "api", "type": "api", "label": "API Checkout", "box": "core" },
+    { "id": "cache", "type": "cache", "label": "Redis (carrinho)", "box": "core" },
+    { "id": "db", "type": "db", "label": "Postgres + tabela outbox", "box": "core" },
+    { "id": "relay", "type": "worker", "label": "Outbox Relay", "box": "async" },
+    { "id": "broker", "type": "stream", "label": "Broker de eventos", "box": "async" },
+    { "id": "pay", "type": "worker", "label": "Worker de pagamento", "box": "async" },
+    { "id": "dlq", "type": "dlq", "label": "DLQ", "box": "async" },
+    { "id": "psp", "type": "extern", "label": "Gateway de pagamento" },
+    { "id": "obs", "type": "obs", "label": "Métricas + traces" }
+  ],
+  "edges": [
+    { "from": "u", "to": "cdn" },
+    { "from": "cdn", "to": "gw" },
+    { "from": "gw", "to": "api" },
+    { "from": "api", "to": "cache", "label": "carrinho" },
+    { "from": "api", "to": "db", "label": "1 transação: pedido + evento" },
+    { "from": "db", "to": "relay", "label": "poll/CDC", "dash": true },
+    { "from": "relay", "to": "broker", "label": "publica c/ retry" },
+    { "from": "broker", "to": "pay" },
+    { "from": "pay", "to": "psp", "label": "cobrança" },
+    { "from": "pay", "to": "dlq", "label": "após N falhas", "dash": true },
+    { "from": "api", "to": "obs", "dash": true }
+  ],
+  "texts": [
+    { "text": "Outbox garante: pedido salvo ⇒ evento publicado (at-least-once). Worker de pagamento é idempotente." },
+    { "text": "Pico de venda vira profundidade de fila, não queda — a API só valida, grava e responde." }
+  ]
+}
