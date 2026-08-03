@@ -345,47 +345,55 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .node .ntech.editando,.node .ndesc.editando{display:block;min-width:70px}
 
 /* ===== FAMÍLIA C4 =====
-   A notação C4 pede um cartão formal: preenchimento sólido na cor canônica do
-   elemento, texto claro, cantos quase retos e sem ícone de catálogo. O nó mantém
-   TODAS as ações (conectar, girar, fixar, redimensionar, detalhes, C4 aninhado) —
-   muda só a pele. As formas por tipo (pessoa, cilindro, fila) vêm de ::before. */
+   Prancha técnica, não bloco chapado: vidro tintado na cor do elemento (mesmo
+   comportamento no tema claro e no escuro), canto reto, barra de acento à
+   esquerda e texto alinhado à esquerda — leitura de documento, não de ícone.
+   O nó mantém TODAS as ações (conectar, girar, fixar, redimensionar, detalhes,
+   C4 aninhado): muda só a pele. */
 .node.fam-c4{
-  background:var(--c4-fill);
-  border:1px solid rgb(0 0 0 / .18);
-  border-radius:4px;
-  box-shadow:0 4px 14px rgb(0 0 0 / .18);
-  color:var(--c4-ink);
-  overflow:visible;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--c4-accent) 16%, var(--nodebg)) 0%,
+                            color-mix(in srgb, var(--c4-accent) 7%, var(--nodebg)) 100%);
+  border:1px solid color-mix(in srgb, var(--c4-accent) 42%, transparent);
+  border-left:3px solid var(--c4-accent);
+  border-radius:3px;
+  box-shadow:0 6px 20px -8px rgb(0 0 0 / .45);
+  text-align:left;
+  padding:9px 11px 10px 12px!important;
 }
-.node.fam-c4 .nicon{display:none}                     /* C4 é notação, não catálogo de ícone */
-.node.fam-c4 .nname{color:var(--c4-ink);font-weight:700;letter-spacing:-.01em}
-.node.fam-c4 .ntech{color:var(--c4-ink);opacity:.82;font-size:.86em}
-.node.fam-c4 .ndesc{color:var(--c4-ink);opacity:.78}
+.node.fam-c4 .nname{
+  color:var(--ink);font-weight:650;letter-spacing:-.01em;
+  padding-right:16px;                       /* respiro para o glifo no canto */
+}
+/* rótulo do tipo: versalete discreto, na cor do elemento */
+.node.fam-c4 .ntech{
+  color:var(--c4-accent);opacity:.92;font-size:.78em;letter-spacing:.045em;
+  text-transform:uppercase;margin-top:3px!important;line-height:1.4;
+}
+.node.fam-c4 .ndesc{color:var(--dim);margin-top:5px!important}
 .node.fam-c4 .ntech:empty{display:none}
-/* a pilha de "múltiplos" acompanha o preenchimento sólido */
+/* glifo pequeno no canto: dá reconhecimento sem virar cartão de catálogo */
+.node.fam-c4 .nicon{
+  position:absolute;top:8px;right:9px;
+  width:15px!important;height:15px!important;
+  color:var(--c4-accent);opacity:.5;
+}
+/* pilha de "múltiplos" com o mesmo vidro */
 .node.fam-c4.multi{box-shadow:
-  5px 5px 0 -1px var(--c4-fill), 5px 5px 0 0 rgb(0 0 0 / .22),
-  10px 10px 0 -1px var(--c4-fill), 10px 10px 0 0 rgb(0 0 0 / .22),
-  0 4px 14px rgb(0 0 0 / .18)}
+  5px 5px 0 -1px var(--nodebg), 5px 5px 0 0 color-mix(in srgb, var(--c4-accent) 34%, transparent),
+  10px 10px 0 -1px var(--nodebg), 10px 10px 0 0 color-mix(in srgb, var(--c4-accent) 22%, transparent),
+  0 6px 20px -8px rgb(0 0 0 / .45)}
 
-/* Pessoa: cabeça redonda dentro do topo do cartão (mantém a geometria honesta,
-   sem transbordar para fora da área clicável). */
-.node.fam-c4.c4-person{border-radius:14px;padding-top:30px!important}
-.node.fam-c4.c4-person::before{
-  content:'';position:absolute;top:7px;left:50%;transform:translateX(-50%);
-  width:19px;height:19px;border-radius:50%;
-  background:var(--c4-ink);opacity:.92;
+/* assinatura de forma por tipo, sutil: pessoa com topo suave, dados com base
+   arredondada (cilindro) e fila com pontas de duto. */
+.node.fam-c4.c4-person{border-radius:3px 11px 11px 3px}
+.node.fam-c4.c4-cylinder{border-radius:3px 3px 12px 12px}
+.node.fam-c4.c4-cylinder::after{
+  content:'';position:absolute;left:9px;right:9px;bottom:5px;height:5px;
+  border:1px solid color-mix(in srgb, var(--c4-accent) 38%, transparent);
+  border-top:0;border-radius:0 0 60% 60%/0 0 100% 100%;
 }
-/* Banco de dados: cilindro (tampa elíptica no topo). */
-.node.fam-c4.c4-cylinder{border-radius:4px 4px 10px 10px;padding-top:22px!important}
-.node.fam-c4.c4-cylinder::before{
-  content:'';position:absolute;top:-1px;left:-1px;right:-1px;height:16px;
-  border:1px solid rgb(0 0 0 / .18);border-bottom:0;
-  border-radius:50%/100% 100% 0 0;
-  background:color-mix(in srgb, var(--c4-fill) 82%, #fff);
-}
-/* Fila/mensageria: extremidades arredondadas, como um duto. */
-.node.fam-c4.c4-queue{border-radius:26px}
+.node.fam-c4.c4-queue{border-radius:3px 14px 14px 3px}
 .node .nx{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-size:10px;line-height:16px;cursor:pointer;display:none;text-align:center;z-index:5}
 .node:hover .nx{display:block}
 .node .nx:hover{color:var(--red);border-color:var(--red)}
@@ -1377,25 +1385,53 @@ const FAMILY_OF = {
   c4person:'c4', c4extperson:'c4', c4system:'c4', c4extsystem:'c4',
   c4container:'c4', c4component:'c4', c4db:'c4', c4queue:'c4',
 };
+/* AWS: a família sai do próprio catálogo (todo item do grupo 'AWS'), então tipo
+   novo já nasce com a pele certa, sem lista paralela para manter. */
+for(const g of CATALOG) if(g.group==='AWS') for(const it of g.items) FAMILY_OF[it.t]='aws';
 const familyOf = t => FAMILY_OF[t] || '';
 
-/* Paleta canônica do C4 (a mesma do C4-PlantUML), para o desenho ser reconhecível
-   por quem já lê C4. 'kind' escolhe a forma; 'label' entra na linha do tipo. */
-const C4_STYLE = {
-  c4person:    {kind:'person',    fill:'#08427b', ink:'#ffffff', label:'Pessoa'},
-  c4extperson: {kind:'person',    fill:'#686868', ink:'#ffffff', label:'Pessoa Externa'},
-  c4system:    {kind:'box',       fill:'#1168bd', ink:'#ffffff', label:'Sistema'},
-  c4extsystem: {kind:'box',       fill:'#999999', ink:'#ffffff', label:'Sistema Externo'},
-  c4container: {kind:'box',       fill:'#438dd5', ink:'#ffffff', label:'Contêiner'},
-  c4component: {kind:'box',       fill:'#85bbf0', ink:'#0b1a2b', label:'Componente'},
-  c4db:        {kind:'cylinder',  fill:'#438dd5', ink:'#ffffff', label:'Banco de Dados'},
-  c4queue:     {kind:'queue',     fill:'#438dd5', ink:'#ffffff', label:'Fila'},
+/* Cor do ladrilho AWS: a categoria do diagrama oficial da AWS. O catálogo já
+   agrupa por 'cat', então a cor vem dela; o mapa por tipo só corrige os casos em
+   que a nossa categoria mistura famílias da AWS (storage x banco x analytics). */
+const AWS_CAT_COLOR = {
+  'Rede & Entrada':'#8c4fff',            /* Networking & Content Delivery */
+  'Computação':'#ed7100',                /* Compute */
+  'Dados & Storage':'#c925d1',           /* Database (padrão do grupo) */
+  'Integração & Mensageria':'#e7157b',   /* Application Integration */
+  'Segurança & Operação':'#dd344c',      /* Security, Identity & Compliance */
+  'IA & ML':'#01a88d',                   /* Machine Learning */
 };
-/* Linha do tipo no padrão C4: "[Contêiner: Java e Spring]" ou só "[Contêiner]".
-   A tecnologia continua sendo o campo n.tech — o prefixo é só apresentação. */
+const AWS_TYPE_COLOR = {
+  s3:'#7aa116', glacier:'#7aa116', efs:'#7aa116',                       /* Storage */
+  redshift:'#8c4fff', athena:'#8c4fff', glue:'#8c4fff',                 /* Analytics */
+  opensearch:'#8c4fff', kinesis:'#8c4fff', firehose:'#8c4fff',
+  cloudwatch:'#e7157b', xray:'#e7157b', ssm:'#e7157b', cloudtrail:'#e7157b', /* Management */
+};
+function awsFill(type){
+  const def=TYPE_INDEX[type]||{};
+  return AWS_TYPE_COLOR[type] || AWS_CAT_COLOR[def.cat] || '#ed7100';
+}
+
+/* C4 desenhado como PRANCHA TÉCNICA, não como bloco chapado: o cartão é um vidro
+   tintado na cor do elemento (funciona no tema claro e no escuro), com canto reto,
+   barra de acento à esquerda e texto alinhado à esquerda. A hierarquia do C4 vem
+   da INTENSIDADE do acento — externo é cinza, sistema é forte, componente é claro.
+   'accent' tinge tudo; 'label' vira o rótulo do tipo em versalete. */
+const C4_STYLE = {
+  c4person:    {kind:'person',   accent:'#5b8def', label:'Pessoa'},
+  c4extperson: {kind:'person',   accent:'#8b93a7', label:'Pessoa externa'},
+  c4system:    {kind:'box',      accent:'#3d7dff', label:'Sistema'},
+  c4extsystem: {kind:'box',      accent:'#8b93a7', label:'Sistema externo'},
+  c4container: {kind:'box',      accent:'#4aa3e0', label:'Contêiner'},
+  c4component: {kind:'box',      accent:'#7cc6f0', label:'Componente'},
+  c4db:        {kind:'cylinder', accent:'#4aa3e0', label:'Banco de dados'},
+  c4queue:     {kind:'queue',    accent:'#4aa3e0', label:'Fila'},
+};
+/* Rótulo do tipo em versalete: "CONTÊINER · JAVA E SPRING". Mais discreto que o
+   colchete e mais formal. A tecnologia continua sendo só o campo n.tech. */
 function c4TechLine(n){
   const st=C4_STYLE[n.type]; if(!st) return n.tech?'['+n.tech+']':'';
-  return '['+st.label+(n.tech?': '+n.tech:'')+']';
+  return (st.label+(n.tech?' · '+n.tech:'')).toUpperCase();
 }
 
 /* ============ ESTADO ============ */
@@ -1682,7 +1718,10 @@ function setRot(kind,o,deg){
 const rotCss=o=>o.rot?`;transform:rotate(${o.rot}deg)`:'';
 
 /* ============ GEOMETRIA ============ */
-const nodeW = n => 118*(n.s||1), nodeH = n => 66*(n.s||1);
+/* O C4 é mais largo: o cartão é de leitura (nome + tipo + descrição alinhados à
+   esquerda), não um ícone rotulado. Sair pelo nodeW mantém setas, auto-layout e
+   exportação coerentes — todos derivam daqui. */
+const nodeW = n => (familyOf(n.type)==='c4'?164:118)*(n.s||1), nodeH = n => 66*(n.s||1);
 const centerOf = n => ({ x:n.x+nodeW(n)/2, y:n.y+nodeH(n)/2 });
 function trimLine(ca,cb,ta,tb){
   const dx=cb.x-ca.x,dy=cb.y-ca.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
@@ -1740,10 +1779,7 @@ function desenharTudo(){
       +(n.multi?' multi':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
     el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`+rotCss(n);
     if(n.color&&!ic&&!c4) el.style.borderTopColor=n.color;
-    if(c4){                                  /* cor do nó sobrescreve o preenchimento canônico */
-      el.style.setProperty('--c4-fill', n.color||c4.fill);
-      el.style.setProperty('--c4-ink', n.color?'#ffffff':c4.ink);
-    }
+    if(c4) el.style.setProperty('--c4-accent', n.color||c4.accent);   /* cor do nó sobrescreve o acento */
     if(n.z!=null) el.style.zIndex=n.z;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
@@ -4149,26 +4185,26 @@ function buildSvg(fontCss){
        sólido e sem ícone — a imagem exportada tem que sair igual à tela. */
     const c4x = C4_STYLE[n.type];
     if(c4x && !ic){
-      const fill = n.color || c4x.fill, borda = 'rgba(0,0,0,0.18)';
-      const corpo = (dx0,dy0) => {
-        let g='';
-        if(c4x.kind==='cylinder'){
-          const ry=8*sc, ry2=ry*1.05;
-          g+=`<path d="M ${r1(x+dx0)} ${r1(y+dy0+ry)} L ${r1(x+dx0)} ${r1(y+dy0+h-10*sc)}`
-            +` A ${r1(w/2)} ${r1(10*sc)} 0 0 0 ${r1(x+dx0+w)} ${r1(y+dy0+h-10*sc)}`
-            +` L ${r1(x+dx0+w)} ${r1(y+dy0+ry)} Z" fill="${fill}" stroke="${borda}" stroke-width="1"/>`;
-          g+=`<ellipse cx="${r1(x+dx0+w/2)}" cy="${r1(y+dy0+ry)}" rx="${r1(w/2)}" ry="${r1(ry2)}"`
-            +` fill="${fill}" stroke="${borda}" stroke-width="1" style="filter:brightness(1.12)"/>`;
-        } else {
-          const rx = c4x.kind==='queue' ? h/2 : (c4x.kind==='person' ? 14*sc : 4*sc);
-          g+=`<rect x="${r1(x+dx0)}" y="${r1(y+dy0)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${fill}" stroke="${borda}" stroke-width="1"/>`;
-          if(c4x.kind==='person')   /* cabeça: mesmo círculo que o ::before desenha na tela */
-            g+=`<circle cx="${r1(x+dx0+w/2)}" cy="${r1(y+dy0+16.5*sc)}" r="${r1(9.5*sc)}" fill="${n.color?'#fff':c4x.ink}" opacity="0.92"/>`;
-        }
+      /* mesma prancha da tela: vidro tintado, canto reto e barra de acento à
+         esquerda. O vidro é a cor do elemento diluída no fundo do cartão. */
+      const ac = n.color || c4x.accent;
+      const vidro = `color-mix(in srgb, ${ac} 12%, ${P.node})`;
+      const borda = `color-mix(in srgb, ${ac} 42%, transparent)`;
+      const rx = c4x.kind==='queue' ? 3*sc : 3*sc;
+      const corpo = (dx0,dy0,op) => {
+        let g=`<rect x="${r1(x+dx0)}" y="${r1(y+dy0)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}"`
+             +` fill="${vidro}" stroke="${borda}" stroke-width="1"${op?` opacity="${op}"`:''}/>`;
+        g+=`<path d="M ${r1(x+dx0+1.5)} ${r1(y+dy0)} L ${r1(x+dx0+1.5)} ${r1(y+dy0+h)}" stroke="${ac}" stroke-width="3"${op?` opacity="${op}"`:''}/>`;
         return g;
       };
-      if(n.multi) for(const d of [10,5]) s+=corpo(d,d);
+      if(n.multi) for(const d of [10,5]) s+=corpo(d,d,0.5);
       s+=corpo(0,0);
+      if(ico){                                   /* glifo pequeno no canto, na cor do acento */
+        const iw2=ico.offsetWidth||15*sc;
+        s+=`<g transform="translate(${r1(x+bl+ico.offsetLeft)},${r1(y+bt+ico.offsetTop)}) scale(${r1(iw2/24)})"`
+          +` color="${ac}" opacity="0.5" stroke="currentColor" fill="none" stroke-width="1.7"`
+          +` stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
+      }
     } else {
     if(!ic){
       const rx=11*sc, faixa=Math.max(2,bt||3);
@@ -4196,13 +4232,17 @@ function buildSvg(fontCss){
       const fam=cs2?cs2.fontFamily:curFont().css;
       const lw=sp._fb?w-14:sp.offsetWidth, lt=sp._fb?y+(ic?48:43)*sc:y+bt+sp.offsetTop;
       const lh=fs*(nome?1.3:(sp.classList&&sp.classList.contains('ntech')?1.25:1.3));
-      /* No C4 o cartão é sólido: o texto usa a tinta da própria família (e não a
-         paleta do tema de exportação, que assume cartão claro). */
-      const tinta = c4x ? (n.color?'#ffffff':c4x.ink) : (nome?P.ink:P.dim);
-      const opac = c4x && !nome ? ' fill-opacity="0.82"' : '';
-      const peso = c4x && nome ? ' font-weight="700"' : (nome&&ic?' font-weight="500"':'');
+      /* No C4 o texto é alinhado à esquerda e o rótulo do tipo usa a cor do
+         elemento; nas demais famílias segue centralizado com a paleta do tema. */
+      const tech = sp.classList && sp.classList.contains('ntech');
+      const tinta = c4x ? (nome?P.ink:(tech?(n.color||c4x.accent):P.dim)) : (nome?P.ink:P.dim);
+      const peso = c4x && nome ? ' font-weight="650"' : (nome&&ic?' font-weight="500"':'');
+      const esq = !!c4x && !sp._fb;
+      const tx = esq ? x+bl+sp.offsetLeft : cx;
+      const anc = esq ? 'start' : 'middle';
+      const esp = c4x && tech ? ` letter-spacing="${r1(fs*0.045)}"` : '';
       quebraPx(sp.textContent,lw,fs,fam).forEach((ln,i)=>{
-        s+=`<text x="${r1(cx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}" font-family="${String(fam).replace(/"/g,'&quot;').replace(/\x27/g,'&#39;')}"${peso} fill="${tinta}"${opac} text-anchor="middle">${svgEscape(ln)}</text>`;
+        s+=`<text x="${r1(tx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}" font-family="${String(fam).replace(/"/g,'&quot;').replace(/\x27/g,'&#39;')}"${peso} fill="${tinta}"${esp} text-anchor="${anc}">${svgEscape(ln)}</text>`;
       });
     }
     if(n.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(n.rot,cx,y+h/2,corpo); }
