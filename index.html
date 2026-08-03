@@ -2070,7 +2070,7 @@ function desenharTudo(){
     const el=document.createElement('div');
     /* família visual: C4 tem forma e tipografia próprias (ver C4_STYLE) */
     const fam=familyOf(n.type), c4=fam==='c4'?C4_STYLE[n.type]:null;
-    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(fam?` fam-${fam} c4-${c4?c4.kind:''}`:'')
+    el.className=`node b-${def.color}`+(ic?' st-icon':'')+(fam?` fam-${fam}`:'')+(c4?` c4-${c4.kind}`:'')
       +(n.multi?' multi':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
     el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`+rotCss(n);
     if(n.color&&!ic&&!c4) el.style.borderTopColor=n.color;
