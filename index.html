@@ -410,9 +410,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 /* O ladrilho tem volume: degradê no sentido da luz, fio de brilho no topo e
    sombra interna embaixo. É o que separa "quadrado colorido" de peça desenhada. */
 .node.fam-aws .nicon{
-  box-sizing:border-box;padding:8px;
+  box-sizing:border-box;padding:calc(var(--tile) * .19);
   color:#fff!important;
-  border-radius:11px;
+  border-radius:calc(var(--tile) * .26);
   background:
     linear-gradient(160deg,
       color-mix(in srgb, var(--aws-fill) 78%, #fff) 0%,
@@ -440,7 +440,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 /* disco TONAL CLARO (superfície de papel, à la Material) com o glifo saturado:
    é o oposto exato do ladrilho sólido da AWS, e é assim que o Google desenha. */
 .node.fam-gcp .nicon{
-  box-sizing:border-box;padding:9px;
+  box-sizing:border-box;padding:calc(var(--tile) * .21);
   color:var(--gcp-fill)!important;
   border-radius:50%;
   background:
@@ -454,9 +454,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .node.fam-gcp .nicon svg{stroke-width:2}
 .node.fam-gcp .nname{color:var(--ink);font-weight:600;margin-top:7px!important}
 .node.fam-gcp .ntech,.node.fam-gcp .ndesc{color:var(--dim)}
-.node.fam-gcp .port{right:auto;left:50%;top:21px;margin-left:19px}
-.node.fam-gcp .nx{top:-2px;right:50%;margin-right:-30px}
-.node.fam-gcp .nres{right:50%;bottom:auto;top:32px;margin-right:-28px}
+
+
+
 .node.fam-gcp.multi .nicon{box-shadow:
   0 0 0 1.5px color-mix(in srgb, var(--gcp-fill) 55%, transparent),
   5px 5px 0 -2px color-mix(in srgb, var(--gcp-fill) 14%, #fff), 5px 5px 0 -1px color-mix(in srgb, var(--gcp-fill) 45%, transparent),
@@ -483,9 +483,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   padding:0 2px 3px!important;
 }
 .node.fam-azure .nicon{
-  box-sizing:border-box;padding:8px;
+  box-sizing:border-box;padding:calc(var(--tile) * .19);
   color:var(--az-ink)!important;
-  border-radius:2px;
+  border-radius:calc(var(--tile) * .05);
   background:var(--az-fill);
   /* a cruz do logo: dois fios de luz dividindo o ladrilho em quatro */
   background-image:
@@ -506,7 +506,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   border-radius:0;padding:0 2px 3px!important;
 }
 .node.fam-ai .nicon{
-  box-sizing:border-box;padding:9px 8px;
+  box-sizing:border-box;padding:calc(var(--tile) * .21) calc(var(--tile) * .19);
   color:#fff!important;
   clip-path:polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   background:linear-gradient(150deg,
@@ -521,14 +521,14 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
    Placa de equipamento: chapa com leve metal, canto vivo e uma base mais escura
    embaixo — peso de coisa física, em oposição ao brilho da nuvem. */
 .node.fam-onprem .nicon{
-  box-sizing:border-box;padding:8px;
+  box-sizing:border-box;padding:calc(var(--tile) * .19);
   color:#eef1f7!important;
-  border-radius:3px;
+  border-radius:calc(var(--tile) * .07);
   background:linear-gradient(180deg,
     color-mix(in srgb, var(--op-fill) 58%, #fff) 0%,
     var(--op-fill) 40%,
     color-mix(in srgb, var(--op-fill) 62%, #000) 100%);
-  box-shadow:inset 0 -4px 0 rgb(0 0 0 / .3), inset 0 1px 0 rgb(255 255 255 / .3);
+  box-shadow:inset 0 calc(var(--tile) * -.095) 0 rgb(0 0 0 / .3), inset 0 1px 0 rgb(255 255 255 / .3);
 }
 .node.fam-onprem .ncat{color:var(--op-fill)}
 
@@ -536,31 +536,52 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
    Contorno vazado, sem preenchimento: o ator está FORA do sistema que você
    desenha — a ausência de massa é a mensagem. */
 .node.fam-client .nicon{
-  box-sizing:border-box;padding:8px;
+  box-sizing:border-box;padding:calc(var(--tile) * .19);
   color:var(--cl-fill)!important;
-  border-radius:12px;
+  border-radius:calc(var(--tile) * .28);
   background:transparent;
   box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--cl-fill) 70%, transparent);
 }
 .node.fam-client .ncat{color:var(--cl-fill)}
 
+
+/* As alças moram nas BORDAS do glifo e derivam de --tile: ao redimensionar o
+   componente, elas acompanham em vez de ficar num ponto fixo (era o motivo de o
+   ponto de redimensionar cair dentro do desenho em nós ampliados).
+   - conectar: meio da aresta direita
+   - remover:  canto superior direito
+   - redimensionar: canto inferior direito */
+.node.fam-aws .port,.node.fam-gcp .port,.node.fam-azure .port,
+.node.fam-ai .port,.node.fam-onprem .port,.node.fam-client .port{
+  right:auto;left:50%;top:calc(var(--tile) / 2);
+  margin-left:calc(var(--tile) / 2 - 7px);
+}
+.node.fam-aws .nx,.node.fam-gcp .nx,.node.fam-azure .nx,
+.node.fam-ai .nx,.node.fam-onprem .nx,.node.fam-client .nx{
+  top:-9px;right:50%;margin-right:calc(var(--tile) / -2 - 9px);
+}
+.node.fam-aws .nres,.node.fam-gcp .nres,.node.fam-azure .nres,
+.node.fam-ai .nres,.node.fam-onprem .nres,.node.fam-client .nres{
+  right:50%;bottom:auto;top:calc(var(--tile) - 7px);
+  margin-right:calc(var(--tile) / -2 - 7px);
+}
 /* comportamento comum das famílias sem cartão */
 .node.fam-ai .nname,.node.fam-onprem .nname,.node.fam-client .nname{
   color:var(--ink);font-weight:600;margin-top:7px!important}
 .node.fam-ai .ntech,.node.fam-ai .ndesc,
 .node.fam-onprem .ntech,.node.fam-onprem .ndesc,
 .node.fam-client .ntech,.node.fam-client .ndesc{color:var(--dim)}
-.node.fam-ai .port,.node.fam-onprem .port,.node.fam-client .port{right:auto;left:50%;top:21px;margin-left:19px}
-.node.fam-ai .nx,.node.fam-onprem .nx,.node.fam-client .nx{top:-2px;right:50%;margin-right:-30px}
-.node.fam-ai .nres,.node.fam-onprem .nres,.node.fam-client .nres{right:50%;bottom:auto;top:32px;margin-right:-28px}
+
+
+
 .node.fam-onprem.multi .nicon{box-shadow:
   inset 0 -4px 0 rgb(0 0 0 / .3), inset 0 1px 0 rgb(255 255 255 / .3),
   4px 4px 0 -1px var(--op-fill), 4px 4px 0 0 rgb(0 0 0 / .25),
   8px 8px 0 -1px var(--op-fill), 8px 8px 0 0 rgb(0 0 0 / .25)}
 
-.node.fam-azure .port{right:auto;left:50%;top:21px;margin-left:19px}
-.node.fam-azure .nx{top:-2px;right:50%;margin-right:-30px}
-.node.fam-azure .nres{right:50%;bottom:auto;top:32px;margin-right:-28px}
+
+
+
 .node.fam-azure.multi .nicon{box-shadow:
   inset 0 0 0 1px rgb(255 255 255 / .12),
   4px 4px 0 -1px var(--az-fill), 4px 4px 0 0 rgb(0 0 0 / .25),
@@ -568,9 +589,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 
 .node.fam-gcp .ncat{color:var(--gcp-fill)}
 /* as alças seguem o ladrilho, não a caixa invisível do cartão */
-.node.fam-aws .port{right:auto;left:50%;top:21px;margin-left:19px}
-.node.fam-aws .nx{top:-2px;right:50%;margin-right:-30px}
-.node.fam-aws .nres{right:50%;bottom:auto;top:32px;margin-right:-28px}
+
+
+
 /* "múltiplos": ladrilhos empilhados atrás — afordância, não enfeite */
 .node.fam-aws.multi .nicon{box-shadow:
   4px 4px 0 -1px var(--aws-fill), 4px 4px 0 0 color-mix(in srgb, var(--aws-fill) 62%, #000),
@@ -2053,7 +2074,10 @@ function desenharTudo(){
     if(n.z!=null) el.style.zIndex=n.z;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
-    const iconPx = SEM_CARTAO.has(fam) ? (ic?52:42)*s : (ic?42:30)*s;   /* nuvem: o glifo é o protagonista */
+    const iconPx = SEM_CARTAO.has(fam) ? (ic?52:42)*s : (ic?42:30)*s;
+    /* o CSS deriva raio de borda e posição das alças DESTE tamanho: assim tudo
+       acompanha o redimensionamento em vez de ficar preso a pixels fixos */
+    if(SEM_CARTAO.has(fam)) el.style.setProperty('--tile', iconPx+'px');   /* nuvem: o glifo é o protagonista */
     el.innerHTML=`<span class="nicon i-${def.color}" style="width:${iconPx}px;height:${iconPx}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span>${catTxt?`<span class="ncat" style="font-size:${Math.max(7,7.5*s)}px">${escapeHtml(catTxt)}</span>`:''}<span class="ntech" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${2*s}px">${escapeHtml(c4?c4TechLine(n):(n.tech?'['+n.tech+']':''))}</span><span class="ndesc" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${3*s}px">${escapeHtml(n.desc||'')}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${(n.details||[]).length?`<span class="ndet" title="ver detalhes do card">${LAYERS_TI}${n.details.length}</span>`:''}${(n.details||[]).some(d=>d.kind==='arch')?`<span class="narch" title="abrir sub-arquitetura (C4)">${DKIND.arch.icon}<span>C4</span></span>`:''}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
     /* duplo-clique: no TEXTO edita o campo clicado (nome/[tec]/descrição); fora do
        texto (ícone, corpo do card) ENTRA no card e abre os detalhes. Assim o duplo-
@@ -4486,7 +4510,7 @@ function buildSvg(fontCss){
       const ac = n.color || c4x.accent;
       const vidro = `color-mix(in srgb, ${ac} 12%, ${P.node})`;
       const borda = `color-mix(in srgb, ${ac} 42%, transparent)`;
-      const rx = c4x.kind==='queue' ? 3*sc : 3*sc;
+      const rx = 3;   /* o CSS usa 3px fixo: escalar aqui faria a imagem divergir da tela */
       const corpo = (dx0,dy0,op) => {
         let g=`<rect x="${r1(x+dx0)}" y="${r1(y+dy0)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}"`
              +` fill="${vidro}" stroke="${borda}" stroke-width="1"${op?` opacity="${op}"`:''}/>`;
@@ -4518,19 +4542,19 @@ function buildSvg(fontCss){
     const ix=ico?x+bl+ico.offsetLeft:cx-iw/2, iy=ico?y+bt+ico.offsetTop:y+(ic?4:8)*sc;
     if(famN==='aws'){
       /* ladrilho com volume: degradê no sentido da luz + fio de brilho no topo */
-      const pad=8*sc, gi=iw-pad*2, gid='gA'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=iw*.19, gi=iw-pad*2, gid='gA'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       s+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.5" y2="1">`
         +`<stop offset="0%" stop-color="color-mix(in srgb, ${col} 78%, #fff)"/>`
         +`<stop offset="46%" stop-color="${col}"/>`
         +`<stop offset="100%" stop-color="color-mix(in srgb, ${col} 86%, #000)"/></linearGradient></defs>`;
-      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(11*sc)}" fill="${f}"/>`;
+      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.26)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=tile(d,d,`color-mix(in srgb, ${col} 62%, #000)`);
       s+=tile(0,0,`url(#${gid})`);
-      s+=`<path d="M ${r1(ix+11*sc)} ${r1(iy+1)} L ${r1(ix+iw-11*sc)} ${r1(iy+1)}" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/>`;
+      s+=`<path d="M ${r1(ix+iw*.26)} ${r1(iy+1)} L ${r1(ix+iw-iw*.26)} ${r1(iy+1)}" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#ffffff" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='gcp'){
       /* disco claro com o glifo na cor do produto e anel fino */
-      const pad=9*sc, gi=iw-pad*2, r=iw/2;
+      const pad=iw*.21, gi=iw-pad*2, r=iw/2;
       const disco=(dx0,dy0,op)=>`<circle cx="${r1(ix+dx0+r)}" cy="${r1(iy+dy0+r)}" r="${r1(r)}"`
         +` fill="color-mix(in srgb, ${col} 14%, #ffffff)" stroke="color-mix(in srgb, ${col} 40%, transparent)" stroke-width="1.5"${op?` opacity="${op}"`:''}/>`;
       if(n.multi) for(const d of [10,5]) s+=disco(d,d,0.55);
@@ -4539,15 +4563,15 @@ function buildSvg(fontCss){
     } else if(famN==='azure'){
       /* live tile: chapado, canto vivo e a cruz do logo em dois fios de luz */
       const az=azStyle(n.type), tinta=n.color?'#ffffff':az.ink;
-      const pad=8*sc, gi=iw-pad*2, m=iw/2;
-      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(2*sc)}" fill="${f}"/>`;
+      const pad=iw*.19, gi=iw-pad*2, m=iw/2;
+      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.05)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=tile(d,d,`color-mix(in srgb, ${col} 70%, #000)`);
       s+=tile(0,0,col);
       s+=`<path d="M ${r1(ix+m)} ${r1(iy)} L ${r1(ix+m)} ${r1(iy+iw)} M ${r1(ix)} ${r1(iy+m)} L ${r1(ix+iw)} ${r1(iy+m)}" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="${tinta}" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='ai'){
       /* hexágono com degradê violeta -> rosa */
-      const pad=9*sc, gi=iw-pad*2, gid='gI'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=iw*.21, gi=iw-pad*2, gid='gI'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       const hex=(dx0,dy0,f)=>{
         const X=ix+dx0, Y=iy+dy0, w2=iw;
         const pts=[[.5,0],[.93,.25],[.93,.75],[.5,1],[.07,.75],[.07,.25]]
@@ -4563,20 +4587,20 @@ function buildSvg(fontCss){
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#ffffff" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='onprem'){
       /* placa de equipamento: chapa com base escura embaixo */
-      const pad=8*sc, gi=iw-pad*2, gid='gO'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=iw*.19, gi=iw-pad*2, gid='gO'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       s+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">`
         +`<stop offset="0%" stop-color="color-mix(in srgb, ${col} 58%, #fff)"/>`
         +`<stop offset="40%" stop-color="${col}"/>`
         +`<stop offset="100%" stop-color="color-mix(in srgb, ${col} 62%, #000)"/></linearGradient></defs>`;
-      const placa=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(3*sc)}" fill="${f}"/>`;
+      const placa=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.07)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=placa(d,d,`color-mix(in srgb, ${col} 70%, #000)`);
       s+=placa(0,0,`url(#${gid})`);
-      s+=`<rect x="${r1(ix)}" y="${r1(iy+iw-4*sc)}" width="${r1(iw)}" height="${r1(4*sc)}" fill="rgba(0,0,0,0.3)"/>`;
+      s+=`<rect x="${r1(ix)}" y="${r1(iy+iw-iw*.095)}" width="${r1(iw)}" height="${r1(iw*.095)}" fill="rgba(0,0,0,0.3)"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#eef1f7" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='client'){
       /* contorno vazado: o ator está fora do sistema */
-      const pad=8*sc, gi=iw-pad*2;
-      s+=`<rect x="${r1(ix+1)}" y="${r1(iy+1)}" width="${r1(iw-2)}" height="${r1(iw-2)}" rx="${r1(12*sc)}" fill="none" stroke="color-mix(in srgb, ${col} 70%, transparent)" stroke-width="2"/>`;
+      const pad=iw*.19, gi=iw-pad*2;
+      s+=`<rect x="${r1(ix+1)}" y="${r1(iy+1)}" width="${r1(iw-2)}" height="${r1(iw-2)}" rx="${r1(iw*.28)}" fill="none" stroke="color-mix(in srgb, ${col} 70%, transparent)" stroke-width="2"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else {
       s+=`<g transform="translate(${r1(ix)},${r1(iy)}) scale(${r1(iw/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
