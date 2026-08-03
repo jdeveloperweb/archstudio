@@ -407,14 +407,64 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   border-radius:0;
   padding:0 2px 3px!important;
 }
+/* O ladrilho tem volume: degradê no sentido da luz, fio de brilho no topo e
+   sombra interna embaixo. É o que separa "quadrado colorido" de peça desenhada. */
 .node.fam-aws .nicon{
-  box-sizing:border-box;padding:7px;
-  background:var(--aws-fill);color:#fff!important;
-  border-radius:9px;
+  box-sizing:border-box;padding:8px;
+  color:#fff!important;
+  border-radius:11px;
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--aws-fill) 78%, #fff) 0%,
+      var(--aws-fill) 46%,
+      color-mix(in srgb, var(--aws-fill) 86%, #000) 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .38),
+    inset 0 -1px 0 rgb(0 0 0 / .22);
 }
-.node.fam-aws .nicon svg{stroke-width:1.9}
-.node.fam-aws .nname{color:var(--ink);font-weight:600;margin-top:6px!important}
+.node.fam-aws .nicon svg{stroke-width:1.9;filter:drop-shadow(0 1px 1px rgb(0 0 0 / .22))}
+.node.fam-aws .nname{color:var(--ink);font-weight:600;margin-top:7px!important}
 .node.fam-aws .ntech,.node.fam-aws .ndesc{color:var(--dim)}
+
+/* ===== FAMÍLIA GCP =====
+   Onde a AWS é quadrado sólido com glifo branco, o GCP é DISCO claro com o glifo
+   NA COR do produto, sobre um anel fino. A diferença de forma é o que mantém os
+   dois legíveis lado a lado num diagrama híbrido. */
+.node.fam-gcp{
+  background:transparent!important;
+  border:none!important;
+  box-shadow:none!important;
+  border-radius:0;
+  padding:0 2px 3px!important;
+}
+.node.fam-gcp .nicon{
+  box-sizing:border-box;padding:9px;
+  color:var(--gcp-fill)!important;
+  border-radius:50%;
+  background:color-mix(in srgb, var(--gcp-fill) 15%, var(--nodebg));
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--gcp-fill) 55%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / .14);
+}
+.node.fam-gcp .nicon svg{stroke-width:2}
+.node.fam-gcp .nname{color:var(--ink);font-weight:600;margin-top:7px!important}
+.node.fam-gcp .ntech,.node.fam-gcp .ndesc{color:var(--dim)}
+.node.fam-gcp .port{right:auto;left:50%;top:21px;margin-left:19px}
+.node.fam-gcp .nx{top:-2px;right:50%;margin-right:-30px}
+.node.fam-gcp .nres{right:50%;bottom:auto;top:32px;margin-right:-28px}
+.node.fam-gcp.multi .nicon{box-shadow:
+  0 0 0 1.5px color-mix(in srgb, var(--gcp-fill) 55%, transparent),
+  5px 5px 0 -2px var(--nodebg), 5px 5px 0 -1px color-mix(in srgb, var(--gcp-fill) 45%, transparent),
+  10px 10px 0 -2px var(--nodebg), 10px 10px 0 -1px color-mix(in srgb, var(--gcp-fill) 30%, transparent)}
+
+/* rótulo da categoria: a cor deixa de ser só estética e vira leitura */
+.node.fam-aws .ncat,.node.fam-gcp .ncat{
+  display:block;margin-top:2px;line-height:1.2;
+  font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  opacity:.9;
+}
+.node.fam-aws .ncat{color:var(--aws-fill)}
+.node.fam-gcp .ncat{color:var(--gcp-fill)}
 /* as alças seguem o ladrilho, não a caixa invisível do cartão */
 .node.fam-aws .port{right:auto;left:50%;top:21px;margin-left:19px}
 .node.fam-aws .nx{top:-2px;right:50%;margin-right:-30px}
@@ -1443,6 +1493,36 @@ function awsFill(type){
   const def=TYPE_INDEX[type]||{};
   return AWS_TYPE_COLOR[type] || AWS_CAT_COLOR[def.cat] || '#ed7100';
 }
+/* Rótulo curto da categoria, impresso sob o ladrilho: transforma a cor em
+   informação legível — bate o olho e você sabe a natureza do serviço. */
+const AWS_CAT_LABEL = {
+  'Rede & Entrada':'Rede', 'Computação':'Computação', 'Dados & Storage':'Dados',
+  'Integração & Mensageria':'Integração', 'Segurança & Operação':'Segurança', 'IA & ML':'IA',
+};
+const AWS_TYPE_LABEL = {
+  s3:'Armazenamento', glacier:'Armazenamento', efs:'Armazenamento',
+  redshift:'Analytics', athena:'Analytics', glue:'Analytics', opensearch:'Analytics',
+  kinesis:'Analytics', firehose:'Analytics',
+  cloudwatch:'Operação', xray:'Operação', ssm:'Operação', cloudtrail:'Operação',
+};
+const awsCatLabel = t => AWS_TYPE_LABEL[t] || AWS_CAT_LABEL[(TYPE_INDEX[t]||{}).cat] || '';
+
+/* GCP: identidade circular. Onde a AWS usa ladrilho quadrado com glifo branco, o
+   GCP usa um disco claro com o glifo NA COR do produto — a diferença de FORMA
+   deixa os dois legíveis lado a lado num diagrama híbrido. */
+for(const g of CATALOG) if(g.group==='GCP') for(const it of g.items) FAMILY_OF[it.t]='gcp';
+const GCP_CAT_COLOR = {
+  'Computação':'#4285f4',        /* azul Google */
+  'Dados & Analytics':'#34a853', /* verde */
+  'Integração & IA':'#ea4335',   /* vermelho */
+  'Rede & Segurança':'#f9ab00',  /* âmbar */
+};
+const GCP_CAT_LABEL = {
+  'Computação':'Computação', 'Dados & Analytics':'Dados',
+  'Integração & IA':'Integração', 'Rede & Segurança':'Rede',
+};
+const gcpFill = t => GCP_CAT_COLOR[(TYPE_INDEX[t]||{}).cat] || '#4285f4';
+const gcpCatLabel = t => GCP_CAT_LABEL[(TYPE_INDEX[t]||{}).cat] || '';
 
 /* C4 desenhado como PRANCHA TÉCNICA, não como bloco chapado: o cartão é um vidro
    tintado na cor do elemento (funciona no tema claro e no escuro), com canto reto,
@@ -1813,11 +1893,14 @@ function desenharTudo(){
     if(n.color&&!ic&&!c4) el.style.borderTopColor=n.color;
     if(c4) el.style.setProperty('--c4-accent', n.color||c4.accent);   /* cor do nó sobrescreve o acento */
     if(fam==='aws') el.style.setProperty('--aws-fill', n.color||awsFill(n.type));
+    if(fam==='gcp') el.style.setProperty('--gcp-fill', n.color||gcpFill(n.type));
+    /* rótulo da categoria (nuvem): a cor do glifo vira informação legível */
+    const catTxt = fam==='aws' ? awsCatLabel(n.type) : fam==='gcp' ? gcpCatLabel(n.type) : '';
     if(n.z!=null) el.style.zIndex=n.z;
     el.dataset.id=n.id;
     const icClr=n.color?`;color:${n.color}`:'';
-    const iconPx = fam==="aws" ? (ic?52:42)*s : (ic?42:30)*s;   /* ladrilho AWS pede mais presença */
-    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${iconPx}px;height:${iconPx}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span><span class="ntech" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${2*s}px">${escapeHtml(c4?c4TechLine(n):(n.tech?'['+n.tech+']':''))}</span><span class="ndesc" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${3*s}px">${escapeHtml(n.desc||'')}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${(n.details||[]).length?`<span class="ndet" title="ver detalhes do card">${LAYERS_TI}${n.details.length}</span>`:''}${(n.details||[]).some(d=>d.kind==='arch')?`<span class="narch" title="abrir sub-arquitetura (C4)">${DKIND.arch.icon}<span>C4</span></span>`:''}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
+    const iconPx = (fam==='aws'||fam==='gcp') ? (ic?52:42)*s : (ic?42:30)*s;   /* nuvem: o glifo é o protagonista */
+    el.innerHTML=`<span class="nicon i-${def.color}" style="width:${iconPx}px;height:${iconPx}px${icClr}">${iconSvg(def.i)}</span><span class="nname" style="font-size:${Math.max(9,(ic?12:11)*s)}px;margin-top:${(ic?2:5)*s}px">${escapeHtml(n.label)}</span>${catTxt?`<span class="ncat" style="font-size:${Math.max(7,7.5*s)}px">${escapeHtml(catTxt)}</span>`:''}<span class="ntech" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${2*s}px">${escapeHtml(c4?c4TechLine(n):(n.tech?'['+n.tech+']':''))}</span><span class="ndesc" style="font-size:${Math.max(8,9.5*s)}px;margin-top:${3*s}px">${escapeHtml(n.desc||'')}</span><span class="nx" title="remover">✕</span><span class="port" title="arraste até outro componente para conectar"></span><span class="nres" title="arraste para redimensionar"></span>${ROT_HANDLE}${(n.details||[]).length?`<span class="ndet" title="ver detalhes do card">${LAYERS_TI}${n.details.length}</span>`:''}${(n.details||[]).some(d=>d.kind==='arch')?`<span class="narch" title="abrir sub-arquitetura (C4)">${DKIND.arch.icon}<span>C4</span></span>`:''}${n.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
     /* duplo-clique: no TEXTO edita o campo clicado (nome/[tec]/descrição); fora do
        texto (ícone, corpo do card) ENTRA no card e abre os detalhes. Assim o duplo-
        clique vira o atalho de "entrar", sem tirar a edição de texto. */
@@ -2099,13 +2182,14 @@ function edgeStep(n){ return n<=1 ? 0 : Math.min(26, 72/(n-1)); }
    helpers abaixo devolvem o centro e o meio-tamanho da FORMA visível — para as
    demais famílias nada muda. */
 const AWS_TILE = 42;
+const semCartao = t => { const f=familyOf(t); return f==='aws'||f==='gcp'; };
 function shapeCenter(n){
   const c=centerOf(n);
-  if(familyOf(n.type)!=='aws') return c;
+  if(!semCartao(n.type)) return c;
   return {x:c.x, y:n.y + (AWS_TILE*(n.s||1))/2};
 }
 function shapeHalf(n){
-  if(familyOf(n.type)!=='aws') return null;
+  if(!semCartao(n.type)) return null;
   return (AWS_TILE*(n.s||1))/2 + 5;      /* ladrilho é quadrado: mesma folga nos dois eixos */
 }
 function edgeAnchor(n,t,trim,off,ox,oy){
@@ -4227,7 +4311,7 @@ function buildSvg(fontCss){
     const def=TYPE_INDEX[n.type]||{i:'hexagon',color:'gen'};
     const famN=familyOf(n.type);
     /* na AWS a cor é a da CATEGORIA do serviço, não a do grupo do catálogo */
-    const col=n.color||(famN==='aws'?awsFill(n.type):catColor(def.color)), sc=n.s||1, ic=n.st==='icon';
+    const col=n.color||(famN==='aws'?awsFill(n.type):famN==='gcp'?gcpFill(n.type):catColor(def.color)), sc=n.s||1, ic=n.st==='icon';
     const el=elNode(n.id), ico=el&&el.querySelector('.nicon'), nm=el&&el.querySelector('.nname');
     const cx0=caixaNo(n), w=cx0.w, h=cx0.h;
     const x=n.x+ox, y=n.y+oy, cx=x+w/2;
@@ -4259,7 +4343,7 @@ function buildSvg(fontCss){
           +` stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
       }
     } else {
-    if(!ic && famN!=='aws'){          /* AWS não tem cartão: só o ladrilho e o nome */
+    if(!ic && famN!=='aws' && famN!=='gcp'){   /* nuvem sem cartão: só o glifo e o nome */
       const rx=11*sc, faixa=Math.max(2,bt||3);
       /* "múltiplos": duas folhas atrás, iguais às sombras do canvas */
       if(n.multi) for(const d of [10,5])
@@ -4274,18 +4358,31 @@ function buildSvg(fontCss){
     const iw=ico?ico.offsetWidth:(ic?42:30)*sc;
     const ix=ico?x+bl+ico.offsetLeft:cx-iw/2, iy=ico?y+bt+ico.offsetTop:y+(ic?4:8)*sc;
     if(famN==='aws'){
-      /* ladrilho sólido com o glifo em branco — a assinatura da AWS */
-      const pad=7*sc, gi=iw-pad*2;
-      const tile=(dx0,dy0)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(9*sc)}" fill="${col}"/>`;
-      if(n.multi) for(const d of [8,4]) s+=tile(d,d);
-      s+=tile(0,0);
+      /* ladrilho com volume: degradê no sentido da luz + fio de brilho no topo */
+      const pad=8*sc, gi=iw-pad*2, gid='gA'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      s+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.5" y2="1">`
+        +`<stop offset="0%" stop-color="color-mix(in srgb, ${col} 78%, #fff)"/>`
+        +`<stop offset="46%" stop-color="${col}"/>`
+        +`<stop offset="100%" stop-color="color-mix(in srgb, ${col} 86%, #000)"/></linearGradient></defs>`;
+      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(11*sc)}" fill="${f}"/>`;
+      if(n.multi) for(const d of [8,4]) s+=tile(d,d,`color-mix(in srgb, ${col} 62%, #000)`);
+      s+=tile(0,0,`url(#${gid})`);
+      s+=`<path d="M ${r1(ix+11*sc)} ${r1(iy+1)} L ${r1(ix+iw-11*sc)} ${r1(iy+1)}" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#ffffff" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
+    } else if(famN==='gcp'){
+      /* disco claro com o glifo na cor do produto e anel fino */
+      const pad=9*sc, gi=iw-pad*2, r=iw/2;
+      const disco=(dx0,dy0,op)=>`<circle cx="${r1(ix+dx0+r)}" cy="${r1(iy+dy0+r)}" r="${r1(r)}"`
+        +` fill="color-mix(in srgb, ${col} 15%, ${P.node})" stroke="color-mix(in srgb, ${col} 55%, transparent)" stroke-width="1.5"${op?` opacity="${op}"`:''}/>`;
+      if(n.multi) for(const d of [10,5]) s+=disco(d,d,0.55);
+      s+=disco(0,0);
+      s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else {
       s+=`<g transform="translate(${r1(ix)},${r1(iy)}) scale(${r1(iw/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     }
     }
     /* nome + [tecnologia] + descrição: cada um com a fonte e a posição que tem na tela */
-    const textos = el ? [...el.querySelectorAll('.nname,.ntech,.ndesc')].filter(sp=>sp.textContent.trim())
+    const textos = el ? [...el.querySelectorAll('.nname,.ncat,.ntech,.ndesc')].filter(sp=>sp.textContent.trim())
                       : [{textContent:n.label, _fb:true}];
     for(const sp of textos){
       const nome=sp._fb||sp.classList.contains('nname');
@@ -4297,12 +4394,15 @@ function buildSvg(fontCss){
       /* No C4 o texto é alinhado à esquerda e o rótulo do tipo usa a cor do
          elemento; nas demais famílias segue centralizado com a paleta do tema. */
       const tech = sp.classList && sp.classList.contains('ntech');
-      const tinta = c4x ? (nome?P.ink:(tech?(n.color||c4x.accent):P.dim)) : (nome?P.ink:P.dim);
+      const cat = sp.classList && sp.classList.contains('ncat');
+      const tinta = c4x ? (nome?P.ink:(tech?(n.color||c4x.accent):P.dim))
+                        : (cat ? col : (nome?P.ink:P.dim));
       const peso = c4x && nome ? ' font-weight="650"' : (nome&&ic?' font-weight="500"':'');
       const esq = !!c4x && !sp._fb;
       const tx = esq ? x+bl+sp.offsetLeft : cx;
       const anc = esq ? 'start' : 'middle';
-      const esp = c4x && tech ? ` letter-spacing="${r1(fs*0.045)}"` : '';
+      const esp = (c4x && tech) ? ` letter-spacing="${r1(fs*0.045)}"`
+                : (cat ? ` letter-spacing="${r1(fs*0.1)}"` : '');
       quebraPx(sp.textContent,lw,fs,fam).forEach((ln,i)=>{
         s+=`<text x="${r1(tx)}" y="${r1(lt+lh*i+fs*0.95)}" font-size="${r1(fs)}" font-family="${String(fam).replace(/"/g,'&quot;').replace(/\x27/g,'&#39;')}"${peso} fill="${tinta}"${esp} text-anchor="${anc}">${svgEscape(ln)}</text>`;
       });
