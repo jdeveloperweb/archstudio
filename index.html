@@ -309,7 +309,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   border:1px solid var(--border);color:var(--dim);z-index:6;cursor:default;user-select:none;
   display:flex;align-items:center;justify-content:center}
 .lk .ti{width:11px;height:11px;vertical-align:0}
-.gbox{position:absolute;border:2px dashed;border-radius:14px;z-index:1;cursor:grab;touch-action:none}
+.gbox{position:absolute;border-radius:calc(14px * var(--rscale, 1));border:2px dashed;border-radius:14px;z-index:1;cursor:grab;touch-action:none}
 .gbox .gtitle{position:absolute;top:-11px;left:14px;font-family:var(--mono);font-size:11.5px;font-weight:700;background:var(--bg);padding:1px 9px;border-radius:5px;white-space:pre-wrap;max-width:280px}
 .gbox .bres{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:4px;cursor:nwse-resize;border:2px solid var(--bg)}
 .gbox .nx{position:absolute;top:-9px;right:-9px;width:19px;height:19px;border-radius:50%;background:var(--panel2);border:1px solid var(--border);color:var(--dim);font-size:10px;line-height:17px;cursor:pointer;display:none;text-align:center}
@@ -327,7 +327,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .ftext .tres{position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;border-radius:4px;background:var(--accent);border:2px solid var(--bg);cursor:nwse-resize;display:none;z-index:6}
 .ftext.frame.sel .tres{display:block}
 
-.node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:11px;text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
+.node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:calc(11px * var(--rscale, 1));text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
 .node:active{cursor:grabbing}
 /* "múltiplos": o cartão vira uma pilha (várias instâncias do mesmo componente).
    Feito com sombras deslocadas — não precisa de elemento extra e não atrapalha o clique. */
@@ -356,7 +356,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
                             color-mix(in srgb, var(--c4-accent) 7%, var(--nodebg)) 100%);
   border:1px solid color-mix(in srgb, var(--c4-accent) 42%, transparent);
   border-left:3px solid var(--c4-accent);
-  border-radius:3px;
+  border-radius:calc(3px * var(--rscale, 1));
   box-shadow:0 6px 20px -8px rgb(0 0 0 / .45);
   text-align:left;
   padding:9px 11px 10px 12px!important;
@@ -410,9 +410,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 /* O ladrilho tem volume: degradê no sentido da luz, fio de brilho no topo e
    sombra interna embaixo. É o que separa "quadrado colorido" de peça desenhada. */
 .node.fam-aws .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .19);
+  box-sizing:border-box;padding:8px;
   color:#fff!important;
-  border-radius:calc(var(--tile) * .26);
+  border-radius:calc(11px * var(--rscale, 1));
   background:
     linear-gradient(160deg,
       color-mix(in srgb, var(--aws-fill) 78%, #fff) 0%,
@@ -440,9 +440,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 /* disco TONAL CLARO (superfície de papel, à la Material) com o glifo saturado:
    é o oposto exato do ladrilho sólido da AWS, e é assim que o Google desenha. */
 .node.fam-gcp .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .21);
+  box-sizing:border-box;padding:9px;
   color:var(--gcp-fill)!important;
-  border-radius:50%;
+  border-radius:calc(50% * var(--rscale, 1));
   background:
     linear-gradient(160deg,
       color-mix(in srgb, var(--gcp-fill) 7%, #fff) 0%,
@@ -483,9 +483,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   padding:0 2px 3px!important;
 }
 .node.fam-azure .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .19);
+  box-sizing:border-box;padding:8px;
   color:var(--az-ink)!important;
-  border-radius:calc(var(--tile) * .05);
+  border-radius:calc(2px * var(--rscale, 1));
   background:var(--az-fill);
   /* a cruz do logo: dois fios de luz dividindo o ladrilho em quatro */
   background-image:
@@ -506,7 +506,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   border-radius:0;padding:0 2px 3px!important;
 }
 .node.fam-ai .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .21) calc(var(--tile) * .19);
+  box-sizing:border-box;padding:9px 8px;
   color:#fff!important;
   clip-path:polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
   background:linear-gradient(150deg,
@@ -521,14 +521,14 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
    Placa de equipamento: chapa com leve metal, canto vivo e uma base mais escura
    embaixo — peso de coisa física, em oposição ao brilho da nuvem. */
 .node.fam-onprem .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .19);
+  box-sizing:border-box;padding:8px;
   color:#eef1f7!important;
-  border-radius:calc(var(--tile) * .07);
+  border-radius:calc(3px * var(--rscale, 1));
   background:linear-gradient(180deg,
     color-mix(in srgb, var(--op-fill) 58%, #fff) 0%,
     var(--op-fill) 40%,
     color-mix(in srgb, var(--op-fill) 62%, #000) 100%);
-  box-shadow:inset 0 calc(var(--tile) * -.095) 0 rgb(0 0 0 / .3), inset 0 1px 0 rgb(255 255 255 / .3);
+  box-shadow:inset 0 -4px 0 rgb(0 0 0 / .3), inset 0 1px 0 rgb(255 255 255 / .3);
 }
 .node.fam-onprem .ncat{color:var(--op-fill)}
 
@@ -536,9 +536,9 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
    Contorno vazado, sem preenchimento: o ator está FORA do sistema que você
    desenha — a ausência de massa é a mensagem. */
 .node.fam-client .nicon{
-  box-sizing:border-box;padding:calc(var(--tile) * .19);
+  box-sizing:border-box;padding:8px;
   color:var(--cl-fill)!important;
-  border-radius:calc(var(--tile) * .28);
+  border-radius:calc(12px * var(--rscale, 1));
   background:transparent;
   box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--cl-fill) 70%, transparent);
 }
@@ -911,6 +911,7 @@ body.embed #archCrumbs{top:12px}
       <div class="menu-sep"></div>
       <div class="menu-label">Preferências</div>
       <div class="menu-row"><span>Fonte do diagrama</span><select id="fontSel" onchange="setFont(this.value)"></select></div>
+      <div class="menu-row"><span>Cantos dos componentes</span><select id="radiusSel" onchange="setRadius(this.value)"></select></div>
       <div class="menu-row"><span>Colorir por</span><select id="colorBySel" onchange="setColorBy(this.value)"><option value="">nada</option><option value="env">Ambiente</option><option value="team">Time</option><option value="owner">Dono</option><option value="sla">SLA</option></select></div>
       <label class="menu-item" style="cursor:pointer"><input type="checkbox" id="gridChk" checked onchange="toggleGrid(this.checked)"> Mostrar grade</label>
       <label class="menu-item" style="cursor:pointer" title="mostra o texto de todos os comentários (o marcador aparece sempre)"><input type="checkbox" id="commentsChk" onchange="toggleComments(this.checked)"> Mostrar comentários</label>
@@ -1086,7 +1087,7 @@ function cancelEmbedAnim(){
   state=rootState=embedAnim.final; scopePath=[]; embedAnim=null; suppressEmit=false; renderAll();
 }
 function embedDoc(){ return embedAnim
-  ? {format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state:embedAnim.final}
+  ? {format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,radius:radiusId,state:embedAnim.final}
   : currentDoc(); }
 function aidrawFlash(kind,item){
   if(kind==='edges'||kind==='arrows'){
@@ -1712,7 +1713,7 @@ function c4TechLine(n){
 }
 
 /* ============ ESTADO ============ */
-let mode='move', zoom=1, connSrc=null, sel=null, fontId='system';
+let mode='move', zoom=1, connSrc=null, sel=null, fontId='system', radiusId='padrao';
 /* ---- seleção múltipla: selMulti é a verdade; sel = item único (ou null) ---- */
 let selMulti=[], clipboard=null;
 function syncSel(){ sel = selMulti.length===1 ? selMulti[0] : null; }
@@ -1755,6 +1756,23 @@ function loadExpPrefs(){
   set('expGrid',o.grade); set('expTitle',o.titulo); set('expBg',o.fundo); set('expLegend',o.legenda);
   const th=document.getElementById('expTheme'); if(th&&o.tema) th.value=o.tema;
 }
+/* Arredondamento das bordas: um fator global que multiplica o raio de TODOS os
+   componentes (cartões, ladrilhos, disco, hexágono, placa e caixas). O CSS lê
+   --rscale; a exportação usa radiusScale() para a imagem sair igual à tela. */
+const RADII = [
+  {id:'reto',    n:'Reto',    v:0},
+  {id:'suave',   n:'Suave',   v:.5},
+  {id:'padrao',  n:'Padrão',  v:1},
+  {id:'redondo', n:'Redondo', v:1.7},
+  {id:'pilula',  n:'Pílula',  v:2.6},
+];
+const radiusScale = () => (RADII.find(r=>r.id===radiusId)||RADII[2]).v;
+function setRadius(id){
+  radiusId = RADII.some(r=>r.id===id) ? id : 'padrao';
+  canvas.style.setProperty('--rscale', radiusScale());
+  const sel=document.getElementById('radiusSel'); if(sel) sel.value=radiusId;
+  persist();
+}
 function setFont(id){ fontId=id; canvas.style.setProperty('--dfont', curFont().css); document.getElementById('fontSel').value=id; persist(); }
 let state = { seq:0, nodes:[], edges:[], boxes:[], arrows:[], texts:[] };
 /* --- Sub-arquitetura C4 (pranchetas aninhadas) ---------------------------------
@@ -1788,7 +1806,7 @@ const gsnap = v => snapOn() ? Math.round(v/14)*14 : Math.round(v);
 const theme = () => document.body.dataset.theme;
 const catColor = c => (theme()==='light'?CAT_COLORS_L:CAT_COLORS_D)[c]||'#a679ff';
 
-function curDocJson(){ return JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state:rootState}); }
+function curDocJson(){ return JSON.stringify({format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,radius:radiusId,state:rootState}); }
 function persist(){ if(EMBED){ emitChange(); return; } if(!curProj) return; const name=document.getElementById('diagTitle').value; store.set(PPFX+curProj, curDocJson()); touchProject(curProj,name); store.set(CKEY,curProj); }
 document.getElementById('diagTitle').addEventListener('input', persist);
 /* ---- IDs ------------------------------------------------------------------
@@ -3488,9 +3506,20 @@ canvas.addEventListener('pointerdown', ev=>{
     if(t.classList&&t.classList.contains('nres')){
       ev.preventDefault();
       setSel('node',n.id); paintSel();
-      const sx=ev.clientX, s0=n.s||1;
+      /* Redimensionar pela DISTÂNCIA ao centro do componente: funciona arrastando
+         em qualquer direção (não só na horizontal) e acompanha o ponteiro em vez
+         de andar aos saltos. O passo de 0,05 só entra com Shift, para encaixar
+         em valores redondos quando se quer precisão. */
+      const s0=n.s||1;
+      const cen=centerOf(n);
+      const raio=e=>{ const r=canvas.getBoundingClientRect();
+        const px=(e.clientX-r.left)/zoom, py=(e.clientY-r.top)/zoom;
+        return Math.max(12, Math.hypot(px-cen.x, py-cen.y)); };
+      const d0=raio(ev);
       dragSession(e2=>{
-        n.s=Math.max(0.6,Math.min(2.2,Math.round((s0+(e2.clientX-sx)/zoom/110)*20)/20));
+        let v=s0*raio(e2)/d0;
+        if(e2.shiftKey) v=Math.round(v*20)/20;
+        n.s=Math.max(0.5,Math.min(3,Math.round(v*100)/100));
         renderAllLight2(n);
       });
       return;
@@ -3779,7 +3808,9 @@ function applyDoc(doc){
   document.getElementById('diagTitle').value=(doc&&doc.name)||'Diagrama';
   if(doc&&doc.theme&&doc.theme!==theme()) toggleTheme();
   fontId=(doc&&doc.font&&FONTS.some(f=>f.id===doc.font))?doc.font:fontId;
+  radiusId=(doc&&doc.radius&&RADII.some(r=>r.id===doc.radius))?doc.radius:'padrao';
   setFont(fontId);
+  setRadius(radiusId);
   loadExpPrefs();
   applyGrid();
   applyComments();
@@ -3795,7 +3826,7 @@ function newProjectRecord(name){
 function newProject(name){
   const nm=name||'Novo diagrama';
   newProjectRecord(nm);
-  applyDoc({format:'archstudio',version:3,name:nm,theme:theme(),font:fontId,state:emptyState()});
+  applyDoc({format:'archstudio',version:3,name:nm,theme:theme(),font:fontId,radius:radiusId,state:emptyState()});
   persist(); closeModal();
 }
 function openProject(id){
@@ -3891,7 +3922,7 @@ async function pipeStream(bytes,Ctor,fmt){
   for(const c of chunks){ out.set(c,o); o+=c.length; }
   return out;
 }
-function currentDoc(){ return {format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,state:rootState}; }
+function currentDoc(){ return {format:'archstudio',version:3,name:document.getElementById('diagTitle').value,theme:theme(),font:fontId,radius:radiusId,state:rootState}; }
 async function buildShareUrl(){
   const raw=new TextEncoder().encode(JSON.stringify(currentDoc()));
   let payload;
@@ -4392,6 +4423,7 @@ function wrapTextLines(text,boxW,size){
   return out;
 }
 function buildSvg(fontCss){
+  const rq = radiusScale();   /* arredondamento global: a imagem segue a tela */
   /* o cartão na tela é maior que nodeW/nodeH (borda + padding + rótulo de várias
      linhas). Medir o elemento de verdade é o que faz a imagem sair igual ao canvas. */
   const elNode=id=>canvas.querySelector(`.node[data-id="${id}"]`);
@@ -4432,10 +4464,10 @@ function buildSvg(fontCss){
   for(const b of state.boxes){
     let w='';
     if(b.solid){  /* fundo opaco: base do painel + leve tom da cor (esconde o que estiver atrás) */
-      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="14" fill="${P.node}"/>`;
-      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="14" fill="${b.color}" fill-opacity="0.13" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
+      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="${r1(14*rq)}" fill="${P.node}"/>`;
+      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="${r1(14*rq)}" fill="${b.color}" fill-opacity="0.13" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
     } else {
-      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="14" fill="${b.color}0d" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
+      w+=`<rect x="${b.x+ox}" y="${b.y+oy}" width="${b.w}" height="${b.h}" rx="${r1(14*rq)}" fill="${b.color}0d" stroke="${b.color}" stroke-width="2" stroke-dasharray="10 7"/>`;
     }
     w+=`<rect x="${b.x+ox+12}" y="${b.y+oy-11}" width="${b.label.length*7.2+18}" height="20" rx="5" fill="${P.bg}"/>`;
     w+=`<text x="${b.x+ox+21}" y="${b.y+oy+3.5}" font-size="11.5" font-weight="700" fill="${b.color}" font-family="Consolas, monospace">${svgEscape(b.label)}</text>`;
@@ -4510,7 +4542,7 @@ function buildSvg(fontCss){
       const ac = n.color || c4x.accent;
       const vidro = `color-mix(in srgb, ${ac} 12%, ${P.node})`;
       const borda = `color-mix(in srgb, ${ac} 42%, transparent)`;
-      const rx = 3;   /* o CSS usa 3px fixo: escalar aqui faria a imagem divergir da tela */
+      const rx = 3*rq;
       const corpo = (dx0,dy0,op) => {
         let g=`<rect x="${r1(x+dx0)}" y="${r1(y+dy0)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}"`
              +` fill="${vidro}" stroke="${borda}" stroke-width="1"${op?` opacity="${op}"`:''}/>`;
@@ -4527,7 +4559,7 @@ function buildSvg(fontCss){
       }
     } else {
     if(!ic && !SEM_CARTAO.has(famN)){   /* famílias com forma própria: só o glifo e o nome */
-      const rx=11*sc, faixa=Math.max(2,bt||3);
+      const rx=11*rq, faixa=Math.max(2,bt||3);
       /* "múltiplos": duas folhas atrás, iguais às sombras do canvas */
       if(n.multi) for(const d of [10,5])
         s+=`<rect x="${r1(x+d)}" y="${r1(y+d)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${P.node}" stroke="${P.border}" stroke-width="1"/>`;
@@ -4542,19 +4574,19 @@ function buildSvg(fontCss){
     const ix=ico?x+bl+ico.offsetLeft:cx-iw/2, iy=ico?y+bt+ico.offsetTop:y+(ic?4:8)*sc;
     if(famN==='aws'){
       /* ladrilho com volume: degradê no sentido da luz + fio de brilho no topo */
-      const pad=iw*.19, gi=iw-pad*2, gid='gA'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=8*sc, gi=iw-pad*2, gid='gA'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       s+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0.5" y2="1">`
         +`<stop offset="0%" stop-color="color-mix(in srgb, ${col} 78%, #fff)"/>`
         +`<stop offset="46%" stop-color="${col}"/>`
         +`<stop offset="100%" stop-color="color-mix(in srgb, ${col} 86%, #000)"/></linearGradient></defs>`;
-      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.26)}" fill="${f}"/>`;
+      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(11*rq)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=tile(d,d,`color-mix(in srgb, ${col} 62%, #000)`);
       s+=tile(0,0,`url(#${gid})`);
-      s+=`<path d="M ${r1(ix+iw*.26)} ${r1(iy+1)} L ${r1(ix+iw-iw*.26)} ${r1(iy+1)}" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/>`;
+      s+=`<path d="M ${r1(ix+11*rq)} ${r1(iy+1)} L ${r1(ix+iw-11*rq)} ${r1(iy+1)}" stroke="rgba(255,255,255,0.38)" stroke-width="1.5" stroke-linecap="round"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#ffffff" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='gcp'){
       /* disco claro com o glifo na cor do produto e anel fino */
-      const pad=iw*.21, gi=iw-pad*2, r=iw/2;
+      const pad=9*sc, gi=iw-pad*2, r=iw/2;
       const disco=(dx0,dy0,op)=>`<circle cx="${r1(ix+dx0+r)}" cy="${r1(iy+dy0+r)}" r="${r1(r)}"`
         +` fill="color-mix(in srgb, ${col} 14%, #ffffff)" stroke="color-mix(in srgb, ${col} 40%, transparent)" stroke-width="1.5"${op?` opacity="${op}"`:''}/>`;
       if(n.multi) for(const d of [10,5]) s+=disco(d,d,0.55);
@@ -4563,15 +4595,15 @@ function buildSvg(fontCss){
     } else if(famN==='azure'){
       /* live tile: chapado, canto vivo e a cruz do logo em dois fios de luz */
       const az=azStyle(n.type), tinta=n.color?'#ffffff':az.ink;
-      const pad=iw*.19, gi=iw-pad*2, m=iw/2;
-      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.05)}" fill="${f}"/>`;
+      const pad=8*sc, gi=iw-pad*2, m=iw/2;
+      const tile=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(2*rq)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=tile(d,d,`color-mix(in srgb, ${col} 70%, #000)`);
       s+=tile(0,0,col);
       s+=`<path d="M ${r1(ix+m)} ${r1(iy)} L ${r1(ix+m)} ${r1(iy+iw)} M ${r1(ix)} ${r1(iy+m)} L ${r1(ix+iw)} ${r1(iy+m)}" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="${tinta}" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='ai'){
       /* hexágono com degradê violeta -> rosa */
-      const pad=iw*.21, gi=iw-pad*2, gid='gI'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=9*sc, gi=iw-pad*2, gid='gI'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       const hex=(dx0,dy0,f)=>{
         const X=ix+dx0, Y=iy+dy0, w2=iw;
         const pts=[[.5,0],[.93,.25],[.93,.75],[.5,1],[.07,.75],[.07,.25]]
@@ -4587,20 +4619,20 @@ function buildSvg(fontCss){
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#ffffff" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='onprem'){
       /* placa de equipamento: chapa com base escura embaixo */
-      const pad=iw*.19, gi=iw-pad*2, gid='gO'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
+      const pad=8*sc, gi=iw-pad*2, gid='gO'+String(n.id).replace(/[^a-zA-Z0-9]/g,'');
       s+=`<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">`
         +`<stop offset="0%" stop-color="color-mix(in srgb, ${col} 58%, #fff)"/>`
         +`<stop offset="40%" stop-color="${col}"/>`
         +`<stop offset="100%" stop-color="color-mix(in srgb, ${col} 62%, #000)"/></linearGradient></defs>`;
-      const placa=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(iw*.07)}" fill="${f}"/>`;
+      const placa=(dx0,dy0,f)=>`<rect x="${r1(ix+dx0)}" y="${r1(iy+dy0)}" width="${r1(iw)}" height="${r1(iw)}" rx="${r1(3*rq)}" fill="${f}"/>`;
       if(n.multi) for(const d of [8,4]) s+=placa(d,d,`color-mix(in srgb, ${col} 70%, #000)`);
       s+=placa(0,0,`url(#${gid})`);
-      s+=`<rect x="${r1(ix)}" y="${r1(iy+iw-iw*.095)}" width="${r1(iw)}" height="${r1(iw*.095)}" fill="rgba(0,0,0,0.3)"/>`;
+      s+=`<rect x="${r1(ix)}" y="${r1(iy+iw-4*sc)}" width="${r1(iw)}" height="${r1(4*sc)}" fill="rgba(0,0,0,0.3)"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="#eef1f7" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else if(famN==='client'){
       /* contorno vazado: o ator está fora do sistema */
-      const pad=iw*.19, gi=iw-pad*2;
-      s+=`<rect x="${r1(ix+1)}" y="${r1(iy+1)}" width="${r1(iw-2)}" height="${r1(iw-2)}" rx="${r1(iw*.28)}" fill="none" stroke="color-mix(in srgb, ${col} 70%, transparent)" stroke-width="2"/>`;
+      const pad=8*sc, gi=iw-pad*2;
+      s+=`<rect x="${r1(ix+1)}" y="${r1(iy+1)}" width="${r1(iw-2)}" height="${r1(iw-2)}" rx="${r1(12*rq)}" fill="none" stroke="color-mix(in srgb, ${col} 70%, transparent)" stroke-width="2"/>`;
       s+=`<g transform="translate(${r1(ix+pad)},${r1(iy+pad)}) scale(${r1(gi/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
     } else {
       s+=`<g transform="translate(${r1(ix)},${r1(iy)}) scale(${r1(iw/24)})" color="${col}" stroke="currentColor" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[def.i]||ICONS.hexagon}</g>`;
@@ -5693,6 +5725,7 @@ async function exportPdfAll(){
   applyPalTogglePos();   /* botão flutuante volta para onde foi arrastado */
   initCompDrop();        /* aceita arrastar-e-soltar componentes no canvas */
   document.getElementById('fontSel').innerHTML = FONTS.map(f=>`<option value="${f.id}">${f.n}</option>`).join('');
+  document.getElementById('radiusSel').innerHTML = RADII.map(r=>`<option value="${r.id}">${r.n}</option>`).join('');
   setZoom(1);
   if(EMBED){ initEmbed(); return; }   /* plataforma: a página-mãe injeta o doc via postMessage */
   initProjects();     /* carrega o projeto atual deste navegador (ou migra o antigo) */
