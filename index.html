@@ -565,6 +565,18 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
   right:50%;bottom:auto;top:calc(var(--tile) - 7px);
   margin-right:calc(var(--tile) / -2 - 7px);
 }
+/* Nessas famílias o cartão não é desenhado: o retângulo de seleção precisa
+   abraçar o GLIFO, senão ele contorna uma caixa invisível e as alças parecem
+   soltas no meio do nada. */
+.node.fam-aws.sel,.node.fam-gcp.sel,.node.fam-azure.sel,
+.node.fam-ai.sel,.node.fam-onprem.sel,.node.fam-client.sel{outline:none}
+.node.fam-aws.sel::before,.node.fam-gcp.sel::before,.node.fam-azure.sel::before,
+.node.fam-ai.sel::before,.node.fam-onprem.sel::before,.node.fam-client.sel::before{
+  content:'';position:absolute;left:50%;top:0;
+  width:var(--tile);height:var(--tile);margin-left:calc(var(--tile) / -2);
+  outline:2px solid var(--accent);outline-offset:3px;
+  border-radius:calc(9px * var(--rscale, 1));pointer-events:none;
+}
 /* comportamento comum das famílias sem cartão */
 .node.fam-ai .nname,.node.fam-onprem .nname,.node.fam-client .nname{
   color:var(--ink);font-weight:600;margin-top:7px!important}
