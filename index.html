@@ -2179,6 +2179,7 @@ function montarNo(n){
 }
 
 function desenharTudo(){
+  confirmarEdicaoPendente();   /* o que estava sendo digitado nao se perde no redesenho */
   for(const el of [...canvas.querySelectorAll('.node,.gbox,.ftext')]) if(el.isConnected) el.remove();
   /* maiores primeiro: assim as caixas aninhadas ficam POR CIMA e dá para clicar nelas */
   for(const b of [...state.boxes].sort((x,y)=>(y.w*y.h)-(x.w*x.h))){
@@ -3414,19 +3415,54 @@ function pasteClip(dx,dy){
 function duplicateSelection(){ if(copySel()) pasteClip(28,28); }
 /* ============ EDIÇÃO INLINE (duplo-clique edita no lugar) ============ */
 let editingNow=false;
+/* Quem esta sendo editado agora. Existe para detectar edicao ORFA: o elemento saiu
+   do DOM (um renderAll no meio do caminho) e o blur nunca vai chegar. */
+let edicaoAtual=null;
+function encerrarEdicaoOrfa(){
+  edicaoAtual=null; editingNow=false;
+  fecharBarraRica();
+  document.removeEventListener('selectionchange',aoMudarSelecao);
+  window.removeEventListener('scroll',posicionarBarraRica,true);
+  window.removeEventListener('resize',posicionarBarraRica);
+}
+/* Antes de redesenhar, confirma o que estiver sendo digitado. Sem isto o texto em
+   edicao era descartado em silencio toda vez que algo redesenhava a tela. */
+function confirmarEdicaoPendente(){
+  if(!edicaoAtual) return;
+  const {el, finish}=edicaoAtual;
+  if(el && el.isConnected && typeof finish==='function') finish(true);
+  else encerrarEdicaoOrfa();
+}
 /* ---- barra de formatação do texto rico ----
    Aparece só enquanto se edita um texto e age sobre o TRECHO selecionado. Fica
    presa ao documento (position:fixed) em vez de dentro do texto: dentro, ela
    entraria no conteúdo editável e acabaria salva junto. */
-let barraRica = null, alvoRico = null;
+let barraRica = null, alvoRico = null, trechoSalvo = null;
 
 function fecharBarraRica(){
   if(barraRica){ barraRica.remove(); barraRica = null; }
-  alvoRico = null;
+  alvoRico = null; trechoSalvo = null;
+}
+
+/** Guarda o trecho selecionado: abrir um <select> da barra apaga a seleção do texto. */
+function guardarTrecho(){
+  if(!alvoRico) return;
+  const s = getSelection();
+  if(s && s.rangeCount && alvoRico.contains(s.getRangeAt(0).commonAncestorContainer)){
+    trechoSalvo = s.getRangeAt(0).cloneRange();
+  }
+}
+function restaurarTrecho(){
+  if(!trechoSalvo || !alvoRico) return;
+  alvoRico.focus();
+  const s = getSelection();
+  s.removeAllRanges();
+  s.addRange(trechoSalvo);
 }
 
 /** Aplica no trecho selecionado; sem seleção, não faz nada (não há o que formatar). */
 function envolverSelecao(css){
+  restaurarTrecho();
   const sel = getSelection();
   if(!sel || !sel.rangeCount || sel.isCollapsed) return;
   const r = sel.getRangeAt(0);
@@ -3443,9 +3479,11 @@ function envolverSelecao(css){
 
 function comandoRico(cmd, valor){
   if(!alvoRico) return;
+  restaurarTrecho();
   alvoRico.focus();
   try{ document.execCommand('styleWithCSS', false, 'true'); }catch{}
   try{ document.execCommand(cmd, false, valor ?? null); }catch{}
+  guardarTrecho();
   atualizarBarraRica();
 }
 function fonteRica(css){ if(css) envolverSelecao('font-family:'+css); alvoRico?.focus(); }
@@ -3507,8 +3545,10 @@ function abrirBarraRica(el){
   b.addEventListener('mousedown', ev=>{ if(!ev.target.closest('select,input')) ev.preventDefault(); });
 
   posicionarBarraRica();
-  document.addEventListener('selectionchange', atualizarBarraRica);
+  document.addEventListener('selectionchange', aoMudarSelecao);
 }
+
+function aoMudarSelecao(){ guardarTrecho(); atualizarBarraRica(); }
 
 function posicionarBarraRica(){
   if(!barraRica || !alvoRico) return;
@@ -3521,7 +3561,18 @@ function posicionarBarraRica(){
 }
 
 function beginInline(el, text, opts, onCommit){
-  if(readOnly||editingNow||!el) return; editingNow=true;
+  if(readOnly||!el) return;
+  /* Trava viva: `editingNow` so voltava a false pelo blur do elemento. Se um
+     renderAll acontecesse durante a edicao -- criar outra caixa, uma atualizacao
+     de colaboracao, qualquer coisa que redesenhe -- o elemento saia do DOM levando
+     o ouvinte junto, o blur nunca vinha e a trava ficava ligada PARA SEMPRE: dali
+     em diante nenhum rotulo, caixa ou texto aceitava edicao, sem nenhum aviso.
+     Agora uma edicao orfa e detectada e descartada em vez de bloquear a proxima. */
+  if(editingNow){
+    if(edicaoAtual && edicaoAtual.el && edicaoAtual.el.isConnected) return;   /* edicao viva: respeita */
+    encerrarEdicaoOrfa();
+  }
+  editingNow=true;
   const rico=!!opts.rich;
   if(rico){
     /* contenteditable inteiro: e o que permite negrito e fonte em PARTE do texto.
@@ -3540,7 +3591,7 @@ function beginInline(el, text, opts, onCommit){
   const s=getSelection(); s.removeAllRanges(); s.addRange(r);
   let done=false;
   const finish=commit=>{
-    if(done) return; done=true; editingNow=false;
+    if(done) return; done=true; editingNow=false; edicaoAtual=null;
     const val=rico?limparRico(el.innerHTML):(el.innerText||'').replace(/\u00a0/g,' ');
     el.removeAttribute('contenteditable'); el.classList.remove('editing');
     el.removeEventListener('blur',onBlur); el.removeEventListener('keydown',onKey);
@@ -3548,13 +3599,21 @@ function beginInline(el, text, opts, onCommit){
       el.removeEventListener('paste',onPaste);
       window.removeEventListener('scroll',posicionarBarraRica,true);
       window.removeEventListener('resize',posicionarBarraRica);
-      document.removeEventListener('selectionchange',atualizarBarraRica);
+      document.removeEventListener('selectionchange',aoMudarSelecao);
       fecharBarraRica();
     }
     onCommit(commit?val:null);
     flushRemote();   /* saiu da edi\u00e7\u00e3o: aplica qualquer atualiza\u00e7\u00e3o remota que estava esperando */
   };
-  const onBlur=()=>finish(true);
+  edicaoAtual={el, finish};
+  /* Clicar na barra de formatacao tira o foco do texto. Sem esta guarda o blur
+     encerrava a edicao no instante em que se abria o seletor de fonte: o campo
+     fechava e a escolha caia no vazio. */
+  const onBlur=ev=>{
+    const indo=ev && ev.relatedTarget;
+    if(barraRica && (barraRica.contains(indo) || barraRica.contains(document.activeElement))) return;
+    finish(true);
+  };
   const onKey=ev=>{
     ev.stopPropagation();
     if(ev.key==='Escape'){ ev.preventDefault(); finish(false); }
