@@ -11,6 +11,19 @@ Editor de diagramas de arquitetura em **um único arquivo** (`index.html`): sem 
 - A skill `.claude/skills/archstudio/SKILL.md` ensina agentes a desenhar diagramas e a gerar IaC (CDK/Terraform) a partir deles — mantenha a tabela de tipos dela em sincronia com o `CATALOG` do `index.html`.
 - Para desenhar um diagrama ou gerar infra a partir de um, use a skill `archstudio`.
 
+## Publicar
+
+O canvas roda em **archstudio.mjolnix.com.br**, servido pelo nginx como arquivo estático
+em `/var/www/html/archstudio/index.html` (host SSH `trab`). Não há build nem repositório lá:
+o site é uma cópia.
+
+`bash tools/publicar.sh` — commita antes, o script recusa publicar arquivo sujo e confere o
+tamanho do que ficou no ar. **Toda mudança em `index.html` termina aqui**: enquanto isso foi
+manual, o site ficou 14 commits atrás sem ninguém notar.
+
+A plataforma (studio.mjolnix.com.br) tem a própria cópia vendorizada e é atualizada pelo
+deploy dela, separadamente.
+
 ## Fora de escopo
 
 A plataforma hospedada (contas, times, colaboração) vive em outro repositório, privado. Nada aqui deve depender dela.
