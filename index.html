@@ -316,7 +316,7 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .gbox:hover .nx{display:block}
 .gbox.sel{border-style:solid;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
 
-.ftext{position:absolute;z-index:3;font-family:var(--sans);color:var(--ink);cursor:grab;user-select:none;touch-action:none;white-space:pre-wrap;max-width:420px;line-height:1.35}
+.ftext{position:absolute;z-index:3;font-family:var(--sans);color:var(--ink);cursor:grab;user-select:none;touch-action:none;white-space:pre-wrap;max-width:var(--tw, 420px);line-height:1.35;overflow-wrap:break-word}
 .ftext.sel{outline:1.5px dashed var(--accent);outline-offset:4px}
 .editing{outline:1.5px solid var(--accent)!important;outline-offset:3px;border-radius:4px;cursor:text!important;user-select:text!important;-webkit-user-select:text!important;white-space:pre-wrap;min-width:24px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .editing:focus{outline:1.5px solid var(--accent)}
@@ -324,8 +324,18 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .label-edit.editing{outline:none!important;background:var(--panel)}
 .ftext.frame{border:1px solid var(--border);border-radius:10px;padding:9px 13px;box-shadow:0 2px 12px var(--shadow);overflow-wrap:break-word;max-width:none}
 .ftext.frame.editing{background:var(--nodebg)!important}
+.richbar{position:fixed;z-index:400;display:flex;align-items:center;gap:5px;padding:5px 7px;
+  background:var(--panel);border:1px solid var(--border);border-radius:11px;
+  box-shadow:0 10px 34px -12px var(--shadow);font-size:12px}
+.richbar .pbtn{min-width:26px;padding:3px 7px}
+.richsep{width:1px;height:17px;background:var(--border)}
+.richsel{background:var(--panel2);color:var(--ink);border:1px solid var(--border);border-radius:7px;
+  padding:3px 5px;font-size:11px;font-family:var(--sans);max-width:112px}
+.richcor{width:26px;height:22px;padding:0;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer}
+/* o texto em edicao precisa de area clicavel mesmo vazio */
+.ftext.editing{min-width:40px;min-height:1.2em;outline:1.5px solid var(--accent);outline-offset:3px}
 .ftext .tres{position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;border-radius:4px;background:var(--accent);border:2px solid var(--bg);cursor:nwse-resize;display:none;z-index:6}
-.ftext.frame.sel .tres{display:block}
+.ftext.sel .tres{display:block}
 
 .node{position:absolute;background:var(--nodebg);border:1px solid var(--border);border-radius:calc(11px * var(--rscale, 1));text-align:center;cursor:grab;user-select:none;touch-action:none;box-shadow:0 3px 14px var(--shadow);z-index:4}
 .node:active{cursor:grabbing}
@@ -1163,24 +1173,24 @@ function mergeEmbedSpec(spec){
     const {sn,ex}=p;
     if(ex){
       if(sn.id!=null) ex.aid=String(sn.id);
-      const nl=(sn.label||'').slice(0,60);
+      const nl=(sn.label||'').slice(0,200);
       if(nl&&nl!==ex.label){ ex.label=nl; changed.push(ex.id); }
       const tn=tipoDoSpec(sn.type);
       if(tn&&tn!==ex.type){ ex.type=tn; changed.push(ex.id); }
       if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) ex.color=sn.color;
       if(sn.multiple!==undefined){ if(sn.multiple) ex.multi=true; else delete ex.multi; }
-      if(sn.tech!==undefined){ const v=String(sn.tech||'').slice(0,40); if(v) ex.tech=v; else delete ex.tech; }
-      if(sn.desc!==undefined){ const v=String(sn.desc||'').slice(0,140); if(v) ex.desc=v; else delete ex.desc; }
+      if(sn.tech!==undefined){ const v=String(sn.tech||'').slice(0,120); if(v) ex.tech=v; else delete ex.tech; }
+      if(sn.desc!==undefined){ const v=String(sn.desc||'').slice(0,600); if(v) ex.desc=v; else delete ex.desc; }
       p.node=ex;
     } else {
       const t=resolverTipo(sn.type);
-      const nn={id:++final.seq,type:t,label:(sn.label||TYPE_INDEX[t].n).slice(0,60),s:Math.max(0.6,Math.min(2.2,sn.s||1)),st:sn.style==='icon'?'icon':'card',x:sn.x,y:sn.y};
+      const nn={id:++final.seq,type:t,label:(sn.label||TYPE_INDEX[t].n).slice(0,200),s:Math.max(0.6,Math.min(2.2,sn.s||1)),st:sn.style==='icon'?'icon':'card',x:sn.x,y:sn.y};
       if(sn.id!=null) nn.aid=String(sn.id);
       if(sn.color&&/^#[0-9a-fA-F]{6}$/.test(sn.color)) nn.color=sn.color;
       if(sn.multiple) nn.multi=true;
       if(sn.meta && typeof sn.meta==='object') nn.meta=sanitizeMeta(sn.meta);
-      if(sn.tech) nn.tech=String(sn.tech).slice(0,40);
-      if(sn.desc) nn.desc=String(sn.desc).slice(0,140);
+      if(sn.tech) nn.tech=String(sn.tech).slice(0,120);
+      if(sn.desc) nn.desc=String(sn.desc).slice(0,600);
       p.node=nn; newNodes.push(p);
     }
     final.nodes.push(p.node);
@@ -1219,13 +1229,13 @@ function mergeEmbedSpec(spec){
     let ex=state.edges.find(e=>!usedE.has(e.id)&&e.from===f.id&&e.to===t.id);
     if(ex){
       usedE.add(ex.id);
-      ex.label=(se.label||'').slice(0,40); ex.dash=!!se.dash;
+      ex.label=(se.label||'').slice(0,120); ex.dash=!!se.dash;
       if(['end','both','none'].includes(se.heads)) ex.heads=se.heads;
       if(se.w) ex.w=Math.max(1,Math.min(6,se.w));
       if(se.color&&/^#[0-9a-fA-F]{6}$/.test(se.color)) ex.color=se.color;
       final.edges.push(ex);
     } else {
-      const ne={id:++final.seq,from:f.id,to:t.id,label:(se.label||'').slice(0,40),dash:!!se.dash,heads:['end','both','none'].includes(se.heads)?se.heads:'end',w:Math.max(1,Math.min(6,se.w||2))};
+      const ne={id:++final.seq,from:f.id,to:t.id,label:(se.label||'').slice(0,120),dash:!!se.dash,heads:['end','both','none'].includes(se.heads)?se.heads:'end',w:Math.max(1,Math.min(6,se.w||2))};
       if(ROUTES.includes(se.route)&&se.route!=='reta') ne.r=se.route;
       if(se.color&&/^#[0-9a-fA-F]{6}$/.test(se.color)) ne.color=se.color;
       final.edges.push(ne); newEdges.push(ne);
@@ -1268,7 +1278,7 @@ function mergeEmbedSpec(spec){
     let ex=state.texts.find(t=>!usedT.has(t.id)&&t.text.trim()===key);
     if(ex){ usedT.add(ex.id); final.texts.push(ex); }
     else{
-      const t={id:++final.seq,x:tx.x??130,y:tx.y!=null?tx.y:ty,text:key.slice(0,300),size:Math.max(10,Math.min(34,tx.size||14))};
+      const t={id:++final.seq,x:tx.x??130,y:tx.y!=null?tx.y:ty,text:key.slice(0,4000),size:Math.max(10,Math.min(34,tx.size||14))};
       if(tx.bold) t.b=true; if(tx.italic) t.it=true;
       if(tx.color&&/^#[0-9a-fA-F]{6}$/.test(tx.color)) t.color=tx.color;
       if(tx.align==='center'||tx.align==='right') t.align=tx.align;
@@ -2186,14 +2196,20 @@ function desenharTudo(){
     const el=document.createElement('div');
     const fr=!!t.frame;
     el.className='ftext'+(fr?' frame':'')+(isSelected('text',t.id)?' sel':'')+(t.lock?' locked':'');
-    let css=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}`;
+    const fnt=t.font&&FONTS.find(f=>f.id===t.font);
+    let css=`left:${t.x}px;top:${t.y}px;font-size:${t.size}px;font-weight:${t.b?700:400};font-style:${t.it?'italic':'normal'};text-align:${t.align||'left'}${t.color?`;color:${t.color}`:''}${fnt?`;font-family:${fnt.css}`:''}`;
+    /* largura: a moldura sempre tem uma; o texto solto so quando o usuario arrastou
+       (senao a linha quebra sozinha no padrao, sem prender ninguem a 420px) */
     if(fr) css+=`;width:${t.w||200}px;background:${t.bg?t.bg+'22':'var(--nodebg)'};border-color:${t.bg||'var(--border)'}`;
+    else if(t.w) css+=`;--tw:${t.w}px;width:${t.w}px`;
     el.style.cssText=css+rotCss(t);
     if(t.z!=null) el.style.zIndex=t.z;
     el.dataset.id=t.id;
-    el.textContent=t.text;
+    el.innerHTML=conteudoDeTexto(t);
     el.insertAdjacentHTML('beforeend', ROT_HANDLE);
-    if(fr){ const h=document.createElement('span'); h.className='tres'; h.title='arraste para redimensionar a largura'; el.appendChild(h); }
+    const alca=document.createElement('span');
+    alca.className='tres'; alca.title='arraste para ajustar a largura';
+    el.appendChild(alca);
     if(t.lock) el.insertAdjacentHTML('beforeend', '<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>');
     el.addEventListener('dblclick',ev=>{ if(readOnly){ if(commentMode) editComment('text',t.id,ev); return; } editText(t.id); });
     canvas.appendChild(el);
@@ -2694,7 +2710,7 @@ function editEdgeLabel(kind,id){
     box.remove();
     editandoRotulo=null;
     if(v!==null){
-      const nv=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60);
+      const nv=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,120);
       if(nv!==(o.label||'')){ pushUndo(); o.label=nv; persist(); }
     }
     renderAll();
@@ -2790,10 +2806,17 @@ function renderProps(){
       <button class="pbtn" onclick="propTextSize(2)">A+</button>
       ${colorField('texto', o.color||cssVar('--ink'), 'setSelColor(this.value)', o.color?'clearSelColor()':'')}
       <button class="pbtn" onclick="propTextAlign()">${({left:'⯇ esquerda',center:'↔ centro',right:'⯈ direita'})[o.align||'left']}</button>
+      <span class="cfield" title="fonte deste texto (cada trecho pode ter a sua, na edição)">fonte
+        <select class="richsel" onchange="setTextFont(this.value)">
+          <option value=""${o.font?'':' selected'}>do diagrama</option>
+          ${FONTS.map(f=>`<option value="${f.id}"${o.font===f.id?' selected':''}>${escapeHtml(f.n)}</option>`).join('')}
+        </select>
+      </span>
       <button class="pbtn ${o.frame?'on':''}" onclick="propTextFrame()" title="fundo e borda">▭ moldura</button>
       ${o.frame?colorField('fundo', o.bg||cssVar('--nodebg'), 'setTextBg(this.value)', o.bg?'clearTextBg()':''):''}
       <button class="pbtn" onclick="editText(${o.id})"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1.9 1.9 0 0 1 2.7 2.7L12 14.4l-3.6 1 1-3.6z"/></svg> editar</button>
-      <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar${o.frame?' · arraste o canto p/ largura':''}</span>`;
+      ${o.w?`<button class="pbtn" onclick="clearTextWidth()" title="voltar a largura automática">largura auto</button>`:''}
+      <span class="props-label" style="color:var(--dim)">duplo-clique edita no lugar e abre negrito, fonte e cor <b>por trecho</b> · arraste o canto p/ largura</span>`;
   }
   if(sel.kind!=='edge'){
     const ang=o.rot||0;
@@ -3337,6 +3360,15 @@ function propTextItalic(){ const o=selRef(); if(!o)return; pushUndo(); o.it=!o.i
 function propTextColor(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXT_COLORS[(TEXT_COLORS.indexOf(o.color||null)+1)%TEXT_COLORS.length]; if(nx) o.color=nx; else delete o.color; persist(); renderAll(); }
 function propTextAlign(){ const o=selRef(); if(!o)return; pushUndo(); const order=['left','center','right']; const nx=order[(order.indexOf(o.align||'left')+1)%3]; if(nx==='left') delete o.align; else o.align=nx; persist(); renderAll(); }
 function propTextFrame(){ const o=selRef(); if(!o)return; pushUndo(); if(o.frame){ delete o.frame; delete o.w; delete o.bg; } else { o.frame=true; o.w=o.w||200; } persist(); renderAll(); }
+/** Fonte do texto inteiro. Trecho selecionado tem a sua, pela barra de edição. */
+function setTextFont(id){
+  const o=selRef(); if(!o) return;
+  pushUndo();
+  if(id&&FONTS.some(f=>f.id===id)) o.font=id; else delete o.font;   /* todas já vêm no <link> do head */
+  persist(); renderAll();
+}
+/** Volta a largura ao automático (o texto passa a quebrar sozinho). */
+function clearTextWidth(){ const o=selRef(); if(!o||!o.w) return; pushUndo(); delete o.w; persist(); renderAll(); }
 const TEXTBOX_BG=[null,'#a679ff','#ff9900','#7c9eff','#22d3ee','#4ade80','#f472b6','#f87171'];
 function propTextBg(){ const o=selRef(); if(!o)return; pushUndo(); const nx=TEXTBOX_BG[(TEXTBOX_BG.indexOf(o.bg||null)+1)%TEXTBOX_BG.length]; if(nx) o.bg=nx; else delete o.bg; persist(); renderAll(); }
 function delSel(){
@@ -3382,11 +3414,126 @@ function pasteClip(dx,dy){
 function duplicateSelection(){ if(copySel()) pasteClip(28,28); }
 /* ============ EDIÇÃO INLINE (duplo-clique edita no lugar) ============ */
 let editingNow=false;
+/* ---- barra de formatação do texto rico ----
+   Aparece só enquanto se edita um texto e age sobre o TRECHO selecionado. Fica
+   presa ao documento (position:fixed) em vez de dentro do texto: dentro, ela
+   entraria no conteúdo editável e acabaria salva junto. */
+let barraRica = null, alvoRico = null;
+
+function fecharBarraRica(){
+  if(barraRica){ barraRica.remove(); barraRica = null; }
+  alvoRico = null;
+}
+
+/** Aplica no trecho selecionado; sem seleção, não faz nada (não há o que formatar). */
+function envolverSelecao(css){
+  const sel = getSelection();
+  if(!sel || !sel.rangeCount || sel.isCollapsed) return;
+  const r = sel.getRangeAt(0);
+  if(alvoRico && !alvoRico.contains(r.commonAncestorContainer)) return;
+  const span = document.createElement('span');
+  span.setAttribute('style', css);
+  try{ r.surroundContents(span); }
+  catch{ span.appendChild(r.extractContents()); r.insertNode(span); }   /* seleção corta nós */
+  sel.removeAllRanges();
+  const novo = document.createRange();
+  novo.selectNodeContents(span);
+  sel.addRange(novo);
+}
+
+function comandoRico(cmd, valor){
+  if(!alvoRico) return;
+  alvoRico.focus();
+  try{ document.execCommand('styleWithCSS', false, 'true'); }catch{}
+  try{ document.execCommand(cmd, false, valor ?? null); }catch{}
+  atualizarBarraRica();
+}
+function fonteRica(css){ if(css) envolverSelecao('font-family:'+css); alvoRico?.focus(); }
+function tamanhoRico(px){ envolverSelecao('font-size:'+px+'px'); alvoRico?.focus(); }
+function corRica(v){ comandoRico('foreColor', v); }
+function limparFormatoRico(){ comandoRico('removeFormat'); }
+
+/** Marca B/I/U conforme o cursor, para a barra dizer a verdade sobre o trecho. */
+function atualizarBarraRica(){
+  if(!barraRica) return;
+  for(const [cmd, id] of [['bold','riB'], ['italic','riI'], ['underline','riU']]){
+    const b = barraRica.querySelector('#'+id);
+    if(!b) continue;
+    let on = false;
+    try{ on = document.queryCommandState(cmd); }catch{}
+    b.classList.toggle('on', on);
+  }
+}
+
+function abrirBarraRica(el){
+  fecharBarraRica();
+  alvoRico = el;
+  const b = document.createElement('div');
+  b.className = 'richbar';
+  b.innerHTML =
+    `<button class="pbtn" id="riB" title="negrito (Ctrl+B)" style="font-weight:700">B</button>`
+  + `<button class="pbtn" id="riI" title="itálico (Ctrl+I)" style="font-style:italic">I</button>`
+  + `<button class="pbtn" id="riU" title="sublinhado (Ctrl+U)" style="text-decoration:underline">U</button>`
+  + `<span class="richsep"></span>`
+  + `<select class="richsel" id="riF" title="fonte do trecho">`
+  + `<option value="">fonte…</option>`
+  + FONTS.map(f=>`<option value="${escapeHtml(f.css)}">${escapeHtml(f.n)}</option>`).join('')
+  + `</select>`
+  + `<select class="richsel" id="riS" title="tamanho do trecho">`
+  + `<option value="">tam…</option>`
+  + [10,12,14,16,18,22,28,36,48].map(v=>`<option value="${v}">${v}</option>`).join('')
+  + `</select>`
+  + `<input type="color" class="richcor" id="riC" title="cor do trecho" value="#a679ff">`
+  + `<span class="richsep"></span>`
+  + `<button class="pbtn" id="riX" title="tirar a formatação do trecho">limpar</button>`;
+  document.body.appendChild(b);
+  barraRica = b;
+
+  /* pointerdown em vez de click: click chega depois do blur, e o blur encerra a
+     edição — o botão nunca rodaria */
+  b.addEventListener('pointerdown', ev=>{
+    const alvo = ev.target.closest('button');
+    if(!alvo) return;
+    ev.preventDefault();
+    if(alvo.id === 'riB') comandoRico('bold');
+    else if(alvo.id === 'riI') comandoRico('italic');
+    else if(alvo.id === 'riU') comandoRico('underline');
+    else if(alvo.id === 'riX') limparFormatoRico();
+  });
+  b.querySelector('#riF').addEventListener('change', ev=>{ fonteRica(ev.target.value); ev.target.value=''; });
+  b.querySelector('#riS').addEventListener('change', ev=>{ if(ev.target.value) tamanhoRico(+ev.target.value); ev.target.value=''; });
+  b.querySelector('#riC').addEventListener('input', ev=>corRica(ev.target.value));
+  /* o mousedown na barra não pode tirar o foco do texto: sem foco, não há seleção */
+  b.addEventListener('mousedown', ev=>{ if(!ev.target.closest('select,input')) ev.preventDefault(); });
+
+  posicionarBarraRica();
+  document.addEventListener('selectionchange', atualizarBarraRica);
+}
+
+function posicionarBarraRica(){
+  if(!barraRica || !alvoRico) return;
+  const r = alvoRico.getBoundingClientRect();
+  const larg = barraRica.offsetWidth || 320;
+  const x = Math.max(8, Math.min(window.innerWidth - larg - 8, r.left + r.width/2 - larg/2));
+  const y = r.top - barraRica.offsetHeight - 10;
+  barraRica.style.left = Math.round(x) + 'px';
+  barraRica.style.top = Math.round(y < 8 ? r.bottom + 10 : y) + 'px';
+}
+
 function beginInline(el, text, opts, onCommit){
   if(readOnly||editingNow||!el) return; editingNow=true;
-  el.textContent=text;
-  el.setAttribute('contenteditable','plaintext-only');
-  if(!el.isContentEditable) el.setAttribute('contenteditable','true');
+  const rico=!!opts.rich;
+  if(rico){
+    /* contenteditable inteiro: e o que permite negrito e fonte em PARTE do texto.
+       O conteudo e saneado na saida, entao o que o navegador inventar aqui nao
+       chega ao documento. */
+    el.innerHTML=text||'';
+    el.setAttribute('contenteditable','true');
+  } else {
+    el.textContent=text;
+    el.setAttribute('contenteditable','plaintext-only');
+    if(!el.isContentEditable) el.setAttribute('contenteditable','true');
+  }
   el.classList.add('editing');
   el.focus();
   const r=document.createRange(); r.selectNodeContents(el);
@@ -3394,9 +3541,16 @@ function beginInline(el, text, opts, onCommit){
   let done=false;
   const finish=commit=>{
     if(done) return; done=true; editingNow=false;
-    const val=(el.innerText||'').replace(/\u00a0/g,' ');
+    const val=rico?limparRico(el.innerHTML):(el.innerText||'').replace(/\u00a0/g,' ');
     el.removeAttribute('contenteditable'); el.classList.remove('editing');
     el.removeEventListener('blur',onBlur); el.removeEventListener('keydown',onKey);
+    if(rico){
+      el.removeEventListener('paste',onPaste);
+      window.removeEventListener('scroll',posicionarBarraRica,true);
+      window.removeEventListener('resize',posicionarBarraRica);
+      document.removeEventListener('selectionchange',atualizarBarraRica);
+      fecharBarraRica();
+    }
     onCommit(commit?val:null);
     flushRemote();   /* saiu da edi\u00e7\u00e3o: aplica qualquer atualiza\u00e7\u00e3o remota que estava esperando */
   };
@@ -3410,13 +3564,27 @@ function beginInline(el, text, opts, onCommit){
       ev.preventDefault(); finish(true);
     }
   };
+  /* colar traz o HTML da origem (Word, site, outro canvas). Entra so o texto:
+     formatacao alheia nao tem por que virar formatacao daqui. */
+  const onPaste=ev=>{
+    if(!rico) return;
+    ev.preventDefault();
+    const txt=(ev.clipboardData||window.clipboardData).getData('text/plain')||'';
+    document.execCommand('insertText', false, txt);
+  };
   el.addEventListener('blur',onBlur);
   el.addEventListener('keydown',onKey);
+  if(rico){
+    el.addEventListener('paste',onPaste);
+    abrirBarraRica(el);
+    window.addEventListener('scroll',posicionarBarraRica,true);
+    window.addEventListener('resize',posicionarBarraRica);
+  }
 }
 function renameNode(id){
   const n=state.nodes.find(x=>x.id===id); if(!n||n.lock) return;
   beginInline(canvas.querySelector(`.node[data-id="${id}"] .nname`), n.label, {}, v=>{
-    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,80); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
+    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,200); if(v&&v!==n.label){ pushUndo(); n.label=v; persist(); } }
     renderAll();
   });
 }
@@ -3440,18 +3608,25 @@ function editNodeField(id,campo){
 function renameBox(id){
   const b=state.boxes.find(x=>x.id===id); if(!b||b.lock) return;
   beginInline(canvas.querySelector(`.gbox[data-id="${id}"] .gtitle`), b.label, {}, v=>{
-    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,60); if(v&&v!==b.label){ pushUndo(); b.label=v; persist(); } }
+    if(v!==null){ v=v.replace(/[ \t]+/g,' ').replace(/\n{2,}/g,'\n').trim().slice(0,200); if(v&&v!==b.label){ pushUndo(); b.label=v; persist(); } }
     renderAll();
   });
 }
 function editText(id, isNew){
   const t=state.texts.find(x=>x.id===id); if(!t||t.lock) return;
   sel={kind:'text',id}; renderProps();
-  beginInline(canvas.querySelector(`.ftext[data-id="${id}"]`), t.text, {multiline:true}, v=>{
+  beginInline(canvas.querySelector(`.ftext[data-id="${id}"]`), conteudoDeTexto(t),
+    {multiline:true, rich:true}, v=>{
     if(v!==null){
-      v=v.replace(/\n{3,}/g,'\n\n').trim().slice(0,300);
-      if(!v && isNew){ state.texts=state.texts.filter(x=>x.id!==id); clearSelection(); }
-      else if(v && v!==t.text){ pushUndo(); t.text=v; }
+      const plano=textoPlano(v);
+      if(!plano && isNew){ state.texts=state.texts.filter(x=>x.id!==id); clearSelection(); }
+      else if(plano && v!==t.rich){
+        pushUndo();
+        t.text=plano;                                  /* busca, Mermaid, spec e IA leem daqui */
+        /* so guarda `rich` quando ha marcacao de verdade: texto simples continua
+           simples, e documento antigo nao ganha campo a toa */
+        if(v!==escapeRico(plano)) t.rich=v; else delete t.rich;
+      }
     } else if(isNew){ state.texts=state.texts.filter(x=>x.id!==id); clearSelection(); }
     persist(); renderAll();
   });
@@ -3668,8 +3843,14 @@ canvas.addEventListener('pointerdown', ev=>{
     if(ev.shiftKey){ toggleWithGroup('text',tx.id); paintSel(); return; }
     if(t.classList&&t.classList.contains('tres')){
       setSel('text',tx.id); paintSel();
-      const sx=ev.clientX, w0=tx.w||200;
-      dragSession(e2=>{ tx.w=Math.max(90,Math.min(600,Math.round(w0+(e2.clientX-sx)/zoom))); textEl.style.width=tx.w+'px'; });
+      /* teto alto de proposito: a largura e do usuario, nao do editor. O piso de
+         60px so evita a caixa virar uma coluna de uma letra por linha. */
+      const sx=ev.clientX, w0=tx.w||(tx.frame?200:textEl.offsetWidth);
+      dragSession(e2=>{
+        tx.w=Math.max(60,Math.min(4000,Math.round(w0+(e2.clientX-sx)/zoom)));
+        textEl.style.width=tx.w+'px';
+        if(!tx.frame) textEl.style.setProperty('--tw', tx.w+'px');
+      }, ()=>{ persist(); renderAll(); });
       return;
     }
     if(!isSelected('text',tx.id)) selectWithGroup('text',tx.id);
@@ -4050,19 +4231,19 @@ function normalizeSpec(spec){
   for(const b of spec.boxes||[]) boxDefs.push({key:b.id??b.label, label:b.label||String(b.id), color:(b.color&&/^#/.test(b.color))?b.color:BOX_COLORS[boxDefs.length%BOX_COLORS.length]});
   for(const n of spec.nodes||[]){
     const t=resolverTipo(n.type);
-    const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,60),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
+    const nn={id:++st.seq,type:t,label:(n.label||TYPE_INDEX[t].n).slice(0,200),s:Math.max(0.6,Math.min(2.2,n.s||1)),st:n.style==='icon'?'icon':'card',x:n.x,y:n.y,_box:n.box};
     if(n.id!=null) nn.aid=String(n.id);   /* id do agente: permite ajustes incrementais depois */
     if(n.color&&/^#[0-9a-fA-F]{6}$/.test(n.color)) nn.color=n.color;
     if(n.multiple) nn.multi=true;
     if(n.meta && typeof n.meta==='object') nn.meta=sanitizeMeta(n.meta);
-    if(n.tech) nn.tech=String(n.tech).slice(0,40);
-    if(n.desc) nn.desc=String(n.desc).slice(0,140);
+    if(n.tech) nn.tech=String(n.tech).slice(0,120);
+    if(n.desc) nn.desc=String(n.desc).slice(0,600);
     idMap[String(n.id??st.seq)]=nn.id;
     st.nodes.push(nn);
   }
   for(const e of spec.edges||[]){
     const f=idMap[String(e.from)], t=idMap[String(e.to)];
-    if(f&&t){ const ne={id:++st.seq,from:f,to:t,label:(e.label||'').slice(0,40),dash:!!e.dash,heads:['end','both','none'].includes(e.heads)?e.heads:'end',w:Math.max(1,Math.min(6,e.w||2))};
+    if(f&&t){ const ne={id:++st.seq,from:f,to:t,label:(e.label||'').slice(0,120),dash:!!e.dash,heads:['end','both','none'].includes(e.heads)?e.heads:'end',w:Math.max(1,Math.min(6,e.w||2))};
       if(ROUTES.includes(e.route)&&e.route!=='reta') ne.r=e.route;
       if(e.color&&/^#[0-9a-fA-F]{6}$/.test(e.color)) ne.color=e.color;
       st.edges.push(ne); }
@@ -4078,7 +4259,7 @@ function normalizeSpec(spec){
   const maxY = st.nodes.length ? Math.max(...st.nodes.map(n=>n.y+nodeH(n))) : 200;
   let ty = maxY+70;
   for(const tx of spec.texts||[]){
-    const t={id:++st.seq, x:tx.x??130, y:(tx.y!=null?tx.y:ty), text:(tx.text||'').slice(0,300), size:Math.max(10,Math.min(34,tx.size||14))};
+    const t={id:++st.seq, x:tx.x??130, y:(tx.y!=null?tx.y:ty), text:(tx.text||'').slice(0,4000), size:Math.max(10,Math.min(34,tx.size||14))};
     if(tx.bold) t.b=true;
     if(tx.italic) t.it=true;
     if(tx.color&&/^#[0-9a-fA-F]{6}$/.test(tx.color)) t.color=tx.color;
@@ -4238,6 +4419,134 @@ function loadDoc(doc){
   if(doc && Array.isArray(doc.nodes)){ loadSpec(doc); return true; }
   return false;
 }
+/* ============ TEXTO RICO (negrito, fonte e cor POR TRECHO) ============
+   O texto livre e a caixa de texto guardavam uma string e um punhado de flags que
+   valiam para o objeto inteiro: ou tudo negrito, ou nada. Aqui o conteudo passa a
+   ser HTML restrito, entao cada pedaco pode ter peso, estilo, fonte, tamanho e cor
+   proprios.
+
+   O campo antigo `text` continua existindo e continua sendo a fonte para busca,
+   exportacao Mermaid, spec e casamento com a IA: `rich` e a apresentacao, `text` e
+   o conteudo. Documento salvo antes disto so tem `text`, e continua abrindo.
+
+   O HTML e SANEADO na entrada e na saida. Um diagrama e compartilhado por link e
+   embutido em site de terceiro: aceitar marcacao livre aqui seria colocar script
+   de um usuario dentro da pagina de outro. */
+const RICO_TAGS = {B:'b', STRONG:'b', I:'i', EM:'i', U:'u', S:'s', STRIKE:'s', DEL:'s',
+                   SPAN:'span', FONT:'span', BR:'br', DIV:'bloco', P:'bloco'};
+const RICO_MAX_FONT = 96, RICO_MIN_FONT = 8;
+
+/** Famílias aceitas: as do seletor de fonte do diagrama, mais as genéricas. */
+function familiaSegura(v){
+  if(!v) return null;
+  const alvo = String(v).toLowerCase().replace(/["']/g,'').trim();
+  for(const f of FONTS){
+    const primeira = f.css.split(',')[0].replace(/["']/g,'').toLowerCase();
+    if(alvo === primeira || alvo.startsWith(primeira+',') || alvo === f.css.toLowerCase()) return f.css;
+  }
+  if(/^(sans-serif|serif|monospace|cursive|system-ui)$/.test(alvo)) return alvo;
+  return null;
+}
+
+function corSegura(v){
+  if(!v) return null;
+  const s = String(v).trim();
+  if(/^#[0-9a-fA-F]{3,8}$/.test(s)) return s;
+  if(/^rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(,\s*[\d.]+\s*)?\)$/.test(s)) return s;
+  return null;
+}
+
+/** Só o que muda a aparência do texto passa; o resto é descartado sem dó. */
+function estiloSeguro(el){
+  const s = el.style, fora = [];
+  const peso = (s.fontWeight||'').trim();
+  if(/^(bold|bolder|[5-9]00)$/.test(peso)) fora.push('font-weight:700');
+  else if(/^(normal|[1-4]00)$/.test(peso)) fora.push('font-weight:400');
+
+  if((s.fontStyle||'').trim()==='italic') fora.push('font-style:italic');
+
+  const dec = ((s.textDecorationLine||s.textDecoration||'')+'').toLowerCase();
+  const decs = [];
+  if(dec.includes('underline')) decs.push('underline');
+  if(dec.includes('line-through')) decs.push('line-through');
+  if(decs.length) fora.push('text-decoration:'+decs.join(' '));
+
+  const fam = familiaSegura(s.fontFamily);
+  if(fam) fora.push('font-family:'+fam);
+
+  const tam = parseFloat(s.fontSize);
+  if(tam > 0) fora.push('font-size:'+Math.round(Math.min(RICO_MAX_FONT, Math.max(RICO_MIN_FONT, tam)))+'px');
+
+  const cor = corSegura(s.color) || corSegura(el.getAttribute('color'));
+  if(cor) fora.push('color:'+cor);
+
+  const face = familiaSegura(el.getAttribute('face'));
+  if(face && !fam) fora.push('font-family:'+face);
+
+  return fora.length ? fora.join(';') : null;
+}
+
+function copiarLimpo(de, para){
+  for(const no of Array.from(de.childNodes)){
+    if(no.nodeType === 3){
+      if(no.nodeValue) para.appendChild(document.createTextNode(no.nodeValue));
+      continue;
+    }
+    if(no.nodeType !== 1) continue;
+    const alvo = RICO_TAGS[no.tagName];
+    if(alvo === 'br'){ para.appendChild(document.createElement('br')); continue; }
+    if(alvo === 'bloco'){
+      /* div/p do contenteditable viram quebra de linha: o modelo aqui é uma linha
+         só com <br>, não uma árvore de blocos */
+      if(para.childNodes.length) para.appendChild(document.createElement('br'));
+      copiarLimpo(no, para);
+      continue;
+    }
+    if(!alvo){ copiarLimpo(no, para); continue; }   /* tag estranha: fica o texto, cai a marcação */
+    if(alvo === 'span'){
+      const st = estiloSeguro(no);
+      if(!st){ copiarLimpo(no, para); continue; }   /* span sem estilo útil não vale um nó */
+      const el = document.createElement('span');
+      el.setAttribute('style', st);
+      copiarLimpo(no, el);
+      if(el.childNodes.length) para.appendChild(el);
+      continue;
+    }
+    const el = document.createElement(alvo);
+    copiarLimpo(no, el);
+    if(el.childNodes.length) para.appendChild(el);
+  }
+}
+
+/** Devolve HTML restrito, seguro para ir ao innerHTML e para viajar num link. */
+function limparRico(html){
+  if(!html) return '';
+  const doc = new DOMParser().parseFromString('<body><div id="r"></div></body>', 'text/html');
+  doc.getElementById('r').innerHTML = String(html);
+  const saida = document.createElement('div');
+  copiarLimpo(doc.getElementById('r'), saida);
+  let out = saida.innerHTML;
+  out = out.replace(/(<br>\s*){3,}/g, '<br><br>');     /* respiro sim, buraco não */
+  return out.replace(/^(<br>)+|(<br>)+$/g, '').trim();
+}
+
+/** Projeção em texto puro: é o que vai para busca, Mermaid, spec e IA. */
+function textoPlano(html){
+  if(!html) return '';
+  const doc = new DOMParser().parseFromString('<body><div id="r"></div></body>', 'text/html');
+  const r = doc.getElementById('r');
+  r.innerHTML = String(html);
+  r.querySelectorAll('br').forEach(b => b.replaceWith(doc.createTextNode('\n')));
+  return (r.textContent || '').replace(/ /g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const escapeRico = s => escapeHtml(String(s ?? '')).replace(/\n/g, '<br>');
+
+/** Conteúdo de um texto pronto para o DOM: rico quando há, plano quando não. */
+function conteudoDeTexto(t){
+  return t.rich ? t.rich : escapeRico(t.text || '');
+}
+
 /* ============ ESTILOS DE CONEXÃO (presets) ============ */
 const EDGE_PRESETS_BUILTIN=[
   {n:'Síncrono',   dash:false, heads:'end',  r:'reta'},
@@ -4717,6 +5026,98 @@ function wrapTextLines(text,boxW,size){
   }
   return out;
 }
+/* ---- texto rico na exportação ----
+   O SVG é escrito à mão, então a formatação por trecho precisa virar posição por
+   trecho. Em vez de reimplementar quebra de linha, fonte e alinhamento, LEMOS do
+   DOM: o navegador já resolveu tudo isso na tela, e a exportação passa a ser uma
+   transcrição do que se vê em vez de uma segunda tentativa de calcular o mesmo.
+
+   Agrupa por palavra (não por caractere) para não criar um Range por letra num
+   texto longo, e junta palavras vizinhas que compartilham linha e estilo. */
+function trechosDoTexto(el){
+  if(!el) return [];
+  const base = canvas.getBoundingClientRect();
+  const z = zoom || 1;
+  const emCanvas = r => ({ x:(r.left-base.left)/z, y:(r.top-base.top)/z, h:r.height/z, w:r.width/z });
+
+  const estiloDe = no => {
+    const cs = getComputedStyle(no);
+    const dec = (cs.textDecorationLine || cs.textDecoration || '');
+    return {
+      fam: cs.fontFamily,
+      tam: parseFloat(cs.fontSize) || 14,
+      peso: (parseInt(cs.fontWeight, 10) || 400) >= 600 ? '700' : '400',
+      italico: cs.fontStyle === 'italic',
+      sublinhado: dec.includes('underline'),
+      riscado: dec.includes('line-through'),
+      cor: cs.color,
+    };
+  };
+
+  const saida = [];
+  const passeio = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: n => (n.parentElement && n.parentElement.closest('.tres,.rot,.lk'))
+      ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  let no;
+  while((no = passeio.nextNode())){
+    const txt = no.nodeValue || '';
+    if(!txt.trim()) continue;
+    const est = estiloDe(no.parentElement);
+    let i = 0, grupo = null;
+    while(i < txt.length){
+      /* mede a PALAVRA sem o espaco que a antecede: numa quebra de linha esse
+         espaco fica no fim da linha de cima, e o retangulo abrangeria as duas --
+         era o que jogava a primeira palavra de cada linha para fora do lugar */
+      let k = i;
+      while(k < txt.length && /\s/.test(txt[k])) k++;
+      let j = k;
+      while(j < txt.length && !/\s/.test(txt[j])) j++;
+      if(j === k) break;
+      const r = document.createRange();
+      r.setStart(no, k); r.setEnd(no, j);
+      const rects = r.getClientRects();
+      const cx = rects.length ? rects[rects.length - 1] : r.getBoundingClientRect();
+      if(cx.width > 0 || cx.height > 0){
+        const g = emCanvas(cx);
+        /* mesma linha e encostada na anterior: continua o mesmo trecho. O texto sai
+           da fatia ORIGINAL, entao o espacamento e exatamente o que o navegador
+           desenhou, sem reconstrucao e sem deriva ao longo da linha */
+        const segue = grupo && Math.abs(grupo.y - g.y) < 0.6 && (g.x - (grupo.x + grupo.w)) < est.tam * 0.7;
+        if(segue){ grupo.fim = j; grupo.w = (g.x + g.w) - grupo.x; }
+        else{
+          grupo = { no, ini:k, fim:j, x:g.x, y:g.y, w:g.w, h:g.h, est };
+          saida.push(grupo);
+        }
+      }
+      i = j;
+    }
+  }
+  for(const t of saida) t.texto = (t.no.nodeValue || '').slice(t.ini, t.fim);
+  return saida;
+}
+
+/** Um <text> por trecho, na posição medida. Alinhamento e quebra já vêm resolvidos. */
+function trechosParaSvg(trechos, ox, oy){
+  let s = '';
+  for(const t of trechos){
+    const e = t.est;
+    /* a linha do DOM é a caixa de linha; a base do texto fica no meio dela,
+       descontando ascendente e descendente da fonte */
+    const base = t.y + (t.h - e.tam) / 2 + e.tam * 0.8;
+    const dec = e.sublinhado && e.riscado ? 'underline line-through'
+              : e.sublinhado ? 'underline' : e.riscado ? 'line-through' : '';
+    s += `<text x="${(t.x + ox).toFixed(1)}" y="${(base + oy).toFixed(1)}"`
+       + ` font-size="${e.tam}" fill="${e.cor}"`
+       + ` font-family="${svgEscape(e.fam)}"`
+       + (e.peso === '700' ? ' font-weight="700"' : '')
+       + (e.italico ? ' font-style="italic"' : '')
+       + (dec ? ` text-decoration="${dec}"` : '')
+       + ` xml:space="preserve">${svgEscape(t.texto)}</text>`;
+  }
+  return s;
+}
+
 function buildSvg(fontCss){
   const rq = radiusScale();   /* arredondamento global: a imagem segue a tela */
   /* o cartão na tela é maior que nodeW/nodeH (borda + padding + rótulo de várias
@@ -4961,31 +5362,34 @@ function buildSvg(fontCss){
     }
     if(n.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(n.rot,cx,y+h/2,corpo); }
   }
-  /* textos livres e caixas de texto */
+  /* textos livres e caixas de texto: a formatacao pode variar DENTRO do texto
+     (negrito num pedaco, outra fonte em outro), entao os trechos e as quebras de
+     linha sao lidos do DOM, que ja resolveu tudo isso na tela */
   for(const t of state.texts){
-    const fill=t.color||P.ink;
-    const extra=(t.b?' font-weight="700"':'')+(t.it?' font-style="italic"':'');
-    const s0=s.length;
-    const fecha=(cx,cy)=>{ if(t.rot){ const corpo=s.slice(s0); s=s.slice(0,s0)+rotWrap(t.rot,cx,cy,corpo); } };
+    const el = canvas.querySelector(`.ftext[data-id="${t.id}"]`);
+    const s0 = s.length;
+    const trechos = trechosDoTexto(el);
     if(t.frame){
-      const bw=t.w||200, padX=13, padY=9, lh=t.size*1.42;
-      const lines=wrapTextLines(t.text, bw, t.size);
-      const bh=padY*2+lines.length*lh;
-      s+=`<rect x="${t.x+ox}" y="${t.y+oy}" width="${bw}" height="${bh}" rx="10" fill="${t.bg||P.node}"${t.bg?' fill-opacity="0.13"':''} stroke="${t.bg||P.border}" stroke-width="1"/>`;
-      let ax=t.x+ox+padX, anchor='';
-      if(t.align==='center'){ ax=t.x+ox+bw/2; anchor=' text-anchor="middle"'; }
-      else if(t.align==='right'){ ax=t.x+ox+bw-padX; anchor=' text-anchor="end"'; }
-      lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+padY+lh*(i+0.72)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
-      fecha(t.x+ox+bw/2, t.y+oy+bh/2);
-      continue;
+      const bw = t.w || 200;
+      const bh = el ? el.offsetHeight : 40;
+      s += `<rect x="${t.x+ox}" y="${t.y+oy}" width="${bw}" height="${bh}" rx="10" fill="${t.bg||P.node}"${t.bg?' fill-opacity="0.13"':''} stroke="${t.bg||P.border}" stroke-width="1"/>`;
     }
-    const lines=t.text.split('\n');
-    const est=Math.max(...lines.map(l=>l.length))*t.size*0.55;
-    let ax=t.x+ox, anchor='';
-    if(t.align==='center'){ ax+=est/2; anchor=' text-anchor="middle"'; }
-    else if(t.align==='right'){ ax+=est; anchor=' text-anchor="end"'; }
-    lines.forEach((ln,i)=>{ s+=`<text x="${ax}" y="${t.y+oy+t.size*(i+0.9)}" font-size="${t.size}" fill="${fill}"${extra}${anchor}>${svgEscape(ln)}</text>`; });
-    fecha(t.x+ox+est/2, t.y+oy+t.size*lines.length/2);
+    if(trechos.length){
+      s += trechosParaSvg(trechos, ox, oy);
+    } else if((t.text||'').trim()){
+      /* sem elemento na tela (exportacao fora do render): cai no caminho simples */
+      const fill = t.color || P.ink;
+      const extra = (t.b?' font-weight="700"':'') + (t.it?' font-style="italic"':'');
+      (t.text||'').split('\n').forEach((ln,i)=>{
+        s += `<text x="${t.x+ox}" y="${t.y+oy+t.size*(i+0.9)}" font-size="${t.size}" fill="${fill}"${extra}>${svgEscape(ln)}</text>`;
+      });
+    }
+    if(t.rot){
+      const w = t.frame ? (t.w||200) : (el ? el.offsetWidth : 160);
+      const h = el ? el.offsetHeight : 24;
+      const corpo = s.slice(s0);
+      s = s.slice(0, s0) + rotWrap(t.rot, t.x+ox+w/2, t.y+oy+h/2, corpo);
+    }
   }
   /* legenda: os tipos de componente usados (ícone + nome), num painel no canto */
   if(opLegend && state.nodes.length){
