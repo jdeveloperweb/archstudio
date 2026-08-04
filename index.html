@@ -545,33 +545,51 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .node.fam-client .ncat{color:var(--cl-fill)}
 
 
-/* As alças moram nas BORDAS do glifo e derivam de --tile: ao redimensionar o
-   componente, elas acompanham em vez de ficar num ponto fixo (era o motivo de o
-   ponto de redimensionar cair dentro do desenho em nós ampliados).
-   - conectar: meio da aresta direita
-   - remover:  canto superior direito
-   - redimensionar: canto inferior direito */
-.node.fam-aws .port,.node.fam-gcp .port,.node.fam-azure .port,
-.node.fam-ai .port,.node.fam-onprem .port,.node.fam-client .port{
+/* ====== famílias sem cartão (nuvem, IA, on-premise, cliente) ======
+   Só o glifo é desenhado; o cartão de 118px continua existindo como caixa de
+   layout, mas invisível. Tudo que se pendura no nó tem de se apoiar no GLIFO
+   (--tile), senão flutua num retângulo que ninguém vê. Vale para as alças, para
+   os selos e para o retângulo de seleção. Como --tile acompanha a escala, tudo
+   isso segue o nó ao ser redimensionado.
+
+   Cantos: cima-esquerda detalhes/cadeado · cima-direita remover ·
+   meio-direita conectar · baixo-esquerda C4 · baixo-direita redimensionar. */
+.node.sem-cartao .port{
   right:auto;left:50%;top:calc(var(--tile) / 2);
   margin-left:calc(var(--tile) / 2 - 7px);
 }
-.node.fam-aws .nx,.node.fam-gcp .nx,.node.fam-azure .nx,
-.node.fam-ai .nx,.node.fam-onprem .nx,.node.fam-client .nx{
+.node.sem-cartao .nx{
   top:-9px;right:50%;margin-right:calc(var(--tile) / -2 - 9px);
 }
-.node.fam-aws .nres,.node.fam-gcp .nres,.node.fam-azure .nres,
-.node.fam-ai .nres,.node.fam-onprem .nres,.node.fam-client .nres{
+.node.sem-cartao .nres{
   right:50%;bottom:auto;top:calc(var(--tile) - 7px);
   margin-right:calc(var(--tile) / -2 - 7px);
 }
-/* Nessas famílias o cartão não é desenhado: o retângulo de seleção precisa
-   abraçar o GLIFO, senão ele contorna uma caixa invisível e as alças parecem
-   soltas no meio do nada. */
-.node.fam-aws.sel,.node.fam-gcp.sel,.node.fam-azure.sel,
-.node.fam-ai.sel,.node.fam-onprem.sel,.node.fam-client.sel{outline:none}
-.node.fam-aws.sel::before,.node.fam-gcp.sel::before,.node.fam-azure.sel::before,
-.node.fam-ai.sel::before,.node.fam-onprem.sel::before,.node.fam-client.sel::before{
+/* Selos compactos e ENCOSTADOS na borda esquerda do glifo, nunca por cima: no
+   cartão eles se apoiam em 118px de largura e podem invadir a borda à vontade;
+   aqui o glifo tem 42px (25px num nó a 0,6x) e qualquer invasão engole o
+   desenho. O translateX de -100% ancora a borda direita do selo na borda
+   esquerda do glifo — os 4px de volta são só o encaixe visual. */
+.node.sem-cartao .ndet,.node.sem-cartao .narch{
+  font-size:8px;padding:1px 4px;gap:2px;
+  right:auto;margin-left:0;left:calc(50% - var(--tile) / 2);
+}
+.node.sem-cartao .ndet svg,.node.sem-cartao .narch svg{width:9px;height:9px}
+.node.sem-cartao .ndet{top:0;transform:translateX(calc(-100% + 4px))}
+.node.sem-cartao .narch{bottom:auto;top:var(--tile);
+  transform:translate(calc(-100% + 4px), -100%)}
+.node.sem-cartao .lk{
+  width:16px;height:16px;top:0;
+  left:calc(50% - var(--tile) / 2);transform:translate(-50%, -50%);
+}
+.node.sem-cartao .lk svg{width:9px;height:9px}
+/* cadeado e contador de detalhes disputavam o mesmo canto: com os dois presentes,
+   um cobria o outro */
+.node.locked .ndet{left:14px}
+.node.sem-cartao.locked .ndet{transform:translateX(calc(-100% - 6px))}
+/* seleção: abraça o glifo, não a caixa invisível */
+.node.sem-cartao.sel{outline:none}
+.node.sem-cartao.sel::before{
   content:'';position:absolute;left:50%;top:0;
   width:var(--tile);height:var(--tile);margin-left:calc(var(--tile) / -2);
   outline:2px solid var(--accent);outline-offset:3px;
@@ -2083,7 +2101,7 @@ function desenharTudo(){
     /* família visual: C4 tem forma e tipografia próprias (ver C4_STYLE) */
     const fam=familyOf(n.type), c4=fam==='c4'?C4_STYLE[n.type]:null;
     el.className=`node b-${def.color}`+(ic?' st-icon':'')+(fam?` fam-${fam}`:'')+(c4?` c4-${c4.kind}`:'')
-      +(n.multi?' multi':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
+      +(SEM_CARTAO.has(fam)?' sem-cartao':'')+(n.multi?' multi':'')+(connSrc===n.id?' sel':'')+(isSelected('node',n.id)?' sel':'')+(n.lock?' locked':'');
     el.style.cssText=`left:${n.x}px;top:${n.y}px;width:${nodeW(n)}px;padding:${(ic?4:10)*s}px 6px ${(ic?4:8)*s}px`+rotCss(n);
     if(n.color&&!ic&&!c4) el.style.borderTopColor=n.color;
     if(c4) el.style.setProperty('--c4-accent', n.color||c4.accent);   /* cor do nó sobrescreve o acento */
