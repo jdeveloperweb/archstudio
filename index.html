@@ -3055,7 +3055,28 @@ function editComment(kind,id,ev){
    simplesmente nao oferece a lista -- e digitar @nome continua valendo. */
 let mencionaveis = [], mencaoAberta = null, mencaoSel = 0;
 
-const MENCAO_RE = /(^|[\s(])@([\p{L}0-9._-]*)$/u;
+/* O termo pode ter ESPACO: nome de gente tem. "@Luiz P" precisa continuar
+   procurando, e nao morrer na primeira tecla de espaco -- era o que acontecia, e
+   parecia que a funcao inteira nao existia. Ate 3 palavras, para uma frase inteira
+   depois de um @ nao virar busca eterna. */
+const MENCAO_RE = /(^|[\s(])@([\p{L}0-9._-]*(?: [\p{L}0-9._-]+){0,3})$/u;
+
+/* Normaliza para comparar: sem acento, sem maiuscula, sem pontuacao. */
+const mencaoChave = t => String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'')
+  .toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+
+/* Casa por PALAVRA, nao so por prefixo do apelido: procurar "Luiz P" tem de achar
+   "Luiz Philipe Duarte de Carvalho". Cada palavra digitada precisa comecar alguma
+   palavra do nome (ou do apelido). */
+function mencaoCasa(pessoa, termo){
+  const t = mencaoChave(termo);
+  if(!t) return true;
+  const semEspaco = t.replace(/ /g,'');
+  if((pessoa.handle||'').startsWith(semEspaco)) return true;
+  const palavras = mencaoChave(pessoa.name).split(/\s+/).filter(Boolean);
+  return t.split(/\s+/).filter(Boolean)
+          .every(p => palavras.some(w => w.startsWith(p)));
+}
 
 /* Onde a mencao esta sendo digitada. Sao dois tipos de campo no canvas: a caixa de
    comentario, que e um <textarea>, e todos os outros textos, que sao editados NO
@@ -3125,10 +3146,10 @@ function mencaoAoDigitar(){
   const alvo = mencaoTermo(campo);
   if(!alvo){ mencaoFecha(); return; }
   mencaoAberta = null;
-  const t = alvo.termo.toLowerCase();
-  const achados = mencionaveis
-    .filter(p => !t || p.handle.startsWith(t) || (p.name||'').toLowerCase().includes(t))
-    .slice(0, 8);
+  const achados = mencionaveis.filter(p => mencaoCasa(p, alvo.termo)).slice(0, 8);
+  /* termo com espaco e sem ninguem: o usuario voltou a escrever a frase, nao a
+     procurar alguem -- some em vez de ficar atrapalhando */
+  if(!achados.length && / /.test(alvo.termo) && mencionaveis.length){ mencaoFecha(); return; }
   mencaoAberta = { ...alvo, achados, campo };
   mencaoSel = 0;
   if(!mencionaveis.length){
