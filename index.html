@@ -971,6 +971,7 @@ body.embed #archCrumbs{top:12px}
     <div class="menu-panel">
       <div class="menu-label">Arquivo</div>
       <button class="menu-item" onclick="saveFile();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Salvar .json</button>
+      <button class="menu-item" onclick="document.getElementById('realInput').click();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m8 7-4 5 4 5"/><path d="m16 7 4 5-4 5"/></svg> Comparar com a realidade (compose, Terraform, k8s)</button>
       <button class="menu-item" onclick="document.getElementById('fileInput').click();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg> Carregar .json</button>
       <button class="menu-item" onclick="shareLink(this)" title="copia um link que abre este diagrama"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar link do diagrama</button>
       <button class="menu-item" onclick="exportSvg();closeMenu()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Exportar SVG</button>
@@ -1001,6 +1002,7 @@ body.embed #archCrumbs{top:12px}
     </div>
   </div>
   <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+<input type="file" id="realInput" accept=".yml,.yaml,.json,.tfstate" style="display:none">
 </div>
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"></div>
 <div style="display:none">
@@ -4680,8 +4682,16 @@ function casarPorChave(antes, depois, chaves){
   return { casados, novos: depois.filter(d => !usados.has(d)) };
 }
 
+/* Valor ausente e o valor padrao sao a MESMA coisa: um desenho salvo antes de um
+   campo existir nao pode aparecer como alterado por causa disso. */
+const DIFF_PADRAO = { st:'card', multi:'false', color:'' };
+const valorDiff = (o, c) => {
+  const v = o[c];
+  if(v === undefined || v === null || v === '') return DIFF_PADRAO[c] ?? '';
+  return String(v === true ? 'true' : v === false ? 'false' : v);
+};
 function mudouAlgo(a, d){
-  return DIFF_CAMPOS.some(c => String(a[c] ?? '') !== String(d[c] ?? ''));
+  return DIFF_CAMPOS.some(c => valorDiff(a, c) !== valorDiff(d, c));
 }
 
 /**
@@ -4803,6 +4813,448 @@ function marcarDiff(kind, id, el){
   if(!modoDiff) return;
   const m = modoDiff.marcas[kind] && modoDiff.marcas[kind][id];
   if(m) el.classList.add('diff-'+m);
+}
+
+/* ============ COMPARAR COM A REALIDADE ============
+   Todo o resto do editor flui do desenho para fora: exportação, spec, ADR, PDF.
+   Nada flui de fora para dentro, e por isso "diagrama vivo" parava em "fácil de
+   editar". Aqui entra o caminho inverso: leia o que o sistema REALMENTE é
+   (docker-compose, state do Terraform, manifests do Kubernetes) e compare com o
+   desenho.
+
+   Os arquivos entram como arquivo, não por credencial de nuvem: sem OAuth, sem
+   chave, sem superfície de segurança nova. O usuário arrasta o que já tem. */
+
+/* ---- YAML: o subconjunto que compose e manifests usam ----
+   Não é um parser de YAML completo e não pretende ser. Cobre mapa, lista, escalar,
+   aspas, comentário e documentos separados por ---, que é o que existe nesses
+   arquivos. Âncoras, tags e blocos dobrados ficam de fora: aparecendo, o valor vira
+   texto e a leitura segue em vez de estourar. */
+function lerYaml(txt){
+  const docs = [];
+  for(const parte of String(txt).replace(/\r\n?/g,'\n').split(/^---\s*$/m)){
+    const linhas = [];
+    for(const cru of parte.split('\n')){
+      const semCom = cru.replace(/\s+#.*$/, '');            /* comentário no fim */
+      if(!semCom.trim() || /^\s*#/.test(cru)) continue;
+      linhas.push({ ind: cru.match(/^ */)[0].length, txt: semCom.trim() });
+    }
+    if(linhas.length) docs.push(bloco(linhas, 0, { i:0 }));
+  }
+  return docs;
+
+  function escalar(v){
+    if(v === '' || v === '~' || v === 'null') return null;
+    if(v === 'true') return true;
+    if(v === 'false') return false;
+    const m = v.match(/^(["'])([\s\S]*)\1$/);
+    if(m) return m[2];
+    if(/^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+    if(/^\[.*\]$/.test(v)){                                  /* lista em linha */
+      return partes(v.slice(1,-1)).map(s=>escalar(s)).filter(x=>x!==null);
+    }
+    if(/^\{.*\}$/.test(v)){                                  /* mapa em linha */
+      const o={};
+      for(const par of partes(v.slice(1,-1))){
+        const c=par.indexOf(':');
+        if(c<0) continue;
+        o[escalar(par.slice(0,c).trim())]=escalar(par.slice(c+1).trim());
+      }
+      return o;
+    }
+    return v;
+  }
+
+  /* Divide por virgula respeitando aspas, colchete e chave aninhados: separar no
+     split simples quebraria `{a: [1,2], b: c}` no lugar errado. */
+  function partes(txt){
+    const out=[]; let atual='', prof=0, aspa=null;
+    for(const ch of txt){
+      if(aspa){ atual+=ch; if(ch===aspa) aspa=null; continue; }
+      if(ch==='"'||ch==="'"){ aspa=ch; atual+=ch; continue; }
+      if(ch==='['||ch==='{') prof++;
+      if(ch===']'||ch==='}') prof--;
+      if(ch===',' && prof===0){ out.push(atual.trim()); atual=''; continue; }
+      atual+=ch;
+    }
+    if(atual.trim()) out.push(atual.trim());
+    return out;
+  }
+
+  function bloco(ls, ind, pos){
+    const primeira = ls[pos.i];
+    if(!primeira) return null;
+    if(primeira.txt.startsWith('- ') || primeira.txt === '-'){
+      const arr = [];
+      while(pos.i < ls.length && ls[pos.i].ind === ind && (ls[pos.i].txt.startsWith('- ') || ls[pos.i].txt === '-')){
+        const resto = ls[pos.i].txt.slice(1).trim();
+        pos.i++;
+        if(resto === ''){ arr.push(bloco(ls, ls[pos.i] ? ls[pos.i].ind : ind+2, pos)); continue; }
+        /* escalar entre aspas primeiro: `- "8080:8080"` tem dois-pontos DENTRO das
+           aspas e seria lido como mapa, virando um objeto no lugar da porta */
+        const todoAspado = /^(["'])[\s\S]*$/.test(resto);
+        if(!todoAspado && /^[\w.\-\/]+\s*:(\s|$)/.test(resto)){
+          /* item que já começa um mapa: "- name: x" */
+          const virtual = [{ ind: ind+2, txt: resto }];
+          while(pos.i < ls.length && ls[pos.i].ind > ind) virtual.push(ls[pos.i++]);
+          arr.push(bloco(virtual, ind+2, { i:0 }));
+          continue;
+        }
+        arr.push(escalar(resto));
+      }
+      return arr;
+    }
+    const obj = {};
+    while(pos.i < ls.length && ls[pos.i].ind === ind){
+      const l = ls[pos.i];
+      const c = l.txt.indexOf(':');
+      if(c < 0){ pos.i++; continue; }
+      const chave = escalar(l.txt.slice(0, c).trim());
+      const valor = l.txt.slice(c+1).trim();
+      pos.i++;
+      if(valor !== ''){ obj[chave] = escalar(valor); continue; }
+      if(pos.i < ls.length && ls[pos.i].ind > ind) obj[chave] = bloco(ls, ls[pos.i].ind, pos);
+      else obj[chave] = null;
+    }
+    return obj;
+  }
+}
+
+/* ---- De que tipo do catálogo é isto? ----
+   Casa por palavra encontrada na imagem/tipo do recurso. A ordem importa: o
+   primeiro que casar vence, então o mais específico vem antes. */
+const PISTAS_TIPO = [
+  [/postgres|pgbouncer|timescale/, 'db'], [/mysql|mariadb/, 'db'], [/mongo/, 'db'],
+  [/redis|valkey|memcached/, 'cache'], [/elasticsearch|opensearch/, 'opensearch'],
+  [/kafka|redpanda/, 'stream'], [/rabbitmq|activemq/, 'queue'], [/nats|pulsar/, 'stream'],
+  [/nginx|traefik|haproxy|envoy|caddy/, 'lb'], [/keycloak|dex|authelia/, 'auth'],
+  [/grafana|prometheus|loki|jaeger|tempo|datadog|otel|opentelemetry/, 'obs'],
+  [/minio|localstack/, 's3'], [/vault/, 'secretsmgr'], [/clickhouse|druid/, 'db'],
+  [/worker|consumer|job|cron|scheduler/, 'worker'], [/front|web|ui|spa|nginx-web/, 'browser'],
+];
+const PISTAS_TF = [
+  [/^aws_lambda_function$/, 'lambda'], [/^aws_s3_bucket$/, 's3'],
+  [/^aws_db_instance$|^aws_rds/, 'rds'], [/^aws_dynamodb_table$/, 'dynamodb'],
+  [/^aws_sqs_queue$/, 'sqs'], [/^aws_sns_topic$/, 'sns'], [/^aws_elasticache/, 'elasticache'],
+  [/^aws_ecs_service$|^aws_ecs_task/, 'ecs'], [/^aws_eks/, 'eks'], [/^aws_instance$/, 'ec2'],
+  [/^aws_lb$|^aws_alb/, 'alb'], [/^aws_cloudfront/, 'cloudfront'], [/^aws_route53/, 'route53'],
+  [/^aws_api_gateway|^aws_apigatewayv2/, 'apigw'], [/^aws_kinesis/, 'kinesis'],
+  [/^aws_secretsmanager/, 'secretsmgr'], [/^aws_kms/, 'kms'], [/^aws_cloudwatch/, 'cloudwatch'],
+  [/^aws_vpc$/, 'vpc'], [/^aws_cognito/, 'cognito'], [/^aws_msk/, 'msk'],
+  [/^google_cloud_run/, 'cloudrun'], [/^google_container_cluster/, 'gke'],
+  [/^google_storage_bucket/, 'gcs'], [/^google_sql_database_instance/, 'cloudsql'],
+  [/^google_pubsub/, 'pubsub'], [/^google_bigquery/, 'bigquery'],
+  [/^azurerm_app_service|^azurerm_linux_web_app|^azurerm_windows_web_app/, 'appservice'],
+  [/^azurerm_kubernetes_cluster/, 'aks'], [/^azurerm_storage_account/, 'blob'],
+  [/^azurerm_cosmosdb/, 'cosmosdb'], [/^azurerm_servicebus/, 'servicebus'],
+  [/^azurerm_key_vault/, 'keyvault'], [/^azurerm_postgresql/, 'azpostgres'],
+  [/^azurerm_redis/, 'azredis'], [/^azurerm_function_app/, 'azfunc'],
+];
+const PISTAS_K8S = {
+  Deployment:'container', StatefulSet:'db', DaemonSet:'server', Job:'worker', CronJob:'sched',
+  Service:'lb', Ingress:'gateway', ConfigMap:null, Secret:'secretsmgr',
+  PersistentVolumeClaim:'storagegen', HorizontalPodAutoscaler:null,
+};
+
+function tipoPorPista(texto, tabela){
+  const t = String(texto||'').toLowerCase();
+  for(const [re, tipo] of tabela) if(re.test(t)) return tipo;
+  return null;
+}
+
+/* ---- leitores ---- */
+
+/** docker-compose: serviço vira componente; depends_on e links viram conexão. */
+function lerCompose(doc){
+  const svc = doc && (doc.services || doc.Services);
+  if(!svc || typeof svc !== 'object') return null;
+  const nodes = [], edges = [];
+  for(const [nome, s] of Object.entries(svc)){
+    const cfg = s || {};
+    const img = String(cfg.image || cfg.build && (cfg.build.context||cfg.build) || '');
+    const tipo = tipoPorPista(img, PISTAS_TIPO) || tipoPorPista(nome, PISTAS_TIPO) || 'api';
+    const portas = Array.isArray(cfg.ports) ? cfg.ports.map(String) : [];
+    nodes.push({ id:'svc_'+nome, label:nome, type:tipo,
+      tech: img ? img.split('/').pop().slice(0,60) : undefined,
+      desc: portas.length ? ('porta ' + portas[0]) : undefined });
+  }
+  for(const [nome, s] of Object.entries(svc)){
+    const cfg = s || {};
+    const dep = cfg.depends_on;
+    const alvos = Array.isArray(dep) ? dep : (dep && typeof dep === 'object' ? Object.keys(dep) : []);
+    for(const d of alvos.concat(Array.isArray(cfg.links) ? cfg.links.map(l=>String(l).split(':')[0]) : [])){
+      if(svc[d]) edges.push({ from:'svc_'+nome, to:'svc_'+d, label:'' });
+    }
+  }
+  return { fonte:'docker-compose', nodes, edges };
+}
+
+/** Terraform: `terraform show -json` (state ou plano). */
+function lerTerraform(doc){
+  const raiz = doc && doc.values && doc.values.root_module;
+  const planejado = doc && doc.planned_values && doc.planned_values.root_module;
+  const base = raiz || planejado;
+  if(!base) return null;
+  const nodes = [], edges = [], porEndereco = new Map();
+  const varrer = mod => {
+    for(const r of (mod.resources||[])){
+      if(r.mode === 'data') continue;                       /* data source não é infra criada */
+      const tipo = tipoPorPista(r.type, PISTAS_TF);
+      if(!tipo) continue;                                   /* recurso sem representação visual */
+      const nome = (r.values && (r.values.name || r.values.bucket || r.values.function_name)) || r.name;
+      const id = 'tf_' + r.address;
+      porEndereco.set(r.address, id);
+      nodes.push({ id, label:String(nome).slice(0,60), type:tipo, tech:r.type });
+    }
+    for(const c of (mod.child_modules||[])) varrer(c);
+  };
+  varrer(base);
+  const dep = mod => {
+    for(const r of (mod.resources||[])){
+      const de = porEndereco.get(r.address);
+      if(!de) continue;
+      for(const d of (r.depends_on||[])){
+        const para = porEndereco.get(d);
+        if(para) edges.push({ from:de, to:para, label:'' });
+      }
+    }
+    for(const c of (mod.child_modules||[])) dep(c);
+  };
+  dep(base);
+  return { fonte:'Terraform', nodes, edges };
+}
+
+/** Kubernetes: um ou vários manifests. Service liga no que ele seleciona. */
+function lerK8s(docs){
+  const itens = [];
+  for(const d of docs){
+    if(!d || !d.kind) continue;
+    if(d.kind === 'List' && Array.isArray(d.items)) itens.push(...d.items);
+    else itens.push(d);
+  }
+  if(!itens.length) return null;
+  const nodes = [], edges = [], porRotulo = [];
+  for(const o of itens){
+    const tipo = PISTAS_K8S[o.kind];
+    if(tipo === undefined || tipo === null) continue;
+    const nome = (o.metadata && o.metadata.name) || o.kind.toLowerCase();
+    const img = (((o.spec||{}).template||{}).spec||{}).containers;
+    const imagem = Array.isArray(img) && img[0] ? String(img[0].image||'') : '';
+    const id = 'k8s_' + o.kind + '_' + nome;
+    nodes.push({ id, label:nome, type: tipoPorPista(imagem, PISTAS_TIPO) || tipoPorPista(nome, PISTAS_TIPO) || tipo,
+      tech: imagem ? imagem.split('/').pop().slice(0,60) : o.kind });
+    const rot = ((o.spec||{}).selector||{}).matchLabels || ((o.spec||{}).template||{}).metadata?.labels
+             || (o.metadata||{}).labels;
+    porRotulo.push({ id, kind:o.kind, nome, rot: rot||{}, selector: (o.spec||{}).selector });
+  }
+  for(const s of porRotulo){
+    if(s.kind !== 'Service' || !s.selector) continue;
+    const sel = s.selector.matchLabels || s.selector;
+    for(const alvo of porRotulo){
+      if(alvo.id === s.id || alvo.kind === 'Service') continue;
+      const casa = Object.entries(sel).every(([k,v]) => String(alvo.rot[k]) === String(v));
+      if(casa) edges.push({ from:s.id, to:alvo.id, label:'' });
+    }
+  }
+  return { fonte:'Kubernetes', nodes, edges };
+}
+
+/**
+ * Descobre o formato e devolve a realidade normalizada.
+ * @return {fonte, nodes, edges} ou null se não reconhecer
+ */
+function lerRealidade(texto, nomeArquivo){
+  const t = String(texto||'').trim();
+  if(!t) return null;
+  if(t.startsWith('{') || t.startsWith('[')){
+    let j; try{ j = JSON.parse(t); }catch{ return null; }
+    return lerTerraform(j) || (Array.isArray(j) ? lerK8s(j) : lerK8s([j]));
+  }
+  let docs; try{ docs = lerYaml(t); }catch{ return null; }
+  if(!docs.length) return null;
+  for(const d of docs){ const c = lerCompose(d); if(c) return c; }
+  return lerK8s(docs);
+}
+
+/* Papel que o componente cumpre na arquitetura. O desenho diz `rds` e o compose diz
+   `db`: sao tipos diferentes e a MESMA coisa. Casar por tipo exato faria a
+   reconciliacao dizer "falta um banco, sobra outro" no caso mais comum de todos. */
+const PAPEL_DO_TIPO = (()=>{
+  const m = {};
+  const por = (papel, ...tipos) => tipos.forEach(t => m[t] = papel);
+  por('banco','db','rds','aurora','dynamodb','cosmosdb','azsql','azpostgres','cloudsql','spanner',
+      'firestore','documentdb','dbonprem','bigtable','redshift','c4db','bigquery','synapse','athena');
+  por('cache','cache','elasticache','memorystore','azredis','semcache');
+  por('fila','queue','sqs','servicebus','faasqueue','dlq','c4queue','cloudtasks');
+  por('stream','stream','kinesis','msk','pubsub','eventhubs','firehose','eventbridge','eventgrid','sns');
+  por('computo','api','worker','lambda','cloudrun','appservice','ecs','eks','gke','aks','ec2','gce',
+      'azvm','container','funcao','azfunc','cloudfn','apprunner','containerapps','aci','batch','k8s',
+      'server','vm','c4container','c4component','edgefn','appengine','fargate','sched','logicapps');
+  por('borda','lb','alb','nlb','gclb','frontdoor','cloudfront','cdngen','gateway','apigw','apim',
+      'apigee','route53','waf','cloudarmor','appsync');
+  por('armazenamento','s3','gcs','blob','storagegen','efs','glacier','nas','ebs');
+  por('observabilidade','obs','cloudwatch','xray','cloudtrail','llmobs','ragas');
+  por('seguranca','auth','cognito','entra','iam','keyvault','secretsmgr','kms','gcpsecrets','acm',
+      'guardduty','firewall','vpn');
+  por('cliente','user','browser','mobile','iot','partner','c4person','c4extperson');
+  por('busca','opensearch','azaisearch','vectordb');
+  return m;
+})();
+const papelDoTipo = t => PAPEL_DO_TIPO[t] || ('tipo:'+t);
+
+/* ---- reconciliar o desenho com a realidade ----
+   O motor de comparação de versões casa itens pelo id, que é estável DENTRO do
+   documento. Aqui as duas metades vêm de mundos diferentes: de um lado o desenho,
+   do outro um arquivo de infraestrutura. A única ponte é o NOME, e ele quase nunca
+   bate letra por letra ("API Pedidos" no desenho, "api" no compose).
+
+   Então o casamento normaliza: minúsculas, sem acento, sem pontuação, e aceita que
+   um contenha o outro. É deliberadamente frouxo — um falso positivo faz o usuário
+   ver "isto é o mesmo?", enquanto um falso negativo o faz duplicar componente. */
+function chaveDeNome(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toLowerCase().replace(/[^a-z0-9]+/g,'');
+}
+
+function mesmoComponente(a, b){
+  const ka = chaveDeNome(a), kb = chaveDeNome(b);
+  if(!ka || !kb) return false;
+  if(ka === kb) return true;
+  const [curto, longo] = ka.length <= kb.length ? [ka, kb] : [kb, ka];
+  return curto.length >= 3 && longo.includes(curto);
+}
+
+/**
+ * Compara o desenho atual com a realidade lida de um arquivo.
+ * @return {noDesenhoSo, naRealidadeSo, emAmbos, fonte}
+ */
+function reconciliar(realidade, nosDoDesenho){
+  const doDesenho = (nosDoDesenho||state.nodes||[]).map(n => ({ ref:n, nome:n.label||n.type }));
+  const daReal = (realidade.nodes||[]).map(n => ({ ref:n, nome:n.label }));
+  const casados = new Map(), usados = new Set();
+  /* 1a passada: pelo nome */
+  for(const d of doDesenho){
+    const achado = daReal.find(r => !usados.has(r) && mesmoComponente(d.nome, r.nome));
+    if(achado){ usados.add(achado); casados.set(d, achado); }
+  }
+  /* 2a passada: pelo TIPO, quando sobrou exatamente um de cada lado.
+     Um servico chamado "db" rodando postgres:16 e o "Postgres" do desenho, e nome
+     nenhum vai dizer isso. Exigir unicidade evita casar dois workers ao acaso. */
+  const sobramD = doDesenho.filter(d => !casados.has(d));
+  const sobramR = daReal.filter(r => !usados.has(r));
+  for(const d of sobramD){
+    if(casados.has(d)) continue;
+    const papel = papelDoTipo(d.ref.type);
+    const iguais = sobramR.filter(r => !usados.has(r) && papelDoTipo(r.ref.type) === papel);
+    const outrosDoMesmoTipo = sobramD.filter(o => !casados.has(o) && papelDoTipo(o.ref.type) === papel);
+    if(iguais.length === 1 && outrosDoMesmoTipo.length === 1){
+      usados.add(iguais[0]); casados.set(d, iguais[0]);
+    }
+  }
+  return {
+    fonte: realidade.fonte,
+    emAmbos: [...casados].map(([d,r]) => ({ desenho:d.nome, real:r.nome, tipo:r.ref.type })),
+    noDesenhoSo: doDesenho.filter(d => !casados.has(d)).map(d => ({ nome:d.nome, tipo:d.ref.type, id:d.ref.id })),
+    naRealidadeSo: daReal.filter(r => !usados.has(r)).map(r => r.ref),
+  };
+}
+
+/**
+ * Mostra a reconciliação usando o mesmo modo de comparação das versões: o "depois"
+ * é a realidade. Verde = existe de fato e falta no desenho; vermelho = está
+ * desenhado e não existe mais.
+ */
+function compararComRealidade(realidade){
+  const atual = currentDoc();
+  /* calcula ANTES de entrar no modo: entrarModoDiff troca `state` pelo desenho
+     mesclado, e ai a reconciliacao compararia a realidade com ela mesma */
+  const rec = reconciliar(realidade, (state.nodes||[]).slice());
+  /* a realidade vira um desenho de verdade, com posição, para poder ser exibida */
+  const st = normalizeSpec({ nodes: realidade.nodes, edges: realidade.edges });
+  /* os que já existem no desenho herdam a posição de lá: assim o diff mostra o
+     mesmo componente no mesmo lugar em vez de dois desenhos sobrepostos */
+  /* A realidade sai do normalizeSpec com ids começando em 1, e o desenho tambem:
+     sem deslocar, "nginx" (id 1 da realidade) casava com "Cliente" (id 1 do desenho)
+     e aparecia como ALTERADO em vez de novo. */
+  const base = Math.max(0, ...(state.nodes||[]).map(n=>n.id), ...(state.edges||[]).map(e=>e.id)) + 5000;
+  const remap = new Map();
+  for(const n of st.nodes){ remap.set(n.id, n.id + base); n.id += base; }
+  for(const e of st.edges){ e.id += base; e.from = remap.get(e.from) ?? e.from; e.to = remap.get(e.to) ?? e.to; }
+  for(const b of st.boxes) b.id += base;
+  const paresPorReal = new Map();
+  for(const p of rec.emAmbos) paresPorReal.set(p.real, p.desenho);
+  for(const n of st.nodes){
+    const nomeNoDesenho = paresPorReal.get(n.label);
+    const par = (state.nodes||[]).find(o => nomeNoDesenho
+      ? (o.label||o.type) === nomeNoDesenho
+      : mesmoComponente(o.label||o.type, n.label));
+    if(!par) continue;
+    /* O que casou fica exatamente como esta no desenho -- posicao, nome, tipo e
+       descricao. A pergunta aqui e PRESENCA: marcar em ambar todo componente cujo
+       compose usa outro nome encheria a tela de alerta sobre nomenclatura e
+       esconderia o que importa, que e o que falta e o que sobra. */
+    n.x = par.x; n.y = par.y; n.id = par.id;
+    n.label = par.label; n.type = par.type;
+    n.tech = par.tech; n.desc = par.desc; n.color = par.color; n.s = par.s;
+    n._casou = true;
+  }
+  /* O que so existe na realidade vai para uma FAIXA LIVRE abaixo do desenho. Sem
+     isso o auto-layout os posiciona a partir da origem e eles caem por cima dos
+     componentes que ja estavam la -- o que falta esconde o que existe. */
+  const soltos = st.nodes.filter(n => !n._casou);
+  if(soltos.length){
+    /* abaixo do desenho INTEIRO, nao so dos casados: um componente que sera
+       removido pode estar mais embaixo, e a faixa cairia por cima dele */
+    const doDesenho = state.nodes || [];
+    const baseX = doDesenho.length ? Math.min(...doDesenho.map(n=>n.x)) : 130;
+    const baseY = doDesenho.length ? Math.max(...doDesenho.map(n=>n.y + nodeH(n))) + 140 : 150;
+    const porLinha = Math.max(1, Math.min(5, soltos.length));
+    soltos.forEach((n,i)=>{
+      n.x = Math.round(baseX + (i % porLinha) * 250);
+      n.y = Math.round(baseY + Math.floor(i / porLinha) * 190);
+    });
+  }
+  for(const n of st.nodes) delete n._casou;
+  const depois = { format:'archstudio', version:3, name:'realidade', state:st };
+  entrarModoDiff(atual, depois, 'desenho vs ' + realidade.fonte);
+  modoDiff.docAtual = atual;                       /* sair volta para o SEU desenho */
+  modoDiff.reconciliacao = rec;
+  modoDiff.realidade = realidade;
+  mostrarResumoReconciliacao();
+}
+
+function mostrarResumoReconciliacao(){
+  const r = modoDiff.reconciliacao;
+  let p = document.getElementById('diffResumo');
+  if(!p){ p = document.createElement('div'); p.id='diffResumo'; p.className='diffbar'; document.body.appendChild(p); }
+  const faltam = r.naRealidadeSo.length, sobram = r.noDesenhoSo.length;
+  p.innerHTML =
+    `<span class="diffbar-t">desenho vs ${escapeHtml(r.fonte)}</span>`
+    + (faltam ? `<span class="diffchip novo">${faltam} existe${faltam>1?'m':''} e falta${faltam>1?'m':''} no desenho</span>` : '')
+    + (sobram ? `<span class="diffchip saiu">${sobram} desenhado${sobram>1?'s':''} sem par no arquivo</span>` : '')
+    + (r.emAmbos.length ? `<span class="diffchip">${r.emAmbos.length} em ambos</span>` : '')
+    + (!faltam && !sobram ? `<span class="diffchip">o desenho bate com a realidade</span>` : '')
+    + (faltam ? `<button class="pbtn" onclick="trazerFaltantes()">trazer os que faltam</button>` : '')
+    + `<button class="pbtn" onclick="sairModoDiff()">sair</button>`;
+}
+
+/** Acrescenta ao desenho, de verdade, o que existe na realidade e não estava lá. */
+function trazerFaltantes(){
+  if(!modoDiff || !modoDiff.reconciliacao) return;
+  const novos = modoDiff.reconciliacao.naRealidadeSo;
+  const real = modoDiff.realidade;
+  const doc = modoDiff.docAtual;
+  sairModoDiff();
+  if(!novos.length) return;
+  pushUndo();
+  /* passa pelo mesmo caminho de uma spec de agente: posiciona sozinho e casa o que
+     ja existe pelo rotulo, em vez de duplicar */
+  const idsNovos = new Set(novos.map(n => n.id));
+  applyEmbedSpec({
+    nodes: novos,
+    edges: (real.edges||[]).filter(e => idsNovos.has(e.from) || idsNovos.has(e.to)),
+  }, false);
 }
 
 /* ============ ESTILOS DE CONEXÃO (presets) ============ */
@@ -5236,6 +5688,21 @@ function saveFile(){
   const doc={format:'archstudio',version:3,name,theme:theme(),savedAt:new Date().toISOString(),state};
   downloadBlob(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}), name.replace(/[^\w\-]+/g,'-').toLowerCase()+'.archstudio.json');
 }
+document.getElementById('realInput').addEventListener('change', ev=>{
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const real=lerRealidade(String(reader.result), file.name);
+    if(!real || !real.nodes.length){
+      asAlert('Nao reconheci este arquivo. Vale um docker-compose.yml, a saida de '
+        +'`terraform show -json` (state ou plano) ou manifests do Kubernetes.','Comparar com a realidade');
+    } else {
+      compararComRealidade(real);
+    }
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+});
 document.getElementById('fileInput').addEventListener('change', ev=>{
   const file=ev.target.files[0]; if(!file) return;
   const reader=new FileReader();
