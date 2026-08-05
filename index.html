@@ -1093,12 +1093,15 @@ body.embed #archCrumbs{top:12px}
     <div class="meta-pop" id="commentPop">
       <h4>Comentário</h4>
       <textarea id="cmInput" rows="4" placeholder="Anotação sobre este item… use @ para chamar alguém" oninput="setCommentField(this.value);mencaoAoDigitar()" onkeydown="return mencaoTecla(event)"></textarea>
-      <div id="mencaoLista"></div>
       <div style="display:flex;gap:6px;justify-content:space-between;align-items:center">
         <button class="pbtn" onclick="removeComment()">remover</button>
         <button class="pbtn" onclick="closeCommentPop()">fechar</button>
       </div>
     </div>
+    <!-- Fora do popup de comentário de propósito: lá dentro ela herdava o
+         display:none do popup e ficava invisível ao editar nome, descrição, caixa
+         ou texto livre — "aberta" pela classe, escondida pelo pai. -->
+    <div id="mencaoLista"></div>
     <div class="ctx-menu" id="ctxMenu"></div>
     <div class="dlg-overlay" id="dlgOverlay"><div class="dlg" id="dlgCard"></div></div>
     <div class="sc-overlay" id="scOverlay" onclick="if(event.target===this)toggleShortcuts(false)">
