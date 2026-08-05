@@ -324,6 +324,37 @@ body.focusing #edgeLayer .edge{opacity:.12;transition:opacity .18s ease}
 .label-edit.editing{outline:none!important;background:var(--panel)}
 .ftext.frame{border:1px solid var(--border);border-radius:10px;padding:9px 13px;box-shadow:0 2px 12px var(--shadow);overflow-wrap:break-word;max-width:none}
 .ftext.frame.editing{background:var(--nodebg)!important}
+/* ---- comparacao de versoes: verde entrou, vermelho saiu, ambar mudou ----
+   O contorno so vale para os elementos de caixa. Numa <path> do SVG, `outline`
+   desenha um retangulo em volta da area da linha, e uma seta vertical virava uma
+   moldura alta e fina que parecia contornar o componente errado -- a conexao se
+   marca pela COR do traco. */
+.node.diff-novo,.gbox.diff-novo,.ftext.diff-novo{outline:2.5px solid #22c55e;outline-offset:3px}
+.node.diff-saiu,.gbox.diff-saiu,.ftext.diff-saiu{outline:2.5px dashed #ef4444;outline-offset:3px;opacity:.5}
+.node.diff-mudou,.gbox.diff-mudou,.ftext.diff-mudou{outline:2.5px solid #f59e0b;outline-offset:3px}
+.node.diff-saiu,.gbox.diff-saiu{filter:grayscale(.6)}
+/* familias sem cartao: o contorno abraca o GLIFO, como faz a selecao */
+.node.sem-cartao.diff-novo,.node.sem-cartao.diff-saiu,.node.sem-cartao.diff-mudou{outline:none}
+.node.sem-cartao.diff-novo::after,.node.sem-cartao.diff-saiu::after,.node.sem-cartao.diff-mudou::after{
+  content:'';position:absolute;left:50%;top:0;
+  width:var(--tile);height:var(--tile);margin-left:calc(var(--tile) / -2);
+  outline-offset:3px;border-radius:calc(9px * var(--rscale, 1));pointer-events:none;
+}
+.node.sem-cartao.diff-novo::after{outline:2.5px solid #22c55e}
+.node.sem-cartao.diff-saiu::after{outline:2.5px dashed #ef4444}
+.node.sem-cartao.diff-mudou::after{outline:2.5px solid #f59e0b}
+path.edge.diff-novo{stroke:#22c55e!important;stroke-width:3.4!important}
+path.edge.diff-saiu{stroke:#ef4444!important;stroke-dasharray:7 6!important;opacity:.55}
+body.em-diff .node,body.em-diff .gbox,body.em-diff .ftext{cursor:default}
+.diffbar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;
+  display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);
+  border:1px solid var(--border);border-radius:13px;box-shadow:0 14px 40px -14px var(--shadow);
+  font-size:12px;max-width:94vw;flex-wrap:wrap}
+.diffbar-t{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.diffchip{padding:2px 8px;border-radius:999px;border:1px solid var(--border);color:var(--dim);font-size:11px}
+.diffchip.novo{border-color:#22c55e;color:#22c55e}
+.diffchip.saiu{border-color:#ef4444;color:#ef4444}
+.diffchip.mudou{border-color:#f59e0b;color:#f59e0b}
 .richbar{position:fixed;z-index:400;display:flex;align-items:center;gap:5px;padding:5px 7px;
   background:var(--panel);border:1px solid var(--border);border-radius:11px;
   box-shadow:0 10px 34px -12px var(--shadow);font-size:12px}
@@ -1352,6 +1383,8 @@ function onParentMessage(ev){
   else if(m.type==='archstudio:apply-remote' && m.doc) applyRemoteDoc(m.doc);   /* edição de outro colaborador */
   else if(m.type==='archstudio:cursors') renderPeers(m.cursors||[]);
   else if(m.type==='archstudio:mode') setReadOnly(!!m.readonly, !!m.canComment);
+  else if(m.type==='archstudio:diff' && m.depois) entrarModoDiff(m.antes, m.depois, m.rotulo);
+  else if(m.type==='archstudio:diff-sair') sairModoDiff();
   else if(m.type==='archstudio:png') emitPng();   /* plataforma pede a imagem do diagrama (PDF do documento) */
 }
 /* ============ COLABORAÇÃO (o pai faz o WebSocket; aqui só aplicamos/mostramos) ============ */
@@ -2191,6 +2224,7 @@ function desenharTudo(){
     el.dataset.id=b.id;
     el.innerHTML=`<span class="gtitle" style="color:${b.color}">${escapeHtml(b.label)}</span><span class="bres" style="background:${b.color}"></span><span class="nx" title="remover caixa (mantém o conteúdo)">✕</span>${ROT_HANDLE}${b.lock?'<span class="lk" title="fixado"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}`;
     el.addEventListener('dblclick',ev=>{ if(readOnly){ if(commentMode) editComment('box',b.id,ev); return; } renameBox(b.id); });
+    marcarDiff('box', b.id, el);
     canvas.appendChild(el);
   }
   for(const t of state.texts){
@@ -2240,6 +2274,7 @@ function desenharTudo(){
     const archBadge=el.querySelector('.narch');
     if(archBadge){ archBadge.addEventListener('pointerdown',ev=>ev.stopPropagation()); archBadge.addEventListener('dblclick',ev=>ev.stopPropagation()); archBadge.addEventListener('click',ev=>{ ev.stopPropagation(); enterArch(n.id); }); }
     canvas.appendChild(el);
+    marcarDiff('node', n.id, el);
     guardarAltura(n, el);      /* as setas sao desenhadas depois: ja saem do centro certo */
   }
   renderEdges();
@@ -2397,6 +2432,7 @@ function renderEdges(){
   /* desenha a linha + uma faixa invisível larga por cima, que captura o clique */
   const wire=(kind,o,d,isSel,heads,dVis)=>{
     const p=mkPath('edge'+(isSel?' sel':''),dVis||d,o.dash,o.w,heads,isSel,o.color);
+    marcarDiff(kind, o.id, p);
     edgeLayer.appendChild(p);
     const hit=document.createElementNS(SVGNS,'path');
     hit.setAttribute('class','edge-hit');
@@ -4604,6 +4640,169 @@ const escapeRico = s => escapeHtml(String(s ?? '')).replace(/\n/g, '<br>');
 /** Conteúdo de um texto pronto para o DOM: rico quando há, plano quando não. */
 function conteudoDeTexto(t){
   return t.rich ? t.rich : escapeRico(t.text || '');
+}
+
+/* ============ COMPARAR DUAS VERSÕES ============
+   O histórico já guardava versões e sabia restaurar, mas não sabia MOSTRAR o que
+   mudou: para descobrir, o usuário tinha de restaurar e olhar. Aqui as duas versões
+   viram um desenho só, com cada elemento marcado como novo, removido ou alterado.
+
+   A identidade vem do id, que é estável dentro do documento; `aid` (id do agente)
+   e o par tipo+rótulo entram como reserva, para o caso de versões que passaram por
+   caminhos diferentes. Sem isso um componente renomeado apareceria como "saiu um,
+   entrou outro" em vez de "mudou".
+
+   Posição não conta como mudança. Arrastar uma caixa não é uma decisão de
+   arquitetura, e se contasse toda comparação viraria ruído. */
+let modoDiff = null;   /* {antes, depois, marcas, resumo} enquanto está comparando */
+
+const DIFF_CAMPOS = ['label','type','tech','desc','color','multi','st'];
+
+function chavesDoNo(n){
+  return [ 'id:'+n.id, n.aid?('aid:'+n.aid):null,
+           (n.label||'').trim()?('rot:'+n.type+'|'+(n.label||'').trim().toLowerCase()):null ].filter(Boolean);
+}
+function chavesDaCaixa(b){
+  return [ 'id:'+b.id, b.aid?('aid:'+b.aid):null,
+           (b.label||'').trim()?('rot:'+(b.label||'').trim().toLowerCase()):null ].filter(Boolean);
+}
+
+/** Casa os itens de duas listas pelas chaves, na ordem de confiança delas. */
+function casarPorChave(antes, depois, chaves){
+  const paraDepois = new Map(), usados = new Set(), casados = new Map();
+  for(const d of depois) for(const k of chaves(d)) if(!paraDepois.has(k)) paraDepois.set(k, d);
+  for(const a of antes){
+    for(const k of chaves(a)){
+      const d = paraDepois.get(k);
+      if(d && !usados.has(d)){ usados.add(d); casados.set(a, d); break; }
+    }
+  }
+  return { casados, novos: depois.filter(d => !usados.has(d)) };
+}
+
+function mudouAlgo(a, d){
+  return DIFF_CAMPOS.some(c => String(a[c] ?? '') !== String(d[c] ?? ''));
+}
+
+/**
+ * Constrói o desenho da comparação: tudo que existe nas duas versões, marcado.
+ * @return {state, marcas, resumo}
+ */
+function compararDocs(docAntes, docDepois){
+  const stA = (docAntes && docAntes.state) ? docAntes.state : (docAntes || {});
+  const stD = (docDepois && docDepois.state) ? docDepois.state : (docDepois || {});
+  const nA = stA.nodes||[], nD = stD.nodes||[], eA = stA.edges||[], eD = stD.edges||[];
+  const bA = stA.boxes||[], bD = stD.boxes||[], tA = stA.texts||[], tD = stD.texts||[];
+
+  const marcas = { node:{}, edge:{}, box:{}, text:{} };
+  const resumo = { novos:[], saidos:[], mudados:[], conexoesNovas:0, conexoesSaidas:0 };
+
+  /* --- componentes --- */
+  const cn = casarPorChave(nA, nD, chavesDoNo);
+  const nos = [];
+  const deAntesParaDepois = new Map();
+  for(const [a, d] of cn.casados){
+    deAntesParaDepois.set(a.id, d.id);
+    nos.push({ ...d });
+    if(mudouAlgo(a, d)){
+      marcas.node[d.id] = 'mudou';
+      resumo.mudados.push({ de:a.label||a.type, para:d.label||d.type });
+    }
+  }
+  for(const d of cn.novos){ nos.push({ ...d }); marcas.node[d.id] = 'novo'; resumo.novos.push(d.label||d.type); }
+  /* removidos entram com id deslocado, para não colidir com os que ficaram */
+  const OFFSET = 1000000;
+  for(const a of nA){
+    if(cn.casados.has(a)) continue;
+    const copia = { ...a, id: a.id + OFFSET };
+    nos.push(copia); marcas.node[copia.id] = 'saiu'; resumo.saidos.push(a.label||a.type);
+  }
+  const idDeAntes = a => deAntesParaDepois.has(a) ? deAntesParaDepois.get(a) : a + OFFSET;
+
+  /* --- conexões: identidade é o par de pontas mais o rótulo --- */
+  const chaveAresta = (e, mapear) => (mapear ? idDeAntes(e.from) : e.from) + '>'
+                                   + (mapear ? idDeAntes(e.to) : e.to) + '|' + (e.label||'').trim().toLowerCase();
+  const arestas = [], vistasD = new Set();
+  const porChaveD = new Map();
+  for(const e of eD) porChaveD.set(chaveAresta(e, false), e);
+  for(const e of eA){
+    const k = chaveAresta(e, true);
+    const d = porChaveD.get(k);
+    if(d){ vistasD.add(d); arestas.push({ ...d }); }
+    else{
+      const copia = { ...e, id:e.id + OFFSET, from:idDeAntes(e.from), to:idDeAntes(e.to) };
+      arestas.push(copia); marcas.edge[copia.id] = 'saiu'; resumo.conexoesSaidas++;
+    }
+  }
+  for(const d of eD){
+    if(vistasD.has(d)) continue;
+    arestas.push({ ...d }); marcas.edge[d.id] = 'novo'; resumo.conexoesNovas++;
+  }
+
+  /* --- caixas e textos: presença, sem detalhar o conteúdo --- */
+  const cb = casarPorChave(bA, bD, chavesDaCaixa);
+  const caixas = [];
+  for(const [, d] of cb.casados) caixas.push({ ...d });
+  for(const d of cb.novos){ caixas.push({ ...d }); marcas.box[d.id] = 'novo'; }
+  for(const a of bA){
+    if(cb.casados.has(a)) continue;
+    const copia = { ...a, id:a.id + OFFSET };
+    caixas.push(copia); marcas.box[copia.id] = 'saiu';
+  }
+  const textos = (tD||[]).map(t => ({ ...t }));
+
+  const state = { seq: Math.max(0, ...nos.map(n=>n.id), ...arestas.map(e=>e.id)) + 1,
+                  nodes:nos, edges:arestas, boxes:caixas, arrows:[], texts:textos };
+  return { state, marcas, resumo };
+}
+
+/** Entra no modo comparação: só-leitura, com a marcação por cima. */
+function entrarModoDiff(docAntes, docDepois, rotulo){
+  const { state:st, marcas, resumo } = compararDocs(docAntes, docDepois);
+  modoDiff = { marcas, resumo, rotulo: rotulo||'' , docAtual: docDepois };
+  setReadOnly(true, false);
+  document.body.classList.add('em-diff');
+  suppressEmit = true;
+  try{ state = rootState = st; scopePath = []; renderAll(); }
+  finally{ suppressEmit = false; }
+  mostrarResumoDiff();
+  fitView && fitView();
+}
+
+function sairModoDiff(){
+  if(!modoDiff) return;
+  const doc = modoDiff.docAtual;
+  modoDiff = null;
+  document.body.classList.remove('em-diff');
+  const painel = document.getElementById('diffResumo');
+  if(painel) painel.remove();
+  setReadOnly(false, false);
+  suppressEmit = true;
+  try{ applyDoc(doc); }finally{ suppressEmit = false; }
+}
+
+function mostrarResumoDiff(){
+  let p = document.getElementById('diffResumo');
+  if(!p){ p = document.createElement('div'); p.id='diffResumo'; p.className='diffbar'; document.body.appendChild(p); }
+  const r = modoDiff.resumo;
+  const item = (n, txt, cls) => n ? `<span class="diffchip ${cls}">${n} ${txt}</span>` : '';
+  const nada = !r.novos.length && !r.saidos.length && !r.mudados.length && !r.conexoesNovas && !r.conexoesSaidas;
+  p.innerHTML =
+    `<span class="diffbar-t">${escapeHtml(modoDiff.rotulo||'comparando versões')}</span>`
+    + (nada ? '<span class="diffchip">nada mudou</span>' : (
+        item(r.novos.length, r.novos.length===1?'novo':'novos', 'novo')
+      + item(r.saidos.length, r.saidos.length===1?'removido':'removidos', 'saiu')
+      + item(r.mudados.length, r.mudados.length===1?'alterado':'alterados', 'mudou')
+      + item(r.conexoesNovas, r.conexoesNovas===1?'conexão nova':'conexões novas', 'novo')
+      + item(r.conexoesSaidas, r.conexoesSaidas===1?'conexão removida':'conexões removidas', 'saiu')))
+    + `<button class="pbtn" onclick="sairModoDiff()">sair da comparação</button>`;
+}
+
+/** Marca aplicada no render (o elemento já existe no DOM). */
+function marcarDiff(kind, id, el){
+  if(!modoDiff) return;
+  const m = modoDiff.marcas[kind] && modoDiff.marcas[kind][id];
+  if(m) el.classList.add('diff-'+m);
 }
 
 /* ============ ESTILOS DE CONEXÃO (presets) ============ */
