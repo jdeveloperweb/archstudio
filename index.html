@@ -1385,7 +1385,7 @@ function onParentMessage(ev){
   else if(m.type==='archstudio:apply-remote' && m.doc) applyRemoteDoc(m.doc);   /* edição de outro colaborador */
   else if(m.type==='archstudio:cursors') renderPeers(m.cursors||[]);
   else if(m.type==='archstudio:mode') setReadOnly(!!m.readonly, !!m.canComment);
-  else if(m.type==='archstudio:diff' && m.depois) entrarModoDiff(m.antes, m.depois, m.rotulo);
+  else if(m.type==='archstudio:diff' && m.depois) entrarModoDiff(m.antes, m.depois, m.rotulo, m.voltarPara);
   else if(m.type==='archstudio:diff-sair') sairModoDiff();
   else if(m.type==='archstudio:png') emitPng();   /* plataforma pede a imagem do diagrama (PDF do documento) */
 }
@@ -4767,9 +4767,14 @@ function compararDocs(docAntes, docDepois){
 }
 
 /** Entra no modo comparação: só-leitura, com a marcação por cima. */
-function entrarModoDiff(docAntes, docDepois, rotulo){
+/**
+ * @param voltarPara desenho para o qual sair da comparacao devolve. Por padrao e o
+ *   "depois", que na comparacao de versoes E o desenho atual. Numa PROPOSTA nao e:
+ *   o depois e a sugestao de outra pessoa, e sair tem de devolver o seu diagrama.
+ */
+function entrarModoDiff(docAntes, docDepois, rotulo, voltarPara){
   const { state:st, marcas, resumo } = compararDocs(docAntes, docDepois);
-  modoDiff = { marcas, resumo, rotulo: rotulo||'' , docAtual: docDepois };
+  modoDiff = { marcas, resumo, rotulo: rotulo||'' , docAtual: voltarPara || docDepois };
   setReadOnly(true, false);
   document.body.classList.add('em-diff');
   suppressEmit = true;
