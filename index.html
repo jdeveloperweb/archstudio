@@ -3132,8 +3132,12 @@ function mencaoAoDigitar(){
   mencaoAberta = { ...alvo, achados, campo };
   mencaoSel = 0;
   if(!mencionaveis.length){
-    lista.innerHTML = '<div class="mencao-vazio">Só dá para chamar quem enxerga este diagrama. '
-      + 'Compartilhe com um time para ter a lista.</div>';
+    /* mensagem precisa: "nao funcionou" quase sempre e isto -- diagrama pessoal,
+       onde a unica pessoa e voce, e voce nao aparece na propria lista */
+    lista.innerHTML = '<div class="mencao-vazio"><b>Ninguém para chamar aqui.</b><br>'
+      + 'A lista traz os membros do time deste diagrama. Num diagrama pessoal não há '
+      + 'mais ninguém além de você, e você mesmo não entra (marcar a si não envia aviso).'
+      + '<br>Mova o diagrama para um time para poder marcar alguém.</div>';
   } else if(!achados.length){
     lista.innerHTML = '<div class="mencao-vazio">Ninguém com esse nome neste diagrama.</div>';
   } else {
