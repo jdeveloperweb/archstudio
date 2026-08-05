@@ -3055,23 +3055,81 @@ function editComment(kind,id,ev){
    simplesmente nao oferece a lista -- e digitar @nome continua valendo. */
 let mencionaveis = [], mencaoAberta = null, mencaoSel = 0;
 
-function mencaoTermo(ta){
-  const ate = ta.value.slice(0, ta.selectionStart);
-  const m = /(^|[\s(])@([\p{L}0-9._-]*)$/u.exec(ate);
+const MENCAO_RE = /(^|[\s(])@([\p{L}0-9._-]*)$/u;
+
+/* Onde a mencao esta sendo digitada. Sao dois tipos de campo no canvas: a caixa de
+   comentario, que e um <textarea>, e todos os outros textos, que sao editados NO
+   LUGAR com contenteditable. Os dois precisam do mesmo autocompletar, entao aqui
+   cada tipo diz apenas como ler o texto antes do cursor e como trocar o trecho. */
+function mencaoCampo(){
+  const ta = document.getElementById('cmInput');
+  const pop = document.getElementById('commentPop');
+  const ativo = document.activeElement;
+  if(ta && ativo === ta) return campoTextarea(ta);
+  if(ativo && ativo.isContentEditable && ativo.classList.contains('editing')) return campoEditavel(ativo);
+  /* Sem depender do foco: o popup aberto ou um editor no lugar ja dizem onde se
+     esta digitando. Amarrar so no activeElement quebrava quando o foco ainda nao
+     tinha chegado -- o popup foca por timer, e um clique na lista tira o foco. */
+  if(pop && pop.classList.contains('show') && ta) return campoTextarea(ta);
+  const el = document.querySelector('.editing[contenteditable]');
+  return el ? campoEditavel(el) : null;
+}
+
+function campoTextarea(ta){
+  return {
+    el: ta,
+    antesDoCursor: () => ta.value.slice(0, ta.selectionStart),
+    trocar(inicio, texto){
+      const depois = ta.value.slice(ta.selectionStart);
+      ta.value = ta.value.slice(0, inicio) + texto + depois;
+      const caret = inicio + texto.length;
+      ta.setSelectionRange(caret, caret);
+      ta.focus();
+      setCommentField(ta.value);
+    },
+  };
+}
+
+function campoEditavel(el){
+  const sel = getSelection();
+  const r = (sel && sel.rangeCount) ? sel.getRangeAt(0) : null;
+  const no = (r && r.startContainer.nodeType === 3) ? r.startContainer : null;
+  return {
+    el,
+    antesDoCursor: () => no ? no.nodeValue.slice(0, r.startOffset) : '',
+    trocar(inicio, texto){
+      if(!no) return;
+      const v = no.nodeValue;
+      no.nodeValue = v.slice(0, inicio) + texto + v.slice(r.startOffset);
+      const caret = inicio + texto.length;
+      const novo = document.createRange();
+      novo.setStart(no, Math.min(caret, no.nodeValue.length));
+      novo.collapse(true);
+      const s2 = getSelection();
+      s2.removeAllRanges(); s2.addRange(novo);
+      el.focus();
+    },
+  };
+}
+
+function mencaoTermo(campo){
+  const ate = campo.antesDoCursor();
+  const m = MENCAO_RE.exec(ate);
   return m ? { termo: m[2], inicio: ate.length - m[2].length - 1 } : null;
 }
 
 function mencaoAoDigitar(){
-  const ta = document.getElementById('cmInput');
   const lista = document.getElementById('mencaoLista');
-  if(!ta || !lista) return;
-  const alvo = mencaoTermo(ta);
+  const campo = mencaoCampo();
+  if(!lista || !campo){ mencaoFecha(); return; }
+  const alvo = mencaoTermo(campo);
   if(!alvo){ mencaoFecha(); return; }
+  mencaoAberta = null;
   const t = alvo.termo.toLowerCase();
   const achados = mencionaveis
     .filter(p => !t || p.handle.startsWith(t) || (p.name||'').toLowerCase().includes(t))
     .slice(0, 8);
-  mencaoAberta = { ...alvo, achados };
+  mencaoAberta = { ...alvo, achados, campo };
   mencaoSel = 0;
   if(!mencionaveis.length){
     lista.innerHTML = '<div class="mencao-vazio">Só dá para chamar quem enxerga este diagrama. '
@@ -3090,7 +3148,7 @@ function mencaoAoDigitar(){
       el.addEventListener('mousedown', ev=>{ ev.preventDefault(); mencaoEscolhe(+el.dataset.i); });
     });
   }
-  const r = ta.getBoundingClientRect();
+  const r = campo.el.getBoundingClientRect();
   lista.classList.add('show');
   /* se nao couber abaixo do campo, abre para cima em vez de sair da tela */
   const alt = lista.offsetHeight || 160;
@@ -3113,17 +3171,12 @@ function mencaoPinta(){
 }
 
 function mencaoEscolhe(i){
-  const ta = document.getElementById('cmInput');
-  if(!ta || !mencaoAberta || !mencaoAberta.achados[i]) return;
-  const p = mencaoAberta.achados[i];
-  const antes = ta.value.slice(0, mencaoAberta.inicio);
-  const depois = ta.value.slice(ta.selectionStart);
-  ta.value = antes + '@' + p.handle + ' ' + depois;
-  const caret = (antes + '@' + p.handle + ' ').length;
-  ta.setSelectionRange(caret, caret);
+  if(!mencaoAberta || !mencaoAberta.achados[i]) return;
+  /* le tudo ANTES de fechar: mencaoFecha() zera o estado */
+  const { campo, inicio } = mencaoAberta;
+  const handle = mencaoAberta.achados[i].handle;
   mencaoFecha();
-  setCommentField(ta.value);
-  ta.focus();
+  campo.trocar(inicio, '@' + handle + ' ');
 }
 
 /** @return false para o textarea nao tratar a tecla (setas e Enter sao da lista) */
@@ -3748,6 +3801,8 @@ function beginInline(el, text, opts, onCommit){
     const val=rico?limparRico(el.innerHTML):(el.innerText||'').replace(/\u00a0/g,' ');
     el.removeAttribute('contenteditable'); el.classList.remove('editing');
     el.removeEventListener('blur',onBlur); el.removeEventListener('keydown',onKey);
+    el.removeEventListener('input',onMencao);
+    mencaoFecha();
     if(rico){
       el.removeEventListener('paste',onPaste);
       window.removeEventListener('scroll',posicionarBarraRica,true);
@@ -3769,6 +3824,8 @@ function beginInline(el, text, opts, onCommit){
   };
   const onKey=ev=>{
     ev.stopPropagation();
+    /* com a lista aberta, seta/Enter/Tab/Esc sao dela, nao do editor */
+    if(!mencaoTecla(ev)){ ev.preventDefault(); return; }
     if(ev.key==='Escape'){ ev.preventDefault(); finish(false); }
     else if(ev.key==='Enter'){
       if(opts.multiline) return;   /* texto livre: Enter quebra linha */
@@ -3784,6 +3841,10 @@ function beginInline(el, text, opts, onCommit){
     const txt=(ev.clipboardData||window.clipboardData).getData('text/plain')||'';
     document.execCommand('insertText', false, txt);
   };
+  /* @ vale em QUALQUER texto do desenho: nome, tecnologia, descricao, titulo de
+     caixa, rotulo de conexao e texto livre -- nao so no comentario */
+  const onMencao=()=>mencaoAoDigitar();
+  el.addEventListener('input',onMencao);
   el.addEventListener('blur',onBlur);
   el.addEventListener('keydown',onKey);
   if(rico){
