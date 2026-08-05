@@ -226,7 +226,10 @@ body.comment-mode .node,body.comment-mode .gbox,body.comment-mode .ftext{cursor:
   border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:500 12px/1.45 var(--uifont);color:var(--ink);outline:none}
 #commentPop textarea:focus{border-color:#f2b04a}
 /* lista de quem pode ser mencionado; aparece ao digitar @ dentro do comentario */
-#mencaoLista{position:absolute;z-index:60;min-width:190px;max-width:260px;max-height:190px;overflow-y:auto;
+/* fixed, nao absolute: as coordenadas vem de getBoundingClientRect, que e da
+   JANELA. Com absolute elas eram lidas contra o ancestral posicionado e a lista
+   aparecia longe do campo. */
+#mencaoLista{position:fixed;z-index:60;min-width:190px;max-width:260px;max-height:190px;overflow-y:auto;
   background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;
   box-shadow:0 12px 32px -12px var(--shadow);display:none}
 #mencaoLista.show{display:block}
@@ -3088,9 +3091,13 @@ function mencaoAoDigitar(){
     });
   }
   const r = ta.getBoundingClientRect();
-  lista.style.left = Math.round(r.left) + 'px';
-  lista.style.top  = Math.round(r.bottom + 4) + 'px';
   lista.classList.add('show');
+  /* se nao couber abaixo do campo, abre para cima em vez de sair da tela */
+  const alt = lista.offsetHeight || 160;
+  const abaixo = r.bottom + 4;
+  const cabe = abaixo + alt <= window.innerHeight - 8;
+  lista.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - 270, r.left))) + 'px';
+  lista.style.top  = Math.round(cabe ? abaixo : Math.max(8, r.top - alt - 4)) + 'px';
 }
 
 function mencaoFecha(){
