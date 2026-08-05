@@ -225,6 +225,18 @@ body.comment-mode .node,body.comment-mode .gbox,body.comment-mode .ftext{cursor:
 #commentPop textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:70px;background:var(--panel2);
   border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:500 12px/1.45 var(--uifont);color:var(--ink);outline:none}
 #commentPop textarea:focus{border-color:#f2b04a}
+/* lista de quem pode ser mencionado; aparece ao digitar @ dentro do comentario */
+#mencaoLista{position:absolute;z-index:60;min-width:190px;max-width:260px;max-height:190px;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;
+  box-shadow:0 12px 32px -12px var(--shadow);display:none}
+#mencaoLista.show{display:block}
+.mencao-item{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--ink)}
+.mencao-item.on,.mencao-item:hover{background:var(--panel2)}
+.mencao-ini{width:20px;height:20px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  font:700 9px var(--mono);color:#fff;background:linear-gradient(180deg,var(--accent),#8b5cf6)}
+.mencao-img{width:20px;height:20px;border-radius:50%;flex:0 0 auto;object-fit:cover;border:1px solid var(--border)}
+.mencao-h{color:var(--dim);font-family:var(--mono);font-size:10.5px}
+.mencao-vazio{padding:6px 8px;color:var(--dim);font-size:11.5px;line-height:1.4}
 /* ---- guias inteligentes de alinhamento (aparecem só durante o arrasto) ---- */
 .sguide{position:absolute;z-index:40;pointer-events:none;background:var(--accent);opacity:.9;box-shadow:0 0 0 0.5px color-mix(in srgb,var(--accent) 40%,transparent)}
 .sguide.v{width:1px}
@@ -1077,7 +1089,8 @@ body.embed #archCrumbs{top:12px}
     </div>
     <div class="meta-pop" id="commentPop">
       <h4>Comentário</h4>
-      <textarea id="cmInput" rows="4" placeholder="Anotação sobre este item…" oninput="setCommentField(this.value)"></textarea>
+      <textarea id="cmInput" rows="4" placeholder="Anotação sobre este item… use @ para chamar alguém" oninput="setCommentField(this.value);mencaoAoDigitar()" onkeydown="return mencaoTecla(event)"></textarea>
+      <div id="mencaoLista"></div>
       <div style="display:flex;gap:6px;justify-content:space-between;align-items:center">
         <button class="pbtn" onclick="removeComment()">remover</button>
         <button class="pbtn" onclick="closeCommentPop()">fechar</button>
@@ -1397,6 +1410,7 @@ function onParentMessage(ev){
   else if(m.type==='archstudio:mode') setReadOnly(!!m.readonly, !!m.canComment);
   else if(m.type==='archstudio:diff' && m.depois) entrarModoDiff(m.antes, m.depois, m.rotulo, m.voltarPara);
   else if(m.type==='archstudio:diff-sair') sairModoDiff();
+  else if(m.type==='archstudio:mentions') mencionaveis = Array.isArray(m.pessoas) ? m.pessoas : [];
   else if(m.type==='archstudio:png') emitPng();   /* plataforma pede a imagem do diagrama (PDF do documento) */
 }
 /* ============ COLABORAÇÃO (o pai faz o WebSocket; aqui só aplicamos/mostramos) ============ */
@@ -3032,6 +3046,89 @@ function editComment(kind,id,ev){
   pop.classList.add('show');
   setTimeout(()=>{ ta.focus(); ta.select(); },10);
 }
+/* ---- mencionar alguem num comentario ----
+   A lista vem da PLATAFORMA (mensagem archstudio:mentions) e traz so quem enxerga
+   este diagrama. O canvas nao conhece usuarios nem consulta ninguem: sozinho, ele
+   simplesmente nao oferece a lista -- e digitar @nome continua valendo. */
+let mencionaveis = [], mencaoAberta = null, mencaoSel = 0;
+
+function mencaoTermo(ta){
+  const ate = ta.value.slice(0, ta.selectionStart);
+  const m = /(^|[\s(])@([\p{L}0-9._-]*)$/u.exec(ate);
+  return m ? { termo: m[2], inicio: ate.length - m[2].length - 1 } : null;
+}
+
+function mencaoAoDigitar(){
+  const ta = document.getElementById('cmInput');
+  const lista = document.getElementById('mencaoLista');
+  if(!ta || !lista) return;
+  const alvo = mencaoTermo(ta);
+  if(!alvo){ mencaoFecha(); return; }
+  const t = alvo.termo.toLowerCase();
+  const achados = mencionaveis
+    .filter(p => !t || p.handle.startsWith(t) || (p.name||'').toLowerCase().includes(t))
+    .slice(0, 8);
+  mencaoAberta = { ...alvo, achados };
+  mencaoSel = 0;
+  if(!mencionaveis.length){
+    lista.innerHTML = '<div class="mencao-vazio">Só dá para chamar quem enxerga este diagrama. '
+      + 'Compartilhe com um time para ter a lista.</div>';
+  } else if(!achados.length){
+    lista.innerHTML = '<div class="mencao-vazio">Ninguém com esse nome neste diagrama.</div>';
+  } else {
+    lista.innerHTML = achados.map((p,i)=>{
+      const ini = escapeHtml((p.name||'?').trim().charAt(0).toUpperCase());
+      const foto = p.avatar ? `<img class="mencao-img" src="${escapeHtml(p.avatar)}" alt="">`
+                            : `<span class="mencao-ini">${ini}</span>`;
+      return `<div class="mencao-item${i===0?' on':''}" data-i="${i}">${foto}`
+           + `<span>${escapeHtml(p.name||'')}</span><span class="mencao-h">@${escapeHtml(p.handle)}</span></div>`;
+    }).join('');
+    lista.querySelectorAll('.mencao-item').forEach(el=>{
+      el.addEventListener('mousedown', ev=>{ ev.preventDefault(); mencaoEscolhe(+el.dataset.i); });
+    });
+  }
+  const r = ta.getBoundingClientRect();
+  lista.style.left = Math.round(r.left) + 'px';
+  lista.style.top  = Math.round(r.bottom + 4) + 'px';
+  lista.classList.add('show');
+}
+
+function mencaoFecha(){
+  mencaoAberta = null;
+  const lista = document.getElementById('mencaoLista');
+  if(lista) lista.classList.remove('show');
+}
+
+function mencaoPinta(){
+  const lista = document.getElementById('mencaoLista');
+  if(!lista) return;
+  lista.querySelectorAll('.mencao-item').forEach((el,i)=>el.classList.toggle('on', i===mencaoSel));
+}
+
+function mencaoEscolhe(i){
+  const ta = document.getElementById('cmInput');
+  if(!ta || !mencaoAberta || !mencaoAberta.achados[i]) return;
+  const p = mencaoAberta.achados[i];
+  const antes = ta.value.slice(0, mencaoAberta.inicio);
+  const depois = ta.value.slice(ta.selectionStart);
+  ta.value = antes + '@' + p.handle + ' ' + depois;
+  const caret = (antes + '@' + p.handle + ' ').length;
+  ta.setSelectionRange(caret, caret);
+  mencaoFecha();
+  setCommentField(ta.value);
+  ta.focus();
+}
+
+/** @return false para o textarea nao tratar a tecla (setas e Enter sao da lista) */
+function mencaoTecla(ev){
+  if(!mencaoAberta || !mencaoAberta.achados.length) return true;
+  if(ev.key === 'ArrowDown'){ mencaoSel = (mencaoSel+1) % mencaoAberta.achados.length; mencaoPinta(); return false; }
+  if(ev.key === 'ArrowUp'){ mencaoSel = (mencaoSel-1+mencaoAberta.achados.length) % mencaoAberta.achados.length; mencaoPinta(); return false; }
+  if(ev.key === 'Enter' || ev.key === 'Tab'){ mencaoEscolhe(mencaoSel); return false; }
+  if(ev.key === 'Escape'){ mencaoFecha(); return false; }
+  return true;
+}
+
 function setCommentField(v){
   if(!commentEditRef) return;
   const o=itemByKind(commentEditRef.kind, commentEditRef.id); if(!o) return;
@@ -3040,6 +3137,7 @@ function setCommentField(v){
   if(v.trim()) o.comment=v; else delete o.comment;
   persist(); renderComments();
 }
+function fecharPopComMencao(){ mencaoFecha(); }
 function removeComment(){ const ta=document.getElementById('cmInput'); if(ta) ta.value=''; setCommentField(''); closeCommentPop(); }
 function closeCommentPop(){ document.getElementById('commentPop').classList.remove('show'); commentEditRef=null; renderProps(); }
 /* ---- ordem de sobreposição (z-order) ----------------------------------------
