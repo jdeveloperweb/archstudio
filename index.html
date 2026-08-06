@@ -970,12 +970,12 @@ body.embed #archCrumbs{top:12px}
     <button class="mode-btn" id="modeConn" onclick="setMode('connect')" title="clique em dois componentes para conectar">→ Conectar</button>
   </div>
   <span class="tb-sep"></span>
-  <button class="tool-btn" onclick="addBox()">▭ Caixa</button>
+  <button class="tool-btn" data-guia="caixa" onclick="addBox()">▭ Caixa</button>
   <button class="tool-btn" onclick="addArrow()">↗ Seta</button>
-  <button class="tool-btn" onclick="addText()" title="anotação de texto solta">T Texto</button>
+  <button class="tool-btn" data-guia="texto" onclick="addText()" title="anotação de texto solta">T Texto</button>
   <button class="tool-btn" onclick="addTextBox()" title="caixa de texto com fundo e borda">▭ Cx. texto</button>
   <span class="tb-sep"></span>
-  <button class="tool-btn icon" onclick="undo()" title="Desfazer (Ctrl+Z)">↩</button>
+  <button class="tool-btn icon" data-guia="desfazer" onclick="undo()" title="Desfazer (Ctrl+Z)">↩</button>
   <button class="tool-btn icon" onclick="redo()" title="Refazer (Ctrl+Y)">↪</button>
   <span class="tb-sep"></span>
   <button class="tool-btn" onclick="openTemplates()"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg> Modelos</button>
@@ -1404,10 +1404,85 @@ function startEmbedDraw({base,final,steps,changed}){
   };
   embedAnim={final,timer:setTimeout(tick,180)};
 }
+/* ============ GUIA GUIADO (a plataforma conduz; aqui só apontamos) ============
+
+   A plataforma ensina a ferramenta passo a passo, mas o editor mora num iframe:
+   ela não consegue medir nada aqui dentro. Então o acordo é este — ela diz o NOME
+   do que quer destacar, e nós devolvemos a régua (posição e tamanho) e avisamos
+   quando a pessoa clicou ali. O desenho do destaque é dela, por cima do iframe.
+
+   Nomes, e não seletores: o guia não deveria conhecer a estrutura interna do
+   canvas. Mudar uma classe aqui não pode quebrar o onboarding lá. */
+const GUIA_ALVOS = {
+  paleta:         '.palette',
+  'paleta-busca': '.pal-search',
+  conectar:       '#modeConn',
+  caixa:          '[data-guia="caixa"]',
+  texto:          '[data-guia="texto"]',
+  desfazer:       '[data-guia="desfazer"]',
+  mais:           '#moreMenu',
+  props:          '#propsBar',
+  no:             '.node',
+  'no-nome':      '.node .nname',
+  'no-tec':       '.node .ntech',
+  'no-desc':      '.node .ndesc',
+  'no-porta':     '.node .port',
+  'no-detalhes':  '.node .ndet',
+  'caixa-no-canvas': '.gbox',
+  /* conexão não entra: a caixa envolvente de um traço diagonal é quase a tela
+     inteira, e o destaque apontaria para o vazio entre os dois componentes. */
+};
+let guiaAlvo=null, guiaTimer=null, guiaMedida='';
+function guiaElemento(){ const sel=GUIA_ALVOS[guiaAlvo]; return sel?document.querySelector(sel):null; }
+/* A régua de um alvo, ou null quando ele não está visível.
+
+   O caso que obriga a subir para o pai: campo em branco não ocupa espaço. Uma
+   descrição vazia tem altura zero — e é exatamente esse o estado de quem está no
+   passo "preencha a descrição". Apontar para um retângulo de área zero mandaria o
+   destaque para o canto da tela justo em quem mais precisa dele; apontar para o
+   componente inteiro ainda mostra ONDE mexer. */
+const guiaVale = r => r && r.width >= 8 && r.height >= 8;   /* faixa de 1px não é destaque */
+function guiaRegua(){
+  const el=guiaElemento(); if(!el) return null;
+  let r=el.getBoundingClientRect();
+  if(guiaVale(r)) return r;
+  const pai=el.closest('.node,.gbox,.ftext');
+  if(pai){ r=pai.getBoundingClientRect(); if(guiaVale(r)) return r; }
+  return null;   /* paleta recolhida, barra sem seleção: some de verdade */
+}
+function guiaMedir(){
+  const r=guiaRegua();
+  const vale=!!r;
+  const chave=vale?[r.x,r.y,r.width,r.height].map(Math.round).join(','):'';
+  if(chave===guiaMedida) return;   /* só fala quando de fato mexeu */
+  guiaMedida=chave;
+  postToParent({type:'archstudio:guia-alvo', alvo:guiaAlvo,
+    rect: vale?{x:r.x,y:r.y,w:r.width,h:r.height}:null});
+}
+function guiaApontar(alvo){
+  guiaAlvo = (alvo && GUIA_ALVOS[alvo]) ? alvo : null;
+  guiaMedida = 'nada';   /* força o primeiro aviso, inclusive o de "não achei" */
+  clearInterval(guiaTimer); guiaTimer=null;
+  if(!guiaAlvo){ postToParent({type:'archstudio:guia-alvo', alvo:null, rect:null}); return; }
+  guiaMedir();
+  /* medir por tempo, sempre do DOM de agora: o alvo pode nascer depois (um
+     componente que ainda vai ser criado), mudar de lugar com zoom, scroll ou
+     arrasto, ou sumir num redesenho. Prever cada um desses casos daria mais
+     código e menos certeza. */
+  guiaTimer=setInterval(guiaMedir, 200);
+}
+/* fazer a coisa é o que avança o passo lá na plataforma */
+document.addEventListener('click', ev=>{
+  if(!guiaAlvo) return;
+  const el=guiaElemento();
+  if(el && (el===ev.target || el.contains(ev.target))) postToParent({type:'archstudio:guia-clique', alvo:guiaAlvo});
+}, true);
+
 function onParentMessage(ev){
   if(ev.origin!==location.origin) return;
   const m=ev.data||{};
   if(m.type==='archstudio:load' && m.doc) applyEmbedDoc(m.doc);
+  else if(m.type==='archstudio:guia') guiaApontar(m.alvo||null);
   else if(m.type==='archstudio:get') postToParent({type:'archstudio:doc', doc:embedDoc()});
   else if(m.type==='archstudio:apply' && m.spec) applyEmbedSpec(m.spec, m.replace===true);
   else if(m.type==='archstudio:theme' && m.theme) applyEmbedTheme(m.theme);
